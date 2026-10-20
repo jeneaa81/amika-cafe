@@ -34,7 +34,22 @@ import {
   Tv,
   AlertCircle,
   Undo2,
+  Lock,
+  KeyRound,
+  LogOut,
 } from 'lucide-react';
+
+const ADMIN_PASS_STORAGE_KEY = 'amika_admin_password_v1';
+const ADMIN_SESSION_UNLOCKED_KEY = 'amika_admin_unlocked_v1';
+const DEFAULT_ADMIN_PASSWORD = 'amika';
+
+function getStoredAdminPassword(): string {
+  try {
+    return localStorage.getItem(ADMIN_PASS_STORAGE_KEY) || DEFAULT_ADMIN_PASSWORD;
+  } catch {
+    return DEFAULT_ADMIN_PASSWORD;
+  }
+}
 
 interface AdminBuilderProps {
   language: Language;
@@ -42,11 +57,268 @@ interface AdminBuilderProps {
   onOpenTvMode?: () => void;
 }
 
+const ADMIN_I18N = {
+  ro: {
+    // Login Gate
+    loginBadge: 'Acces Protejat • Amika Café',
+    loginTitle: 'Cabinetul Administratorului',
+    loginSubtitle:
+      'Introduceți parola pentru a edita cele 2 coloane de produse și caruselul foto de pe televizor.',
+    passwordPlaceholder: 'Introduceți parola...',
+    loginBtn: 'Intră în Cabinet',
+    backToStoreBtn: 'Înapoi la vitrină',
+    wrongPassword: '⚠️ Parolă incorectă! Vă rugăm să verificați și să încercați din nou.',
+    // Top Bar
+    topBadge: 'Cabinet Administrator • Tabletă / PC',
+    unsavedBadge: 'Modificări nesalvate',
+    syncedBadge: 'Sincronizat cu TV',
+    mainTitle: 'Administrare Meniu (2 Coloane) & Carusel Foto TV',
+    mainDesc1:
+      'Editați liniștit denumirile, prețurile și fotografiile — ecranul televizorului ',
+    mainDescNot: 'NU',
+    mainDesc2: ' se reîncarcă la fiecare literă, ci doar după ce apăsați butonul ',
+    mainDescBtn: '„Salvează și trimite pe TV”',
+    discardBtn: 'Anulează modificările',
+    discardTitle: 'Anulează modificările nesalvate',
+    saveBtn: '💾 Salvează și trimite pe TV',
+    savingBtn: 'Se trimite pe televizor...',
+    // Secondary Toolbar
+    exportBackup: 'Descarcă copie de rezervă (.json)',
+    importBackup: 'Restaurează din copie',
+    resetFactory: 'Resetează la standard',
+    changePassBtn: 'Schimbă parola',
+    previewTvBtn: 'Previzualizare TV',
+    lockExitBtn: 'Ieșire (Blochează)',
+    // Password Change Box
+    newPassTitle: 'Schimbare parolă administrator',
+    newPassPlaceholder: 'Parolă nouă (minim 3 caractere)...',
+    saveNewPassBtn: 'Salvează parola nouă',
+    cancelBtn: 'Anulează',
+    passChangedToast: '🔑 Parola de administrator a fost actualizată cu succes!',
+    passTooShortToast: '⚠️ Parola trebuie să conțină cel puțin 3 caractere',
+    // Tabs
+    tabBoth: 'Ambele coloane (PC / Tabletă)',
+    tabCoffee: '1. Coloana Cafea',
+    tabDesserts: '2. Coloana Deserturi',
+    tabSlides: '3. Carusel Foto',
+    // Coffee Column
+    coffeeColTitle: 'Coloana 1: Cafea & Băuturi',
+    coffeeColSub: 'Coloana din stânga a meniului de pe televizor',
+    addCoffeeTopBtn: 'Adaugă băutură',
+    addCoffeeBottomBtn: 'Adaugă băutură în Coloana 1',
+    coffeeHeaderLabel: 'Titlul primei coloane (RO / RU)',
+    headerRo: 'Titlu (RO)',
+    headerRu: 'Titlu (RU)',
+    // Dessert Column
+    dessertColTitle: 'Coloana 2: Deserturi & Patiserie',
+    dessertColSub: 'A doua coloană a meniului de pe televizor',
+    addDessertTopBtn: 'Adaugă desert',
+    addDessertBottomBtn: 'Adaugă desert / patiserie în Coloana 2',
+    dessertHeaderLabel: 'Titlul celei de-a doua coloane (RO / RU)',
+    // Item fields
+    moveUp: 'Mută mai sus',
+    moveDown: 'Mută mai jos',
+    visibleOnTv: 'Vizibil',
+    hiddenOnTv: 'Ascuns',
+    deleteItem: 'Șterge poziția',
+    nameRo: 'Denumire (RO)',
+    nameRu: 'Denumire (RU)',
+    priceMdl: 'Preț (MDL)',
+    discountPriceMdl: 'Seara -30% (L)',
+    volumeMl: 'Volum (ml)',
+    badgeLabel: 'Ecuson (TOP / NOU)',
+    badgePlaceholder: 'Gol sau TOP',
+    descRo: 'Descriere / Note (RO)',
+    descRu: 'Descriere / Note (RU)',
+    ingredientsRo: 'Ingrediente / Descriere (RO)',
+    ingredientsRu: 'Ingrediente / Descriere (RU)',
+    // Slides section
+    slidesHeaderTitle: 'Partea dreaptă a ecranului TV: Carusel Foto',
+    slidesWord: 'slide-uri',
+    slidesHeaderDesc:
+      'Încărcați orice număr de fotografii proprii de pe calculator sau tabletă. Acestea sunt optimizate automat pentru televizorul Full HD.',
+    uploadPhotosBtn: '📷 Încarcă fotografii proprii (una sau mai multe)',
+    uploadingPhotosBtn: 'Se procesează foto...',
+    pickFromGalleryBtn: '🖼 Din colecția Amika (15 foto)',
+    galleryPickerHint:
+      'Apăsați pe orice fotografie din colecția Amika Café pentru a o adăuga în carusel:',
+    slideNumOf: 'Slide #',
+    slideOf: 'din',
+    replacePhotoBtn: 'Schimbă foto',
+    slideBadgeLabel: 'Ecusonul de sus (RO / RU)',
+    slideTitleRo: 'Titlu mare (RO)',
+    slideTitleRu: 'Titlu mare (RU)',
+    slideSubtitleRo: 'Subtitlu (RO)',
+    slideSubtitleRu: 'Subtitlu (RU)',
+    slideDetailsRo: 'Descriere jos (RO)',
+    slideDetailsRu: 'Descriere jos (RU)',
+    // Bottom status
+    bottomUnsavedText:
+      '● Există modificări nesalvate în ciornă. Apăsați butonul din dreapta pentru a le trimite pe televizor.',
+    bottomSavedText: '✓ Toate modificările sunt salvate și afișate pe televizor.',
+    // Toasts & prompts
+    toastDiscarded: '↩️ Modificările nesalvate au fost anulate',
+    confirmReset:
+      'Sigur doriți să încărcați meniul și fotografiile implicite Amika Café în editor? (Pentru aplicare pe TV apăsați apoi „Salvează și trimite pe TV”)',
+    toastResetDraft:
+      '🔄 Meniul standard a fost încărcat în ciornă. Apăsați „Salvează și trimite pe TV” pentru aplicare.',
+    toastExported: '📥 Copia de rezervă a meniului și fotografiilor a fost descărcată!',
+    toastImported:
+      '📂 Copia a fost încărcată în editor! Verificați datele și apăsați „Salvează și trimite pe TV”.',
+    toastBadFormat: '⚠️ Format invalid al fișierului de rezervă',
+    toastJsonErr: '⚠️ Eroare la citirea fișierului JSON',
+    toastAddedCoffee: '☕ Băutură nouă adăugată în ciornă (Coloana 1)',
+    toastAddedDessert: '🥐 Desert nou adăugat în ciornă (Coloana 2)',
+    toastMinOneSlide: '⚠️ În carusel trebuie să rămână cel puțin 1 slide',
+    toastPhotosAdded:
+      '📸 Fotografii adăugate în ciornă! Apăsați „Salvează și trimite pe TV” când sunteți gata.',
+    toastPhotoReplaced: '📸 Fotografia slide-ului a fost actualizată în ciornă!',
+    toastPhotoErr: '⚠️ Eroare la procesarea imaginii',
+    toastGalleryAdded: '🖼 Slide adăugat în ciornă:',
+  },
+  ru: {
+    // Login Gate
+    loginBadge: 'Защищённый доступ • Amika Café',
+    loginTitle: 'Кабинет Администратора',
+    loginSubtitle:
+      'Введите пароль администратора для редактирования 2 колонок меню и фото-карусели на телевизоре.',
+    passwordPlaceholder: 'Введите пароль...',
+    loginBtn: 'Войти в кабинет',
+    backToStoreBtn: 'Назад к витрине',
+    wrongPassword: '⚠️ Неверный пароль! Проверьте раскладку и попробуйте снова.',
+    // Top Bar
+    topBadge: 'Кабинет Администратора • Планшет / ПК',
+    unsavedBadge: 'Есть несохранённые правки',
+    syncedBadge: 'Синхронизировано с ТВ',
+    mainTitle: 'Управление 2 колонками меню и Фото-каруселью ТВ',
+    mainDesc1:
+      'Спокойно вносите любые изменения в текст, цены и фото — телевизор ',
+    mainDescNot: 'НЕ',
+    mainDesc2: ' дергается при вводе символов и обновится только после нажатия кнопки ',
+    mainDescBtn: '«Сохранить и отправить на ТВ»',
+    discardBtn: 'Отменить правки',
+    discardTitle: 'Отменить несохраненные изменения',
+    saveBtn: '💾 Сохранить и отправить на ТВ',
+    savingBtn: 'Отправка на телевизор...',
+    // Secondary Toolbar
+    exportBackup: 'Скачать резервную копию (.json)',
+    importBackup: 'Восстановить из копии',
+    resetFactory: 'Сбросить к заводским',
+    changePassBtn: 'Сменить пароль',
+    previewTvBtn: 'Предпросмотр ТВ-экрана',
+    lockExitBtn: 'Выйти (Заблокировать)',
+    // Password Change Box
+    newPassTitle: 'Смена пароля администратора',
+    newPassPlaceholder: 'Новый пароль (минимум 3 символа)...',
+    saveNewPassBtn: 'Сохранить новый пароль',
+    cancelBtn: 'Отмена',
+    passChangedToast: '🔑 Пароль администратора успешно обновлён!',
+    passTooShortToast: '⚠️ Пароль должен содержать минимум 3 символа',
+    // Tabs
+    tabBoth: 'Обе колонки рядом (ПК / Планшет)',
+    tabCoffee: '1. Колонка Кофе',
+    tabDesserts: '2. Колонка Десерты',
+    tabSlides: '3. Фото-карусель',
+    // Coffee Column
+    coffeeColTitle: 'Колонка 1: Кофе и Напитки',
+    coffeeColSub: 'Левая колонка меню на телевизоре',
+    addCoffeeTopBtn: 'Добавить напиток',
+    addCoffeeBottomBtn: 'Добавить напиток в Колонку 1',
+    coffeeHeaderLabel: 'Заголовок первой колонки (RO / RU)',
+    headerRo: 'Заголовок (RO)',
+    headerRu: 'Заголовок (RU)',
+    // Dessert Column
+    dessertColTitle: 'Колонка 2: Десерты и Выпечка',
+    dessertColSub: 'Вторая колонка меню на телевизоре',
+    addDessertTopBtn: 'Добавить десерт',
+    addDessertBottomBtn: 'Добавить десерт / выпечку в Колонку 2',
+    dessertHeaderLabel: 'Заголовок второй колонки (RO / RU)',
+    // Item fields
+    moveUp: 'Переместить выше',
+    moveDown: 'Переместить ниже',
+    visibleOnTv: 'Виден',
+    hiddenOnTv: 'Скрыт',
+    deleteItem: 'Удалить позицию',
+    nameRo: 'Наименование (RO)',
+    nameRu: 'Наименование (RU)',
+    priceMdl: 'Цена (MDL)',
+    discountPriceMdl: 'Вечер -30% (L)',
+    volumeMl: 'Объем (мл)',
+    badgeLabel: 'Бейдж (ХИТ / TOP)',
+    badgePlaceholder: 'Пусто или ХИТ',
+    descRo: 'Описание (RO)',
+    descRu: 'Описание (RU)',
+    ingredientsRo: 'Состав / Описание (RO)',
+    ingredientsRu: 'Состав / Описание (RU)',
+    // Slides section
+    slidesHeaderTitle: 'Правая часть экрана ТВ: Фото-карусель',
+    slidesWord: 'слайдов',
+    slidesHeaderDesc:
+      'Загружайте любое количество своих фотографий с компьютера или планшета. Они автоматически оптимизируются под Full HD телевизор.',
+    uploadPhotosBtn: '📷 Загрузить свои фото (можно несколько)',
+    uploadingPhotosBtn: 'Обработка фото...',
+    pickFromGalleryBtn: '🖼 Из коллекции Amika (15 фото)',
+    galleryPickerHint:
+      'Нажмите на любое фото из коллекции Amika Café, чтобы добавить его в карусель:',
+    slideNumOf: 'Слайд №',
+    slideOf: 'из',
+    replacePhotoBtn: 'Заменить фото',
+    slideBadgeLabel: 'Верхняя плашка-бейдж (RO / RU)',
+    slideTitleRo: 'Заголовок (RO)',
+    slideTitleRu: 'Заголовок (RU)',
+    slideSubtitleRo: 'Подзаголовок (RO)',
+    slideSubtitleRu: 'Подзаголовок (RU)',
+    slideDetailsRo: 'Описание внизу (RO)',
+    slideDetailsRu: 'Описание внизу (RU)',
+    // Bottom status
+    bottomUnsavedText:
+      '● В черновике есть несохранённые изменения. Нажмите кнопку справа, чтобы отправить их на телевизор.',
+    bottomSavedText: '✓ Все изменения сохранены и отправлены на телевизор.',
+    // Toasts & prompts
+    toastDiscarded: '↩️ Несохранённые правки отменены',
+    confirmReset:
+      'Загрузить стандартное меню и фотографии Amika Café по умолчанию? (Для отправки на ТВ нажмите затем «Сохранить и отправить на ТВ»)',
+    toastResetDraft:
+      '🔄 Стандартное меню загружено в черновик. Нажмите «Сохранить и отправить на ТВ» для применения.',
+    toastExported: '📥 Резервная копия меню и фото скачана на устройство!',
+    toastImported:
+      '📂 Копия загружена в редактор! Проверьте данные и нажмите «Сохранить и отправить на ТВ».',
+    toastBadFormat: '⚠️ Неверный формат файла резервной копии',
+    toastJsonErr: '⚠️ Ошибка чтения JSON-файла',
+    toastAddedCoffee: '☕ Позиция добавлена в черновик (Колонка 1)',
+    toastAddedDessert: '🥐 Позиция добавлена в черновик (Колонка 2)',
+    toastMinOneSlide: '⚠️ В карусели должен оставаться хотя бы 1 слайд',
+    toastPhotosAdded:
+      '📸 Фото добавлены в черновик! Нажмите «Сохранить и отправить на ТВ», когда будете готовы.',
+    toastPhotoReplaced: '📸 Фото слайда заменено в черновике!',
+    toastPhotoErr: '⚠️ Ошибка при обработке изображения',
+    toastGalleryAdded: '🖼 Слайд добавлен в черновик:',
+  },
+};
+
 export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   language,
   onExitAdminMode,
   onOpenTvMode,
 }) => {
+  const L = ADMIN_I18N[language];
+
+  // Password authentication state
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(ADMIN_SESSION_UNLOCKED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [showPasswordText, setShowPasswordText] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<boolean>(false);
+
+  // Change password panel inside Admin
+  const [showChangePasswordBox, setShowChangePasswordBox] = useState<boolean>(false);
+  const [newPasswordInput, setNewPasswordInput] = useState<string>('');
+
   // Local draft state: edits NEVER trigger TV updates until "Save & Send to TV" is clicked
   const [draftConfig, setDraftConfig] = useState<TvBoardConfig>(() => loadTvConfig());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
@@ -66,6 +338,46 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     setTimeout(() => setToastMsg(null), 4500);
   };
 
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const expected = getStoredAdminPassword();
+    if (passwordInput.trim() === expected) {
+      setIsUnlocked(true);
+      setLoginError(false);
+      setPasswordInput('');
+      try {
+        sessionStorage.setItem(ADMIN_SESSION_UNLOCKED_KEY, 'true');
+      } catch {}
+    } else {
+      setLoginError(true);
+    }
+  };
+
+  const handleLockAdmin = () => {
+    setIsUnlocked(false);
+    try {
+      sessionStorage.removeItem(ADMIN_SESSION_UNLOCKED_KEY);
+    } catch {}
+    if (onExitAdminMode) {
+      onExitAdminMode();
+    }
+  };
+
+  const handleSaveNewPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newPasswordInput.trim();
+    if (trimmed.length < 3) {
+      showToast(L.passTooShortToast);
+      return;
+    }
+    try {
+      localStorage.setItem(ADMIN_PASS_STORAGE_KEY, trimmed);
+    } catch {}
+    setNewPasswordInput('');
+    setShowChangePasswordBox(false);
+    showToast(L.passChangedToast);
+  };
+
   // Update draft in memory ONLY (does NOT save to localStorage or broadcast to TV)
   const updateDraft = (nextConfig: TvBoardConfig) => {
     setDraftConfig(nextConfig);
@@ -77,7 +389,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     const saved = loadTvConfig();
     setDraftConfig(saved);
     setHasUnsavedChanges(false);
-    showToast('↩️ Несохранённые правки отменены');
+    showToast(L.toastDiscarded);
   };
 
   // Save & Push to TV ONLY on explicit button click
@@ -101,18 +413,12 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
 
   // Reset to factory defaults
   const handleResetDefaults = () => {
-    if (
-      !window.confirm(
-        language === 'ro'
-          ? 'Sigur doriți să încărcați meniul și fotografiile implicite Amika Café în editor?'
-          : 'Загрузить стандартное меню и фотографии Amika Café по умолчанию? (Для отправки на ТВ нажмите «Сохранить и отправить на ТВ»)'
-      )
-    ) {
+    if (!window.confirm(L.confirmReset)) {
       return;
     }
     const fresh = JSON.parse(JSON.stringify(DEFAULT_TV_CONFIG)) as TvBoardConfig;
     updateDraft(fresh);
-    showToast('🔄 Стандартное меню загружено в черновик. Нажмите «Сохранить и отправить на ТВ» для применения.');
+    showToast(L.toastResetDraft);
   };
 
   // Export JSON backup
@@ -124,7 +430,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     a.href = dataStr;
     a.download = `amika_cafe_menu_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    showToast('📥 Резервная копия меню и фото скачана на устройство!');
+    showToast(L.toastExported);
   };
 
   // Import JSON backup into draft
@@ -137,12 +443,12 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         const parsed = JSON.parse(String(ev.target?.result || '')) as TvBoardConfig;
         if (parsed && Array.isArray(parsed.coffeeItems) && Array.isArray(parsed.slides)) {
           updateDraft(parsed);
-          showToast('📂 Копия загружена в редактор! Проверьте данные и нажмите «Сохранить и отправить на ТВ».');
+          showToast(L.toastImported);
         } else {
-          showToast('⚠️ Неверный формат файла резервной копии');
+          showToast(L.toastBadFormat);
         }
       } catch {
-        showToast('⚠️ Ошибка чтения JSON-файла');
+        showToast(L.toastJsonErr);
       }
     };
     reader.readAsText(file);
@@ -170,7 +476,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       ...draftConfig,
       coffeeItems: [...draftConfig.coffeeItems, newItem],
     });
-    showToast('☕ Позиция добавлена в черновик (Колонка 1)');
+    showToast(L.toastAddedCoffee);
   };
 
   const removeCoffeeItem = (idx: number) => {
@@ -209,7 +515,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       ...draftConfig,
       dessertItems: [...draftConfig.dessertItems, newItem],
     });
-    showToast('🥐 Позиция добавлена в черновик (Колонка 2)');
+    showToast(L.toastAddedDessert);
   };
 
   const removeDessertItem = (idx: number) => {
@@ -236,7 +542,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
 
   const removeSlide = (idx: number) => {
     if (draftConfig.slides.length <= 1) {
-      showToast('⚠️ В карусели должен оставаться хотя бы 1 слайд');
+      showToast(L.toastMinOneSlide);
       return;
     }
     const next = draftConfig.slides.filter((_, i) => i !== idx);
@@ -284,11 +590,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         ...draftConfig,
         slides: [...draftConfig.slides, ...addedSlides],
       });
-      showToast(
-        `📸 Добавлено в черновик фото: ${addedSlides.length} шт. Нажмите «Сохранить и отправить на ТВ», когда будете готовы!`
-      );
+      showToast(`${L.toastPhotosAdded} (+${addedSlides.length})`);
     } catch {
-      showToast('⚠️ Не удалось обработать изображение');
+      showToast(L.toastPhotoErr);
     } finally {
       setIsUploadingPhoto(false);
       e.target.value = '';
@@ -302,9 +606,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     try {
       const compressedDataUrl = await compressImageFile(file, 1080, 0.78);
       updateSlide(idx, { image: compressedDataUrl });
-      showToast(`📸 Фото слайда №${idx + 1} заменено в черновике!`);
+      showToast(`${L.toastPhotoReplaced} (#${idx + 1})`);
     } catch {
-      showToast('⚠️ Ошибка при загрузке фото');
+      showToast(L.toastPhotoErr);
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -332,8 +636,82 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       slides: [...draftConfig.slides, newSlide],
     });
     setShowInstaPicker(false);
-    showToast(`🖼 Слайд «${label}» добавлен в черновик`);
+    showToast(`${L.toastGalleryAdded} «${label}»`);
   };
+
+  // ================= PASSWORD PROTECTION GATE =================
+  if (!isUnlocked) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12">
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950/40 border border-amber-500/40 shadow-2xl space-y-6">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              {L.loginBadge}
+            </span>
+
+            <h2 className="text-2xl font-black text-white font-serif">
+              {L.loginTitle}
+            </h2>
+
+            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+              {L.loginSubtitle}
+            </p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div className="relative">
+              <input
+                type={showPasswordText ? 'text' : 'password'}
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  if (loginError) setLoginError(false);
+                }}
+                placeholder={L.passwordPlaceholder}
+                autoFocus
+                className="w-full pl-4 pr-11 py-3.5 rounded-2xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-sm text-white font-semibold"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordText(!showPasswordText)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-stone-400 hover:text-stone-200"
+              >
+                {showPasswordText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {loginError && (
+              <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{L.wrongPassword}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-black text-sm shadow-lg shadow-amber-950/50 transition active:scale-98 cursor-pointer"
+            >
+              {L.loginBtn}
+            </button>
+
+            {onExitAdminMode && (
+              <button
+                type="button"
+                onClick={onExitAdminMode}
+                className="w-full py-2.5 rounded-2xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold transition cursor-pointer"
+              >
+                {L.backToStoreBtn}
+              </button>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   // Render Coffee Column Editor Block
   const renderCoffeeEditor = () => (
@@ -345,11 +723,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           </span>
           <div>
             <h4 className="text-sm sm:text-base font-extrabold text-white font-serif">
-              Колонка 1: Кофе и Напитки ({draftConfig.coffeeItems.length})
+              {L.coffeeColTitle} ({draftConfig.coffeeItems.length})
             </h4>
-            <p className="text-[11px] text-stone-400">
-              Левая колонка меню на телевизоре
-            </p>
+            <p className="text-[11px] text-stone-400">{L.coffeeColSub}</p>
           </div>
         </div>
         <button
@@ -357,18 +733,18 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           className="px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Добавить напиток</span>
+          <span>{L.addCoffeeTopBtn}</span>
         </button>
       </div>
 
       {/* Column Header Settings */}
       <div className="p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
         <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-          Заголовок первой колонки (RO / RU)
+          {L.coffeeHeaderLabel}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RO)</label>
+            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRo}</label>
             <input
               type="text"
               value={draftConfig.coffeeHeader.ro}
@@ -382,7 +758,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             />
           </div>
           <div>
-            <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RU)</label>
+            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRu}</label>
             <input
               type="text"
               value={draftConfig.coffeeHeader.ru}
@@ -412,7 +788,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Item Top Controls */}
             <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
               <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
-                #{idx + 1} • {item.name.ru || item.name.ro}
+                #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -420,7 +796,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   onClick={() => moveCoffeeItem(idx, -1)}
                   disabled={idx === 0}
                   className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title="Переместить выше"
+                  title={L.moveUp}
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
@@ -428,7 +804,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   onClick={() => moveCoffeeItem(idx, 1)}
                   disabled={idx === draftConfig.coffeeItems.length - 1}
                   className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title="Переместить ниже"
+                  title={L.moveDown}
                 >
                   <ArrowDown className="w-4 h-4" />
                 </button>
@@ -439,15 +815,14 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                       ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                       : 'bg-stone-800 border-stone-700 text-stone-400'
                   }`}
-                  title={item.visible ? 'Показан на ТВ' : 'Скрыт на ТВ'}
                 >
                   {item.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{item.visible ? 'Виден' : 'Скрыт'}</span>
+                  <span className="hidden sm:inline">{item.visible ? L.visibleOnTv : L.hiddenOnTv}</span>
                 </button>
                 <button
                   onClick={() => removeCoffeeItem(idx)}
                   className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30"
-                  title="Удалить позицию"
+                  title={L.deleteItem}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -457,7 +832,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Names RO / RU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Наименование (RO)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRo}</label>
                 <input
                   type="text"
                   value={item.name.ro}
@@ -468,7 +843,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Наименование (RU)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRu}</label>
                 <input
                   type="text"
                   value={item.name.ru}
@@ -483,7 +858,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Price, Volume, Badge */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1">Цена (MDL)</label>
+                <label className="text-[11px] text-amber-400 font-bold block mb-1">{L.priceMdl}</label>
                 <input
                   type="number"
                   value={item.price}
@@ -494,7 +869,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Объем (мл)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.volumeMl}</label>
                 <input
                   type="text"
                   value={item.volume}
@@ -503,11 +878,11 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Бейдж (ХИТ/TOP)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.badgeLabel}</label>
                 <input
                   type="text"
-                  placeholder="Пусто или ХИТ"
-                  value={item.badge ? item.badge.ru : ''}
+                  placeholder={L.badgePlaceholder}
+                  value={item.badge ? (language === 'ro' ? item.badge.ro : item.badge.ru) : ''}
                   onChange={(e) => {
                     const val = e.target.value;
                     updateCoffeeItem(idx, {
@@ -522,7 +897,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Description RO / RU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Описание (RO)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.descRo}</label>
                 <input
                   type="text"
                   value={item.notes.ro}
@@ -533,7 +908,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Описание (RU)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.descRu}</label>
                 <input
                   type="text"
                   value={item.notes.ru}
@@ -553,7 +928,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         className="w-full py-3.5 rounded-2xl bg-amber-600/20 hover:bg-amber-600/30 border border-dashed border-amber-500/50 text-amber-300 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
       >
         <Plus className="w-4 h-4" />
-        <span>Добавить напиток в Колонку 1</span>
+        <span>{L.addCoffeeBottomBtn}</span>
       </button>
     </div>
   );
@@ -568,11 +943,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           </span>
           <div>
             <h4 className="text-sm sm:text-base font-extrabold text-white font-serif">
-              Колонка 2: Десерты и Выпечка ({draftConfig.dessertItems.length})
+              {L.dessertColTitle} ({draftConfig.dessertItems.length})
             </h4>
-            <p className="text-[11px] text-stone-400">
-              Вторая колонка меню на телевизоре
-            </p>
+            <p className="text-[11px] text-stone-400">{L.dessertColSub}</p>
           </div>
         </div>
         <button
@@ -580,18 +953,18 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           className="px-3 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Добавить десерт</span>
+          <span>{L.addDessertTopBtn}</span>
         </button>
       </div>
 
       {/* Column Header Settings */}
       <div className="p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
         <div className="text-[11px] font-bold text-rose-400 uppercase tracking-wider">
-          Заголовок второй колонки (RO / RU)
+          {L.dessertHeaderLabel}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RO)</label>
+            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRo}</label>
             <input
               type="text"
               value={draftConfig.dessertHeader.ro}
@@ -605,7 +978,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             />
           </div>
           <div>
-            <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RU)</label>
+            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRu}</label>
             <input
               type="text"
               value={draftConfig.dessertHeader.ru}
@@ -634,7 +1007,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           >
             <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
               <span className="text-xs sm:text-sm font-extrabold text-rose-400 font-mono">
-                #{idx + 1} • {item.name.ru || item.name.ro}
+                #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -642,7 +1015,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   onClick={() => moveDessertItem(idx, -1)}
                   disabled={idx === 0}
                   className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title="Переместить выше"
+                  title={L.moveUp}
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
@@ -650,7 +1023,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   onClick={() => moveDessertItem(idx, 1)}
                   disabled={idx === draftConfig.dessertItems.length - 1}
                   className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title="Переместить ниже"
+                  title={L.moveDown}
                 >
                   <ArrowDown className="w-4 h-4" />
                 </button>
@@ -661,15 +1034,14 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                       ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                       : 'bg-stone-800 border-stone-700 text-stone-400'
                   }`}
-                  title={item.visible ? 'Показан на ТВ' : 'Скрыт на ТВ'}
                 >
                   {item.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{item.visible ? 'Виден' : 'Скрыт'}</span>
+                  <span className="hidden sm:inline">{item.visible ? L.visibleOnTv : L.hiddenOnTv}</span>
                 </button>
                 <button
                   onClick={() => removeDessertItem(idx)}
                   className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30"
-                  title="Удалить позицию"
+                  title={L.deleteItem}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -679,7 +1051,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Names RO / RU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Наименование (RO)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRo}</label>
                 <input
                   type="text"
                   value={item.name.ro}
@@ -690,7 +1062,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Наименование (RU)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRu}</label>
                 <input
                   type="text"
                   value={item.name.ru}
@@ -705,7 +1077,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Price, Discount Price, Badge */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1">Цена (MDL)</label>
+                <label className="text-[11px] text-amber-400 font-bold block mb-1">{L.priceMdl}</label>
                 <input
                   type="number"
                   value={item.price}
@@ -720,7 +1092,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-rose-400 font-bold block mb-1">Вечер -30% (L)</label>
+                <label className="text-[11px] text-rose-400 font-bold block mb-1">{L.discountPriceMdl}</label>
                 <input
                   type="number"
                   value={item.discountPrice}
@@ -731,11 +1103,11 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Бейдж</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.badgeLabel}</label>
                 <input
                   type="text"
                   placeholder="FOODBERRY"
-                  value={item.badge ? item.badge.ru : ''}
+                  value={item.badge ? (language === 'ro' ? item.badge.ro : item.badge.ru) : ''}
                   onChange={(e) => {
                     const val = e.target.value;
                     updateDessertItem(idx, {
@@ -750,7 +1122,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Description RO / RU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Состав / Описание (RO)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.ingredientsRo}</label>
                 <input
                   type="text"
                   value={item.desc.ro}
@@ -761,7 +1133,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">Состав / Описание (RU)</label>
+                <label className="text-[11px] text-stone-400 block mb-1">{L.ingredientsRu}</label>
                 <input
                   type="text"
                   value={item.desc.ru}
@@ -781,7 +1153,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         className="w-full py-3.5 rounded-2xl bg-rose-600/20 hover:bg-rose-600/30 border border-dashed border-rose-500/50 text-rose-300 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
       >
         <Plus className="w-4 h-4" />
-        <span>Добавить десерт / выпечку в Колонку 2</span>
+        <span>{L.addDessertBottomBtn}</span>
       </button>
     </div>
   );
@@ -792,28 +1164,31 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-950/70 via-stone-900 to-stone-900 border border-amber-500/40 shadow-2xl space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                Кабинет Администратора • Планшет / ПК
+                {L.topBadge}
               </span>
               {hasUnsavedChanges ? (
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-stone-950 flex items-center gap-1 animate-pulse">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Есть несохранённые правки</span>
+                  <span>{L.unsavedBadge}</span>
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span>Синхронизировано с ТВ</span>
+                  <span>{L.syncedBadge}</span>
                 </span>
               )}
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black text-white font-serif mt-1.5">
-              Управление 2 колонками меню и Фото-каруселью ТВ
+              {L.mainTitle}
             </h2>
             <p className="text-xs sm:text-sm text-stone-300 mt-1">
-              Спокойно вносите любые изменения в текст, цены и фото — телевизор <b className="text-amber-300">НЕ</b> дергается при вводе символов и обновится только после нажатия кнопки <b className="text-emerald-400">«Сохранить и отправить на ТВ»</b>.
+              {L.mainDesc1}
+              <b className="text-amber-300">{L.mainDescNot}</b>
+              {L.mainDesc2}
+              <b className="text-emerald-400">{L.mainDescBtn}</b>.
             </p>
           </div>
 
@@ -822,10 +1197,10 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               <button
                 onClick={handleDiscardDraft}
                 className="px-3.5 py-3 rounded-2xl bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-                title="Отменить несохраненные изменения"
+                title={L.discardTitle}
               >
                 <Undo2 className="w-4 h-4 text-amber-400" />
-                <span>Отменить правки</span>
+                <span>{L.discardBtn}</span>
               </button>
             )}
 
@@ -839,16 +1214,12 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               }`}
             >
               <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>
-                {isSaving
-                  ? 'Отправка на телевизор...'
-                  : '💾 Сохранить и отправить на ТВ'}
-              </span>
+              <span>{isSaving ? L.savingBtn : L.saveBtn}</span>
             </button>
           </div>
         </div>
 
-        {/* Secondary Toolbar: Backup, Restore, Preview TV, Exit */}
+        {/* Secondary Toolbar: Backup, Restore, Password Change, Preview TV, Lock/Exit */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-stone-800/80">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -856,7 +1227,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-amber-400" />
-              <span>Скачать резервную копию (.json)</span>
+              <span>{L.exportBackup}</span>
             </button>
 
             <button
@@ -864,7 +1235,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 text-sky-400" />
-              <span>Восстановить из копии</span>
+              <span>{L.importBackup}</span>
             </button>
             <input
               ref={jsonImportRef}
@@ -879,7 +1250,15 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/60 text-stone-400 hover:text-rose-300 border border-stone-700/80 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Сбросить к заводским</span>
+              <span>{L.resetFactory}</span>
+            </button>
+
+            <button
+              onClick={() => setShowChangePasswordBox(!showChangePasswordBox)}
+              className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+              <span>{L.changePassBtn}</span>
             </button>
           </div>
 
@@ -890,19 +1269,53 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Tv className="w-3.5 h-3.5 text-amber-400" />
-                <span>Предпросмотр ТВ-экрана</span>
+                <span>{L.previewTvBtn}</span>
               </button>
             )}
-            {onExitAdminMode && (
-              <button
-                onClick={onExitAdminMode}
-                className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 text-xs font-semibold transition cursor-pointer"
-              >
-                {language === 'ro' ? 'Închide Admin' : 'Вернуться к витрине'}
-              </button>
-            )}
+            <button
+              onClick={handleLockAdmin}
+              className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/60 text-stone-300 hover:text-rose-200 border border-stone-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{L.lockExitBtn}</span>
+            </button>
           </div>
         </div>
+
+        {/* Inline Change Password Form */}
+        {showChangePasswordBox && (
+          <form
+            onSubmit={handleSaveNewPassword}
+            className="p-4 rounded-2xl bg-stone-950 border border-amber-500/40 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-300 shrink-0">
+              <KeyRound className="w-4 h-4" />
+              <span>{L.newPassTitle}:</span>
+            </div>
+            <input
+              type="text"
+              value={newPasswordInput}
+              onChange={(e) => setNewPasswordInput(e.target.value)}
+              placeholder={L.newPassPlaceholder}
+              className="flex-1 p-2 rounded-xl bg-stone-900 border border-stone-700 text-xs text-white font-mono"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-extrabold text-xs cursor-pointer"
+              >
+                {L.saveNewPassBtn}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowChangePasswordBox(false)}
+                className="px-3 py-2 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold cursor-pointer"
+              >
+                {L.cancelBtn}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {/* Toast Notification */}
@@ -924,7 +1337,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           }`}
         >
           <Columns className="w-4 h-4" />
-          <span>Обе колонки рядом (ПК/Планшет)</span>
+          <span>{L.tabBoth}</span>
         </button>
 
         <button
@@ -936,7 +1349,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           }`}
         >
           <Coffee className="w-4 h-4" />
-          <span>1. Колонка Кофе ({draftConfig.coffeeItems.length})</span>
+          <span>
+            {L.tabCoffee} ({draftConfig.coffeeItems.length})
+          </span>
         </button>
 
         <button
@@ -948,7 +1363,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           }`}
         >
           <Cake className="w-4 h-4" />
-          <span>2. Колонка Десерты ({draftConfig.dessertItems.length})</span>
+          <span>
+            {L.tabDesserts} ({draftConfig.dessertItems.length})
+          </span>
         </button>
 
         <button
@@ -960,7 +1377,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           }`}
         >
           <ImageIcon className="w-4 h-4" />
-          <span>3. Фото-карусель ({draftConfig.slides.length})</span>
+          <span>
+            {L.tabSlides} ({draftConfig.slides.length})
+          </span>
         </button>
       </div>
 
@@ -973,18 +1392,10 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       )}
 
       {/* ================= VIEW 1: COFFEE COLUMN ONLY ================= */}
-      {subTab === 'coffee' && (
-        <div className="max-w-4xl mx-auto">
-          {renderCoffeeEditor()}
-        </div>
-      )}
+      {subTab === 'coffee' && <div className="max-w-4xl mx-auto">{renderCoffeeEditor()}</div>}
 
       {/* ================= VIEW 2: DESSERTS COLUMN ONLY ================= */}
-      {subTab === 'desserts' && (
-        <div className="max-w-4xl mx-auto">
-          {renderDessertsEditor()}
-        </div>
-      )}
+      {subTab === 'desserts' && <div className="max-w-4xl mx-auto">{renderDessertsEditor()}</div>}
 
       {/* ================= VIEW 3: PHOTO CAROUSEL EDITOR (MULTI-COLUMN GRID ON TABLET/PC) ================= */}
       {subTab === 'slides' && (
@@ -998,11 +1409,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 </span>
                 <div>
                   <h4 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
-                    Правая часть экрана ТВ: Фото-карусель ({draftConfig.slides.length} слайдов)
+                    {L.slidesHeaderTitle} ({draftConfig.slides.length} {L.slidesWord})
                   </h4>
-                  <p className="text-xs text-stone-300">
-                    Загружайте любое количество своих фотографий с компьютера или планшета. Они автоматически оптимизируются под Full HD телевизор.
-                  </p>
+                  <p className="text-xs text-stone-300">{L.slidesHeaderDesc}</p>
                 </div>
               </div>
 
@@ -1013,9 +1422,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   className="py-3 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 cursor-pointer"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>
-                    {isUploadingPhoto ? 'Обработка фото...' : '📷 Загрузить свои фото (можно несколько)'}
-                  </span>
+                  <span>{isUploadingPhoto ? L.uploadingPhotosBtn : L.uploadPhotosBtn}</span>
                 </button>
                 <input
                   ref={fileInputNewSlidesRef}
@@ -1031,7 +1438,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   className="py-3 px-4 rounded-2xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/30 font-bold text-xs sm:text-sm flex items-center gap-2 transition active:scale-95 cursor-pointer"
                 >
                   <FolderOpen className="w-4 h-4" />
-                  <span>🖼 Из коллекции Amika (15 фото)</span>
+                  <span>{L.pickFromGalleryBtn}</span>
                 </button>
               </div>
             </div>
@@ -1039,9 +1446,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             {/* Built-in Instagram Gallery Picker */}
             {showInstaPicker && (
               <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-3">
-                <div className="text-xs font-bold text-amber-400">
-                  Нажмите на любое фото из коллекции Amika Café, чтобы добавить его в карусель:
-                </div>
+                <div className="text-xs font-bold text-amber-400">{L.galleryPickerHint}</div>
                 <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2.5">
                   {BUILTIN_INSTA_GALLERY.map((g, i) => (
                     <button
@@ -1085,7 +1490,8 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     {/* Slide Header Controls */}
                     <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
                       <span className="text-xs sm:text-sm font-extrabold text-indigo-400 font-mono">
-                        Слайд №{idx + 1} из {draftConfig.slides.length}
+                        {L.slideNumOf}
+                        {idx + 1} {L.slideOf} {draftConfig.slides.length}
                       </span>
 
                       <div className="flex items-center gap-1">
@@ -1093,7 +1499,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                           onClick={() => moveSlide(idx, -1)}
                           disabled={idx === 0}
                           className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                          title="Раньше"
+                          title={L.moveUp}
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
                         </button>
@@ -1101,7 +1507,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                           onClick={() => moveSlide(idx, 1)}
                           disabled={idx === draftConfig.slides.length - 1}
                           className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                          title="Позже"
+                          title={L.moveDown}
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
@@ -1114,12 +1520,12 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                           }`}
                         >
                           {slide.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          <span>{slide.visible ? 'Вкл' : 'Скрыт'}</span>
+                          <span>{slide.visible ? L.visibleOnTv : L.hiddenOnTv}</span>
                         </button>
                         <button
                           onClick={() => removeSlide(idx)}
                           className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30"
-                          title="Удалить слайд"
+                          title={L.deleteItem}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1130,13 +1536,13 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     <div className="relative h-48 rounded-2xl overflow-hidden bg-stone-950 border border-stone-800 group">
                       <img
                         src={imgSrc}
-                        alt={slide.title.ru}
+                        alt={slide.title[language]}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-transparent to-transparent" />
                       <label className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-900/90 hover:bg-indigo-600 text-white border border-stone-700 text-xs font-bold cursor-pointer shadow-lg transition">
                         <Camera className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Заменить фото</span>
+                        <span>{L.replacePhotoBtn}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1149,7 +1555,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     {/* Badge RO / RU */}
                     <div>
                       <label className="text-[11px] text-stone-400 block mb-1">
-                        Верхняя плашка-бейдж (RO / RU)
+                        {L.slideBadgeLabel}
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -1176,7 +1582,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     {/* Slide Title RO / RU */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RO)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideTitleRo}</label>
                         <input
                           type="text"
                           value={slide.title.ro}
@@ -1187,7 +1593,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RU)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideTitleRu}</label>
                         <input
                           type="text"
                           value={slide.title.ru}
@@ -1202,7 +1608,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     {/* Slide Subtitle RO / RU */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Подзаголовок (RO)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideSubtitleRo}</label>
                         <input
                           type="text"
                           value={slide.subtitle.ro}
@@ -1213,7 +1619,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Подзаголовок (RU)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideSubtitleRu}</label>
                         <input
                           type="text"
                           value={slide.subtitle.ru}
@@ -1228,7 +1634,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     {/* Slide Details RO / RU */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Описание внизу (RO)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideDetailsRo}</label>
                         <input
                           type="text"
                           value={slide.details.ro}
@@ -1239,7 +1645,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-stone-400 block mb-1">Описание внизу (RU)</label>
+                        <label className="text-[11px] text-stone-400 block mb-1">{L.slideDetailsRu}</label>
                         <input
                           type="text"
                           value={slide.details.ru}
@@ -1262,11 +1668,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       <div className="pt-4 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-xs text-stone-400">
           {hasUnsavedChanges ? (
-            <span className="text-amber-400 font-bold">
-              ● В черновике есть несохранённые изменения. Нажмите кнопку справа, чтобы отправить их на телевизор.
-            </span>
+            <span className="text-amber-400 font-bold">{L.bottomUnsavedText}</span>
           ) : (
-            <span>✓ Все изменения сохранены и отправлены на телевизор.</span>
+            <span>{L.bottomSavedText}</span>
           )}
         </div>
 
@@ -1276,7 +1680,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition active:scale-98 cursor-pointer"
         >
           <Sparkles className="w-5 h-5" />
-          <span>{isSaving ? 'Синхронизация с телевизором...' : '💾 Сохранить и отправить на ТВ'}</span>
+          <span>{isSaving ? L.savingBtn : L.saveBtn}</span>
         </button>
       </div>
     </div>

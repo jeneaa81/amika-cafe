@@ -27,6 +27,103 @@ interface BaristaScreenProps {
   onOpenTvMode?: () => void;
 }
 
+const BARISTA_I18N = {
+  ro: {
+    topBadge: 'Postul de lucru Barista',
+    topTitle: 'Precomenzi & Telecomandă TV',
+    topSub: 'Cricova • str. Drumul Viilor 10 (fără setări admin)',
+    openTvBtn: 'Ecran TV',
+    exitBtn: 'La vitrină',
+    tabOrders: 'Precomenzi',
+    tabTvRemote: 'Telecomandă TV & -30%',
+    notifSentTitle: 'Notificare trimisă clientului în Telegram!',
+    notifOrderReady: 'Precomanda dvs.',
+    notifReadySuffix: 'este gata!',
+    notifItems: 'Conținut:',
+    notifWaitAtBar: 'Vă așteptăm la barul Amika Café fără coadă! ❤️',
+    noOrdersHint:
+      'Când un oaspete plasează o precomandă în aplicație, aceasta apare aici cu semnal sonor.',
+    paidMia: 'MIA Instant (Achitat)',
+    payOnPickup: 'Plata la preluare',
+    btnAcceptOrder: 'Preia în lucru',
+    btnReadyNotify: '🔔 Gata — Anunță clientul!',
+    btnHandedOut: 'Comandă predată oaspetelui',
+    statusCompleted: '✓ Predată',
+    remoteCardTitle: 'Telecomandă Ecran TV',
+    remoteCardSub: 'Comutare la distanță a regimurilor fără cabluri',
+    openTvShort: 'Deschide TV',
+    tvBrowserUrlLabel: 'Adresa pentru browserul televizorului (LG webOS / Smart TV):',
+    flashSaleSectionTitle: 'Reducere de seară Flash Sale (-30%) pe TV',
+    flashBtnOn: '🔥 Activează (-30%)',
+    flashBtnAuto: '⏰ Auto (20:00)',
+    flashBtnOff: 'Oprește',
+    toastFlashOn: '🔥 Regimul Flash Sale (-30%) a fost activat pe TV',
+    toastFlashAuto: '⏰ Regimul Auto activat (pornire la 20:00)',
+    toastFlashOff: 'Regim obișnuit de zi pe TV',
+    toastBroadcastSent: '🔥 Flash Sale activat pe TV și trimis oaspeților în Telegram!',
+    notifySubscribersLabel: 'Anunță abonații botului despre reducerea de seară:',
+    sendBroadcastBtn: 'Trimite',
+    sentTelegramPrefix: '✅ Trimis în Telegram:',
+    sentTelegramMid: 'la preț special',
+    switchSlideTitle: 'Schimbă slide-ul pe TV',
+    activeWord: 'active',
+    toastSlideSwitched: 'Slide schimbat:',
+    langAndSoundTitle: 'Limba pe TV și Semnal Sonor',
+    toastLangRo: '🌐 Limba pe TV: Română',
+    toastLangRu: '🌐 Limba pe TV: Rusă',
+    toastLangAuto: '🔄 Schimbare automată a limbii la fiecare 15 sec (RO ⇄ RU)',
+    toastChimePlayed: '🔔 Gong melodic redat pe TV!',
+    testSoundBtn: '🔔 Testează sunetul pe TV (Gong melodic)',
+  },
+  ru: {
+    topBadge: 'Рабочее место Бариста',
+    topTitle: 'Предзаказы & Пульт ТВ',
+    topSub: 'Cricova • str. Drumul Viilor 10 (без настроек админки)',
+    openTvBtn: 'TV Экран',
+    exitBtn: 'К витрине',
+    tabOrders: 'Предзаказы',
+    tabTvRemote: 'Пульт ТВ & Скидка -30%',
+    notifSentTitle: 'Уведомление отправлено клиенту в Telegram!',
+    notifOrderReady: 'Ваш предзаказ',
+    notifReadySuffix: 'готов!',
+    notifItems: 'Состав:',
+    notifWaitAtBar: 'Ждём вас на барной стойке Amika Café без очереди! ❤️',
+    noOrdersHint:
+      'Когда гость оформляет предзаказ в приложении, он появляется здесь со звуковым сигналом.',
+    paidMia: 'MIA Instant (Оплачено)',
+    payOnPickup: 'Оплата при получении',
+    btnAcceptOrder: 'Принять в работу',
+    btnReadyNotify: '🔔 Готов — Уведомить клиента!',
+    btnHandedOut: 'Заказ выдан гостю',
+    statusCompleted: '✓ Выдан',
+    remoteCardTitle: 'Пульт управления ТВ экраном',
+    remoteCardSub: 'Дистанционное переключение режимов без проводов',
+    openTvShort: 'Открыть ТВ',
+    tvBrowserUrlLabel: 'Адрес для браузера телевизора (LG webOS / Smart TV):',
+    flashSaleSectionTitle: 'Вечерняя распродажа Flash Sale (-30%) на ТВ',
+    flashBtnOn: '🔥 Включить (-30%)',
+    flashBtnAuto: '⏰ Авто (20:00)',
+    flashBtnOff: 'Выключить',
+    toastFlashOn: '🔥 Включен режим Flash-распродажи (-30%) на ТВ',
+    toastFlashAuto: '⏰ Включен авто-режим (активация в 20:00)',
+    toastFlashOff: 'Обычный дневной режим на ТВ',
+    toastBroadcastSent: '🔥 Flash-распродажа включена на ТВ и отправлена гостям в Telegram!',
+    notifySubscribersLabel: 'Уведомить подписчиков бота о вечерней скидке:',
+    sendBroadcastBtn: 'Рассылка',
+    sentTelegramPrefix: '✅ Отправлено в Telegram:',
+    sentTelegramMid: 'по спеццене',
+    switchSlideTitle: 'Переключить слайд на ТВ',
+    activeWord: 'активных',
+    toastSlideSwitched: 'Слайд переключен:',
+    langAndSoundTitle: 'Язык на ТВ и Звуковой сигнал',
+    toastLangRo: '🌐 Язык на ТВ: Română',
+    toastLangRu: '🌐 Язык на ТВ: Русский',
+    toastLangAuto: '🔄 Авто-смена языка каждые 15 сек (RO ⇄ RU)',
+    toastChimePlayed: '🔔 Мелодичный гонг воспроизведен на ТВ!',
+    testSoundBtn: '🔔 Проверить звук на ТВ (Мелодичный гонг)',
+  },
+};
+
 export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   language,
   orders,
@@ -35,6 +132,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   onOpenTvMode,
 }) => {
   const t = TRANSLATIONS[language];
+  const B = BARISTA_I18N[language];
   const [activeTab, setActiveTab] = useState<'orders' | 'tv_remote'>('orders');
   const [tvConfig] = useState<TvBoardConfig>(() => loadTvConfig());
 
@@ -79,7 +177,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
     sendTvCommand(
       { type: 'SET_FLASH_SALE', mode: 'active' },
       setTvCommandToast,
-      '🔥 Flash-распродажа включена на ТВ и отправлена гостям в Telegram!'
+      B.toastBroadcastSent
     );
   };
 
@@ -92,14 +190,10 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         <div>
           <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Рабочее место Бариста</span>
+            <span>{B.topBadge}</span>
           </div>
-          <h2 className="text-lg font-bold text-white font-serif mt-0.5">
-            Предзаказы & Пульт ТВ
-          </h2>
-          <p className="text-[11px] text-stone-400">
-            Cricova • str. Drumul Viilor 10 (без настроек админки)
-          </p>
+          <h2 className="text-lg font-bold text-white font-serif mt-0.5">{B.topTitle}</h2>
+          <p className="text-[11px] text-stone-400">{B.topSub}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -107,10 +201,9 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             <button
               onClick={onOpenTvMode}
               className="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-              title="Открыть экран телевизора"
             >
               <Tv className="w-3.5 h-3.5 text-amber-400" />
-              <span>TV Экран</span>
+              <span>{B.openTvBtn}</span>
             </button>
           )}
 
@@ -118,7 +211,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             onClick={onExitBaristaMode}
             className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95"
           >
-            {language === 'ro' ? 'Ieșire' : 'К витрине'}
+            {B.exitBtn}
           </button>
         </div>
       </div>
@@ -135,7 +228,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         >
           <Clock className="w-4 h-4" />
           <span className="truncate">
-            Предзаказы ({orders.filter((o) => o.status !== 'completed').length})
+            {B.tabOrders} ({orders.filter((o) => o.status !== 'completed').length})
           </span>
         </button>
 
@@ -148,7 +241,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
           }`}
         >
           <Tv className="w-4 h-4" />
-          <span className="truncate">Пульт ТВ & Скидка -30%</span>
+          <span className="truncate">{B.tabTvRemote}</span>
         </button>
       </div>
 
@@ -161,7 +254,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-emerald-300 text-xs font-extrabold">
                   <MessageSquare className="w-4 h-4 text-emerald-400" />
-                  <span>Уведомление отправлено клиенту в Telegram!</span>
+                  <span>{B.notifSentTitle}</span>
                 </div>
                 <button
                   onClick={() => setNotifiedOrderClient(null)}
@@ -176,11 +269,14 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   🤖 Amika Café Bot ➜ {notifiedOrderClient.name} ({notifiedOrderClient.phone})
                 </div>
                 <p className="text-stone-200 leading-relaxed">
-                  ☕ <b>Ваш предзаказ {notifiedOrderClient.id} готов!</b>
+                  ☕{' '}
+                  <b>
+                    {B.notifOrderReady} {notifiedOrderClient.id} {B.notifReadySuffix}
+                  </b>
                   <br />
-                  Состав: {notifiedOrderClient.itemsSummary}.
+                  {B.notifItems} {notifiedOrderClient.itemsSummary}.
                   <br />
-                  Ждём вас на барной стойке Amika Café без очереди! ❤️
+                  {B.notifWaitAtBar}
                 </p>
               </div>
             </div>
@@ -192,9 +288,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                 <Coffee className="w-6 h-6" />
               </div>
               <p className="text-stone-300 text-sm font-bold">{t.noActiveOrders}</p>
-              <p className="text-xs text-stone-500 max-w-xs mx-auto">
-                Когда гость оформляет предзаказ в приложении, он появляется здесь со звуковым сигналом.
-              </p>
+              <p className="text-xs text-stone-500 max-w-xs mx-auto">{B.noOrdersHint}</p>
             </div>
           ) : (
             orders.map((order) => {
@@ -221,9 +315,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                       <span className="font-mono text-sm font-black text-amber-400">
                         {order.id}
                       </span>
-                      <span className="text-xs font-bold text-white">
-                        {order.customerName}
-                      </span>
+                      <span className="text-xs font-bold text-white">{order.customerName}</span>
                       <span className="text-[10px] text-stone-400 font-mono">
                         ({order.customerPhone})
                       </span>
@@ -231,9 +323,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
                     <div className="flex items-center gap-1.5 text-xs">
                       <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="font-bold text-amber-400">
-                        {order.pickupTime}
-                      </span>
+                      <span className="font-bold text-amber-400">{order.pickupTime}</span>
                     </div>
                   </div>
 
@@ -244,12 +334,8 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                         className="flex items-center justify-between text-stone-200"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-amber-400">
-                            {item.quantity}x
-                          </span>
-                          <span className="font-medium">
-                            {item.product.name[language]}
-                          </span>
+                          <span className="font-bold text-amber-400">{item.quantity}x</span>
+                          <span className="font-medium">{item.product.name[language]}</span>
                           {item.options.milk && item.options.milk !== 'regular' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300">
                               {item.options.milk}
@@ -265,9 +351,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
                   <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-xs">
                     <span className="text-stone-400">
-                      {order.paymentMethod === 'mia'
-                        ? 'MIA Instant (Оплачено)'
-                        : 'Оплата при получении'}
+                      {order.paymentMethod === 'mia' ? B.paidMia : B.payOnPickup}
                     </span>
                     <span className="text-sm font-black text-white">
                       {order.totalAmount} {t.mdl}
@@ -280,7 +364,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                         onClick={() => handleUpdateStatus(order.id, 'preparing')}
                         className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
                       >
-                        <span>Принять в работу</span>
+                        <span>{B.btnAcceptOrder}</span>
                       </button>
                     )}
 
@@ -290,7 +374,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                         className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        <span>🔔 Готов — Уведомить клиента!</span>
+                        <span>{B.btnReadyNotify}</span>
                       </button>
                     )}
 
@@ -299,13 +383,13 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                         onClick={() => handleUpdateStatus(order.id, 'completed')}
                         className="flex-1 py-2 px-3 rounded-xl bg-stone-700 hover:bg-stone-600 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
                       >
-                        <span>Заказ выдан гостю</span>
+                        <span>{B.btnHandedOut}</span>
                       </button>
                     )}
 
                     {isCompleted && (
                       <span className="w-full text-center py-1 text-xs text-stone-500 font-semibold">
-                        ✓ Выдан
+                        {B.statusCompleted}
                       </span>
                     )}
                   </div>
@@ -316,7 +400,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       )}
 
-      {/* ================= TAB 3: TV REMOTE CONTROL & FLASH SALE ================= */}
+      {/* ================= TAB 2: TV REMOTE CONTROL & FLASH SALE ================= */}
       {activeTab === 'tv_remote' && (
         <div className="space-y-4">
           {tvCommandToast && (
@@ -334,12 +418,8 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   <Tv className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="font-bold text-white text-sm">
-                    Пульт управления ТВ экраном
-                  </h3>
-                  <p className="text-[11px] text-stone-400">
-                    Дистанционное переключение режимов без проводов
-                  </p>
+                  <h3 className="font-bold text-white text-sm">{B.remoteCardTitle}</h3>
+                  <p className="text-[11px] text-stone-400">{B.remoteCardSub}</p>
                 </div>
               </div>
 
@@ -349,7 +429,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1 transition active:scale-95"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Открыть ТВ</span>
+                  <span>{B.openTvShort}</span>
                 </button>
               )}
             </div>
@@ -357,7 +437,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             <div className="text-xs text-amber-200 bg-stone-950/80 p-2.5 rounded-xl border border-amber-500/30 space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-amber-400">
                 <Tv className="w-3.5 h-3.5" />
-                <span>Адрес для браузера телевизора (LG webOS / Smart TV):</span>
+                <span>{B.tvBrowserUrlLabel}</span>
               </div>
               <div className="font-mono text-[11px] select-all bg-black/60 p-1.5 rounded text-amber-300 break-all font-semibold">
                 https://jeneaa81.github.io/amika-cafe/tv.html
@@ -369,7 +449,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
           <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-3">
             <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-rose-500" />
-              <span>Вечерняя распродажа Flash Sale (-30%) на ТВ</span>
+              <span>{B.flashSaleSectionTitle}</span>
             </span>
 
             <div className="grid grid-cols-3 gap-2">
@@ -378,43 +458,43 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   sendTvCommand(
                     { type: 'SET_FLASH_SALE', mode: 'active' },
                     setTvCommandToast,
-                    '🔥 Включен режим Flash-распродажи (-30%) на ТВ'
+                    B.toastFlashOn
                   )
                 }
                 className="py-2.5 px-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition active:scale-95 text-center"
               >
-                🔥 Включить (-30%)
+                {B.flashBtnOn}
               </button>
               <button
                 onClick={() =>
                   sendTvCommand(
                     { type: 'SET_FLASH_SALE', mode: 'auto' },
                     setTvCommandToast,
-                    '⏰ Включен авто-режим (активация в 20:00)'
+                    B.toastFlashAuto
                   )
                 }
                 className="py-2.5 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition active:scale-95 text-center"
               >
-                ⏰ Авто (20:00)
+                {B.flashBtnAuto}
               </button>
               <button
                 onClick={() =>
                   sendTvCommand(
                     { type: 'SET_FLASH_SALE', mode: 'inactive' },
                     setTvCommandToast,
-                    'Обычный дневной режим на ТВ'
+                    B.toastFlashOff
                   )
                 }
                 className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95 text-center"
               >
-                Выключить
+                {B.flashBtnOff}
               </button>
             </div>
 
             {/* Telegram Broadcast Simulation */}
             <div className="pt-2 border-t border-stone-800 space-y-2">
               <div className="flex items-center justify-between text-[11px] text-stone-400">
-                <span>Уведомить подписчиков бота о вечерней скидке:</span>
+                <span>{B.notifySubscribersLabel}</span>
               </div>
               <div className="flex gap-2">
                 <select
@@ -433,24 +513,26 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Рассылка</span>
+                  <span>{B.sendBroadcastBtn}</span>
                 </button>
               </div>
 
               {broadcastSent && (
                 <div className="p-3 rounded-2xl bg-stone-950 border border-emerald-500/40 text-[11px] text-stone-300">
-                  ✅ Отправлено в Telegram: <b>{selectedDessert.name[language]}</b> по спеццене{' '}
+                  {B.sentTelegramPrefix} <b>{selectedDessert.name[language]}</b> {B.sentTelegramMid}{' '}
                   <b className="text-rose-400">{discountedPrice} MDL</b>!
                 </div>
               )}
             </div>
           </div>
 
-          {/* 2. Dynamic Slide Selector (Shows all slides from Admin Cabinet) */}
+          {/* 2. Dynamic Slide Selector */}
           <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-2.5">
             <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Переключить слайд на ТВ ({visibleSlides.length} активных)</span>
+              <span>
+                {B.switchSlideTitle} ({visibleSlides.length} {B.activeWord})
+              </span>
             </span>
 
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
@@ -461,15 +543,15 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                     sendTvCommand(
                       { type: 'SET_SLIDE', index: idx },
                       setTvCommandToast,
-                      `Слайд переключен: №${idx + 1} (${s.title.ru})`
+                      `${B.toastSlideSwitched} #${idx + 1} (${s.title[language]})`
                     )
                   }
                   className="py-2.5 px-3 rounded-xl bg-stone-950 hover:bg-stone-800 text-stone-200 border border-stone-800 text-xs font-medium text-left flex items-center justify-between transition active:scale-98"
                 >
                   <span className="truncate pr-2">
-                    📸 {idx + 1}. {s.title.ru || s.title.ro}
+                    📸 {idx + 1}. {s.title[language] || s.title.ro}
                   </span>
-                  <span className="text-[10px] text-amber-400 font-mono shrink-0">№{idx + 1}</span>
+                  <span className="text-[10px] text-amber-400 font-mono shrink-0">#{idx + 1}</span>
                 </button>
               ))}
             </div>
@@ -479,7 +561,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
           <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-3">
             <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
               <Volume2 className="w-4 h-4 text-emerald-400" />
-              <span>Язык на ТВ и Звуковой сигнал</span>
+              <span>{B.langAndSoundTitle}</span>
             </span>
 
             <div className="grid grid-cols-3 gap-2">
@@ -489,7 +571,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   sendTvCommand(
                     { type: 'SET_LANG_MODE', mode: 'ro' },
                     setTvCommandToast,
-                    '🌐 Язык на ТВ: Română'
+                    B.toastLangRo
                   );
                 }}
                 className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
@@ -507,7 +589,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   sendTvCommand(
                     { type: 'SET_LANG_MODE', mode: 'ru' },
                     setTvCommandToast,
-                    '🌐 Язык на ТВ: Русский'
+                    B.toastLangRu
                   );
                 }}
                 className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
@@ -525,7 +607,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   sendTvCommand(
                     { type: 'SET_LANG_MODE', mode: 'auto' },
                     setTvCommandToast,
-                    '🔄 Авто-смена языка каждые 15 сек (RO ⇄ RU)'
+                    B.toastLangAuto
                   );
                 }}
                 className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
@@ -541,16 +623,12 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             <button
               onClick={() => {
                 playMelodicChime();
-                sendTvCommand(
-                  { type: 'CHIME' },
-                  setTvCommandToast,
-                  '🔔 Мелодичный гонг воспроизведен на ТВ!'
-                );
+                sendTvCommand({ type: 'CHIME' }, setTvCommandToast, B.toastChimePlayed);
               }}
               className="w-full py-2.5 px-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition active:scale-98 flex items-center justify-center gap-2"
             >
               <Bell className="w-4 h-4 text-emerald-400" />
-              <span>🔔 Проверить звук на ТВ (Мелодичный гонг)</span>
+              <span>{B.testSoundBtn}</span>
             </button>
           </div>
         </div>
