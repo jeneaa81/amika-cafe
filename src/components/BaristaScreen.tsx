@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Order, OrderStatus, Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
-import { Clock, CheckCircle, Send, Cake, Coffee, Tv } from 'lucide-react';
+import { Clock, CheckCircle, Send, Cake, Coffee, Tv, Flame, Bell, Volume2, ExternalLink, Sparkles } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 
 interface BaristaScreenProps {
@@ -20,10 +20,32 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   onOpenTvMode,
 }) => {
   const t = TRANSLATIONS[language];
-  const [activeTab, setActiveTab] = useState<'orders' | 'flash_sale'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'flash_sale' | 'tv_remote'>('orders');
   const [selectedDessertId, setSelectedDessertId] = useState<string>('fb-01');
   const [discountPercent, setDiscountPercent] = useState<number>(30);
   const [broadcastSent, setBroadcastSent] = useState<boolean>(false);
+  const [tvCommandToast, setTvCommandToast] = useState<string | null>(null);
+
+  // Helper to send real-time commands to the TV Screen
+  const sendTvCommand = (cmd: Record<string, unknown>, label?: string) => {
+    try {
+      const channel = new BroadcastChannel('amika_tv_bus');
+      channel.postMessage(cmd);
+      channel.close();
+    } catch {}
+    localStorage.setItem('amika_tv_command', JSON.stringify({ ...cmd, ts: Date.now() }));
+    if (label) {
+      setTvCommandToast(label);
+      setTimeout(() => setTvCommandToast(null), 3000);
+    }
+  };
+
+  const handleUpdateStatus = (orderId: string, nextStatus: OrderStatus) => {
+    onUpdateOrderStatus(orderId, nextStatus);
+    if (nextStatus === 'ready') {
+      sendTvCommand({ type: 'CHIME', freq: 880 });
+    }
+  };
 
   // Filter only desserts for flash sale
   const desserts = PRODUCTS.filter((p) => p.category === 'foodberry');
@@ -32,6 +54,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
   const handleSendBroadcast = () => {
     setBroadcastSent(true);
+    sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'active' }, '🔥 Flash-распродажа отправлена на ТВ и в Telegram!');
     setTimeout(() => {
       // Auto-hide alert after 8 seconds
     }, 8000);
@@ -76,31 +99,43 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-2 gap-2 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
+      <div className="grid grid-cols-3 gap-1.5 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+          className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
             activeTab === 'orders'
               ? 'bg-amber-600 text-stone-950 shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Clock className="w-4 h-4" />
-          <span>
+          <Clock className="w-3.5 h-3.5" />
+          <span className="truncate">
             {t.tabLiveOrders} ({orders.filter((o) => o.status !== 'completed').length})
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('flash_sale')}
-          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+          className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
             activeTab === 'flash_sale'
               ? 'bg-rose-600 text-white shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Cake className="w-4 h-4" />
-          <span>{t.tabFlashSale}</span>
+          <Cake className="w-3.5 h-3.5" />
+          <span>Flash (-30%)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tv_remote')}
+          className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
+            activeTab === 'tv_remote'
+              ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+              : 'text-stone-400 hover:text-stone-200'
+          }`}
+        >
+          <Tv className="w-3.5 h-3.5" />
+          <span>Пульт ТВ</span>
         </button>
       </div>
 
@@ -204,7 +239,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   <div className="pt-1 flex gap-2">
                     {isNew && (
                       <button
-                        onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
+                        onClick={() => handleUpdateStatus(order.id, 'preparing')}
                         className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
                       >
                         <span>{t.btnAccept}</span>
@@ -213,7 +248,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
                     {isPreparing && (
                       <button
-                        onClick={() => onUpdateOrderStatus(order.id, 'ready')}
+                        onClick={() => handleUpdateStatus(order.id, 'ready')}
                         className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition active:scale-95"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
@@ -223,7 +258,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
                     {isReady && (
                       <button
-                        onClick={() => onUpdateOrderStatus(order.id, 'completed')}
+                        onClick={() => handleUpdateStatus(order.id, 'completed')}
                         className="flex-1 py-2 px-3 rounded-xl bg-stone-700 hover:bg-stone-600 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
                       >
                         <span>{t.btnComplete}</span>
@@ -360,6 +395,138 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 3: TV REMOTE CONTROL (ПУЛЬТ УПРАВЛЕНИЯ ТЕЛЕВИЗОРОМ) */}
+      {activeTab === 'tv_remote' && (
+        <div className="space-y-4">
+          {/* Toast feedback */}
+          {tvCommandToast && (
+            <div className="p-3 rounded-2xl bg-indigo-950 border border-indigo-400 text-indigo-200 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200 shadow-xl">
+              <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" />
+              <span>{tvCommandToast}</span>
+            </div>
+          )}
+
+          {/* Quick link & preview */}
+          <div className="p-4 rounded-3xl bg-gradient-to-br from-indigo-950/60 via-stone-900 to-stone-900 border border-indigo-500/30 shadow-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
+                  <Tv className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-white text-sm">
+                    {language === 'ro' ? 'Telecomandă TV Menu-Board' : 'Пульт управления ТВ экраном'}
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    {language === 'ro' ? 'Controlează televizorul direct de pe telefon' : 'Управляйте экраном на стене прямо с телефона'}
+                  </p>
+                </div>
+              </div>
+
+              {onOpenTvMode && (
+                <button
+                  onClick={onOpenTvMode}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1 transition active:scale-95"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{language === 'ro' ? 'Deschide TV' : 'Открыть ТВ'}</span>
+                </button>
+              )}
+            </div>
+
+            <p className="text-xs text-stone-300 bg-stone-950/60 p-2.5 rounded-xl border border-stone-800">
+              💡 <b>{language === 'ro' ? 'Cum funcționează:' : 'Как это работает:'}</b> {language === 'ro' ? 'Dacă pe televizor este deschisă pagina de TV, apăsarea butoanelor de mai jos va comuta instantaneu ecranul fără fire!' : 'Когда в браузере телевизора открыта ссылка ТВ, кнопки ниже мгновенно переключают экран без проводов!'}
+            </p>
+          </div>
+
+          {/* 1. Flash Sale Controls */}
+          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-2.5">
+            <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Flame className="w-4 h-4 text-rose-500" />
+              <span>{language === 'ro' ? 'Regim Flash Sale (-30%) pe TV' : 'Режим Flash-распродажи (-30%) на ТВ'}</span>
+            </span>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'active' }, '🔥 Включен режим Flash-распродажи на ТВ')}
+                className="py-2.5 px-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition active:scale-95 text-center"
+              >
+                🔥 Включить (-30%)
+              </button>
+              <button
+                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'auto' }, '⏰ Включен авто-режим (активация в 20:00)')}
+                className="py-2.5 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition active:scale-95 text-center"
+              >
+                ⏰ Авто (20:00)
+              </button>
+              <button
+                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'inactive' }, 'Обычный дневной режим')}
+                className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95 text-center"
+              >
+                Выключить
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Slide Selector */}
+          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-2.5">
+            <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{language === 'ro' ? 'Comută Fotografia pe TV' : 'Переключить слайд на ТВ'}</span>
+            </span>
+
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { title: '🥐 1. Deserturi Artizanale Foodberry (Витрина)', idx: 0 },
+                { title: '☕ 2. Зерно недели: 100% Arabica Ethiopia Guji', idx: 1 },
+                { title: '👨‍👦 3. „Ajutorul meu” — Семья Amika Café', idx: 2 },
+                { title: '🏠 4. Барная стойка Amika & Закат в Крикова', idx: 3 },
+                { title: '🍵 5. Церемониальная Матча & Cold Brew', idx: 4 },
+              ].map((s) => (
+                <button
+                  key={s.idx}
+                  onClick={() => sendTvCommand({ type: 'SET_SLIDE', index: s.idx }, `Слайд переключен: ${s.title}`)}
+                  className="py-2.5 px-3 rounded-xl bg-stone-950 hover:bg-stone-800 text-stone-200 border border-stone-800 text-xs font-medium text-left flex items-center justify-between transition active:scale-98"
+                >
+                  <span>{s.title}</span>
+                  <span className="text-[10px] text-amber-400 font-mono">№{s.idx + 1}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Language & Audio Chime */}
+          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-2.5">
+            <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <span>{language === 'ro' ? 'Sunet & Limbă pe TV' : 'Звук и Язык на ТВ'}</span>
+            </span>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => sendTvCommand({ type: 'CHIME', freq: 880 }, '🔔 Тестовый звуковой гонг отправлен на ТВ!')}
+                className="py-2.5 px-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>Гонг ТВ</span>
+              </button>
+              <button
+                onClick={() => sendTvCommand({ type: 'SET_LANG', lang: 'ro' }, 'Язык на ТВ: Română')}
+                className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-200 border border-stone-700 text-xs font-bold transition active:scale-95"
+              >
+                🇷🇴 RO
+              </button>
+              <button
+                onClick={() => sendTvCommand({ type: 'SET_LANG', lang: 'ru' }, 'Язык на ТВ: Русский')}
+                className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-200 border border-stone-700 text-xs font-bold transition active:scale-95"
+              >
+                🇷🇺 RU
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

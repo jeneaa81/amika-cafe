@@ -85,6 +85,47 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // Listen to remote commands from Barista Screen via BroadcastChannel & Storage event
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('amika_tv_bus');
+      channel.onmessage = (event) => {
+        const msg = event.data;
+        if (!msg) return;
+        if (msg.type === 'SET_FLASH_SALE') {
+          setFlashSaleMode(msg.mode);
+        } else if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') {
+          setCurrentSlideIndex(msg.index);
+        } else if (msg.type === 'SET_LANG') {
+          setLang(msg.lang);
+        } else if (msg.type === 'CHIME') {
+          playTvChime(msg.freq || 880);
+        }
+      };
+    } catch {
+      // BroadcastChannel might not be supported in older Smart TV browsers
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'amika_tv_command' && e.newValue) {
+        try {
+          const msg = JSON.parse(e.newValue);
+          if (msg.type === 'SET_FLASH_SALE') setFlashSaleMode(msg.mode);
+          if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') setCurrentSlideIndex(msg.index);
+          if (msg.type === 'SET_LANG') setLang(msg.lang);
+          if (msg.type === 'CHIME') playTvChime(msg.freq || 880);
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      channel?.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   // Determine if flash sale is active
   const isFlashSaleActive =
     flashSaleMode === 'active' ||
