@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Coffee,
-  Cake,
   X,
   Volume2,
   VolumeX,
@@ -545,10 +544,10 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                   <div className="flex items-center gap-2">
                     <span
                       className={`p-1.5 rounded-xl ${
-                        isFlashSaleActive ? 'bg-rose-500/30 text-rose-300' : 'bg-rose-500/20 text-rose-400'
+                        isFlashSaleActive ? 'bg-rose-500/30 text-rose-300' : 'bg-emerald-500/20 text-emerald-400'
                       }`}
                     >
-                      <Cake className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4" />
                     </span>
                     <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
                       {boardConfig.dessertHeader[lang]}
@@ -560,7 +559,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                       -30% REDUCERE
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-500/20">
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/20">
                       {boardConfig.dessertBadge}
                     </span>
                   )}
@@ -578,8 +577,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                             {item.name[lang]}
                           </span>
                           {item.badge && !isFlashSaleActive && (
-                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                               {item.badge[lang]}
+                            </span>
+                          )}
+                          {item.volume && (
+                            <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
+                              {item.volume}
                             </span>
                           )}
                         </div>
@@ -612,8 +616,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               </div>
 
               <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium">
-                <span className="flex items-center gap-1 text-rose-300">
-                  <Sparkles className="w-3 h-3 text-rose-400" />
+                <span className="flex items-center gap-1 text-emerald-300">
+                  <Sparkles className="w-3 h-3 text-emerald-400" />
                   <span>{boardConfig.dessertFooterNote[lang]}</span>
                 </span>
                 <span className="text-stone-400 font-semibold">{boardConfig.dessertFooterBrand}</span>
