@@ -456,6 +456,19 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
               <span>{language === 'ro' ? 'Canal sincronizare TV: ' : 'Канал связи: '}<b>amika_cricova_tv_control (Мульти-кластер)</b></span>
             </div>
 
+            <div className="text-xs text-amber-200 bg-stone-950/80 p-2.5 rounded-xl border border-amber-500/30 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                <Tv className="w-3.5 h-3.5" />
+                <span>Ссылка для браузера Smart TV (webOS / Tizen):</span>
+              </div>
+              <div className="font-mono text-[11px] select-all bg-black/60 p-1.5 rounded text-amber-300 break-all font-semibold">
+                https://jeneaa81.github.io/amika-cafe/tv.html
+              </div>
+              <p className="text-[10px] text-stone-400">
+                ⚡ Облегченная версия 0.05 сек — открывается на любых телевизорах с 2014 года (LG, Samsung, Android TV).
+              </p>
+            </div>
+
             <p className="text-xs text-stone-300 bg-stone-950/60 p-2.5 rounded-xl border border-stone-800">
               💡 <b>{language === 'ro' ? 'Cum funcționează:' : 'Как это работает:'}</b> {language === 'ro' ? 'Dacă pe televizor este deschisă pagina de TV, apăsarea butoanelor de mai jos va comuta instantaneu ecranul fără fire!' : 'Когда в браузере телевизора открыта ссылка ТВ, кнопки ниже мгновенно переключают экран без проводов!'}
             </p>

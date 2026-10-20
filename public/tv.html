@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Amika Café • Live TV Menu Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0c0a09;
+      color: #f5f5f4;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .app-root {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* TOP FLASH SALE MARQUEE */
+    #flashSaleMarquee {
+      display: none;
+      background: -webkit-linear-gradient(left, #b91c1c, #d97706, #b91c1c);
+      background: linear-gradient(90deg, #b91c1c, #d97706, #b91c1c);
+      color: #ffffff;
+      padding: 8px 24px;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(185, 28, 28, 0.5);
+      z-index: 60;
+    }
+    #flashSaleMarquee.active {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+    }
+    .marquee-text {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    /* POPUP ORDER CALL BANNER */
+    #callOrderBanner {
+      display: none;
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      background: -webkit-linear-gradient(left, #059669, #10b981, #0d9488);
+      background: linear-gradient(90deg, #059669, #10b981, #0d9488);
+      color: #ffffff;
+      padding: 16px 36px;
+      border-radius: 28px;
+      border: 3px solid #6ee7b7;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(16, 185, 129, 0.6);
+      z-index: 100;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 20px;
+    }
+    #callOrderBanner.active {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+    }
+    .call-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #d1fae5;
+    }
+    .call-order-id {
+      font-size: 44px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .call-customer-name {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ecfdf5;
+      margin-left: 10px;
+    }
+
+    /* HEADER */
+    .tv-header {
+      background-color: rgba(28, 25, 23, 0.95);
+      border-bottom: 1px solid #292524;
+      padding: 10px 24px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      height: 72px;
+      flex-shrink: 0;
+    }
+    .brand-block {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      position: relative;
+    }
+    .brand-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .badge-specialty {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      margin-left: 8px;
+    }
+    .badge-foodberry {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      margin-left: 4px;
+    }
+    .brand-address {
+      font-size: 11px;
+      color: #a8a29e;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* CENTER CLOCK & CLOUD STATUS */
+    .header-center {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 18px;
+    }
+    .cloud-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 14px;
+      background: rgba(12, 10, 9, 0.8);
+      border: 1px solid #292524;
+      color: #a8a29e;
+    }
+    .cloud-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+    .clock-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 10px;
+      background: rgba(12, 10, 9, 0.8);
+      border: 1px solid #292524;
+      padding: 6px 16px;
+      border-radius: 16px;
+    }
+    .clock-time {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #f59e0b;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 11px;
+      color: #a8a29e;
+      text-transform: capitalize;
+      font-weight: 600;
+    }
+
+    /* CONTROLS RIGHT */
+    .header-controls {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-toggle {
+      background: #292524;
+      border: 1px solid #44403c;
+      color: #d6d3d1;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-toggle.active {
+      background: #d97706;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+    .btn-toggle.flash-active {
+      background: #e11d48;
+      color: #ffffff;
+      border-color: #f43f5e;
+    }
+
+    /* MAIN CONTAINER: 2 COLUMNS (FLEXBOX) */
+    .main-content {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      padding: 16px 20px;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    /* LEFT 60% : DIGITAL MENU BOARD (2 SUB-COLUMNS) */
+    .menu-section {
+      -webkit-box-flex: 6;
+      -webkit-flex: 6;
+      -ms-flex: 6;
+      flex: 6;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .menu-card {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      background: rgba(28, 25, 23, 0.7);
+      border: 1px solid #292524;
+      border-radius: 24px;
+      padding: 16px 18px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .menu-card.flash-card {
+      border-color: rgba(244, 63, 94, 0.4);
+      background: -webkit-linear-gradient(top left, rgba(68, 10, 20, 0.3), rgba(28, 25, 23, 0.8));
+      background: linear-gradient(135deg, rgba(68, 10, 20, 0.3), rgba(28, 25, 23, 0.8));
+    }
+
+    .card-header {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      border-bottom: 1px solid #292524;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-tag {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .card-tag.rose {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+
+    /* MENU ITEMS LIST (LARGE FONTS FOR TV VIEWING) */
+    .item-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      padding: 8px 8px;
+      border-radius: 12px;
+      border-bottom: 1px solid rgba(41, 37, 36, 0.4);
+    }
+    .item-row:last-child {
+      border-bottom: none;
+    }
+    .item-left {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      padding-right: 10px;
+    }
+    .item-name-line {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    /* LARGE FONT FOR TV READABILITY (18px - 20px) */
+    .item-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    .item-badge {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.25);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .item-badge.rose {
+      background: rgba(244, 63, 94, 0.25);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .item-volume {
+      font-size: 12px;
+      color: #a8a29e;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .item-desc {
+      font-size: 12px;
+      color: #d6d3d1;
+      font-weight: 500;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 280px;
+    }
+    .item-price-block {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    /* LARGE PRICE FOR TV READABILITY (22px - 26px) */
+    .item-price {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #fbbf24;
+      line-height: 1;
+    }
+    .item-price-mdl {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fde68a;
+      margin-left: 2px;
+    }
+    .item-price-old {
+      font-size: 14px;
+      color: #78716c;
+      text-decoration: line-through;
+      margin-right: 6px;
+      font-family: monospace;
+    }
+    .item-price.discounted {
+      color: #f43f5e;
+    }
+
+    .card-footer-note {
+      border-top: 1px solid rgba(41, 37, 36, 0.6);
+      padding-top: 8px;
+      font-size: 11px;
+      color: #a8a29e;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    /* RIGHT 40% : DYNAMIC SHOWCASE SLIDER */
+    .slider-section {
+      -webkit-box-flex: 4;
+      -webkit-flex: 4;
+      -ms-flex: 4;
+      flex: 4;
+      background: #1c1917;
+      border: 1px solid #292524;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+    .slider-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      background: -webkit-linear-gradient(top, rgba(0,0,0,0.8), transparent);
+      background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+      z-index: 20;
+    }
+    .progress-bar {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #f59e0b;
+      width: 0%;
+      -webkit-transition: width 0.3s ease;
+      transition: width 0.3s ease;
+    }
+
+    .slide-image-wrapper {
+      position: relative;
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      overflow: hidden;
+      background: #000000;
+    }
+    .slide-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      -webkit-transition: -webkit-transform 1s ease-out;
+      transition: transform 1s ease-out;
+    }
+    .slide-gradient {
+      position: absolute;
+      inset: 0;
+      background: -webkit-linear-gradient(bottom, #0c0a09 0%, rgba(12, 10, 9, 0.4) 50%, transparent 100%);
+      background: linear-gradient(0deg, #0c0a09 0%, rgba(12, 10, 9, 0.4) 50%, transparent 100%);
+    }
+
+    .slide-badge-pill {
+      position: absolute;
+      top: 40px;
+      left: 16px;
+      z-index: 10;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(12, 10, 9, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fcd34d;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .slide-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px;
+      z-index: 10;
+    }
+    .slide-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .slide-subtitle {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fde68a;
+      margin-bottom: 6px;
+    }
+    .slide-details {
+      font-size: 13px;
+      color: #d6d3d1;
+      line-height: 1.4;
+    }
+
+    /* BOTTOM FOOTER: QR CODE + LIVE ORDER BOARD */
+    .tv-footer {
+      background: rgba(28, 25, 23, 0.95);
+      border-top: 1px solid #292524;
+      padding: 10px 24px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 20px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+    .qr-block {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 12px;
+      background: rgba(12, 10, 9, 0.85);
+      padding: 6px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .qr-img {
+      width: 54px;
+      height: 54px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .qr-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .qr-sub {
+      font-size: 11px;
+      color: #fbbf24;
+      font-weight: 700;
+    }
+    .qr-desc {
+      font-size: 10px;
+      color: #a8a29e;
+    }
+
+    /* ORDER TICKER BOARD */
+    .order-ticker {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      background: rgba(12, 10, 9, 0.7);
+      border: 1px solid #292524;
+      border-radius: 16px;
+      padding: 8px 16px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .ready-orders-box {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .ready-label {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #34d399;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .ready-pills-list {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .ready-pill {
+      background: rgba(16, 185, 129, 0.25);
+      border: 2px solid #34d399;
+      color: #6ee7b7;
+      padding: 4px 12px;
+      border-radius: 14px;
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 900;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .ready-pill-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .preparing-orders-box {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+      border-left: 1px solid #292524;
+      padding-left: 14px;
+    }
+    .prep-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #f59e0b;
+      text-transform: uppercase;
+    }
+    .prep-pill {
+      background: #1c1917;
+      border: 1px solid #44403c;
+      color: #d6d3d1;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .footer-right-info {
+      text-align: right;
+      font-size: 11px;
+      color: #a8a29e;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+
+    <!-- FLASH SALE MARQUEE -->
+    <div id="flashSaleMarquee">
+      <div class="marquee-text" id="marqueeText">
+        🔥 FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!
+      </div>
+      <div style="font-family: monospace; font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 12px;">
+        <span id="marqueeCloseHour">Închidere la 21:00</span>
+      </div>
+    </div>
+
+    <!-- CALL ORDER POPUP BANNER -->
+    <div id="callOrderBanner">
+      <div style="font-size: 36px;">🔔</div>
+      <div>
+        <div class="call-title" id="callBannerTitle">COMANDĂ GATA DE RIDICARE!</div>
+        <div style="display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;">
+          <span class="call-order-id" id="callOrderId">#102</span>
+          <span class="call-customer-name" id="callCustomerName">— Mihai</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="tv-header">
+      <div class="brand-block">
+        <img src="amika_logo_round.png" alt="Amika Logo" class="brand-logo">
+        <div>
+          <div style="display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;">
+            <span class="brand-title">Amika Café</span>
+            <span class="badge-specialty">Specialty Coffee</span>
+            <span class="badge-foodberry">Foodberry Partner</span>
+          </div>
+          <div class="brand-address">or. Cricova • str. Drumul Viilor 10 • Prăjire proaspătă Briksa</div>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="cloud-pill">
+          <span class="cloud-dot" id="cloudDot"></span>
+          <span id="cloudStatusText">Облако: Пульт подключен</span>
+        </div>
+
+        <div class="clock-pill">
+          <div class="clock-time" id="clockTime">20:00:00</div>
+          <div class="clock-date" id="clockDate">Marți, 20 octombrie</div>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <button class="btn-toggle" id="btnFlashSale" onclick="toggleFlashSale()">Flash -30%</button>
+        <button class="btn-toggle active" id="btnLangRo" onclick="setLangMode('ro')">RO</button>
+        <button class="btn-toggle" id="btnLangRu" onclick="setLangMode('ru')">RU</button>
+        <button class="btn-toggle" id="btnLangAuto" onclick="setLangMode('auto')">RO⇄RU</button>
+        <button class="btn-toggle" id="btnFullscreen" onclick="toggleFullscreen()">[ ⛶ ]</button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- LEFT 60%: DIGITAL MENU (COFFEE + FOODBERRY) -->
+      <section class="menu-section">
+        <!-- COFFEE COLUMN -->
+        <div class="menu-card">
+          <div>
+            <div class="card-header">
+              <div class="card-title">
+                <span>☕</span>
+                <span id="coffeeHeaderTitle">Cafea & Băuturi</span>
+              </div>
+              <span class="card-tag">100% Arabica</span>
+            </div>
+
+            <div id="coffeeList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="card-footer-note">
+            <span id="milkNoteText">🥛 Lapte alternativ: Oatly ovăz / migdale / fără lactoză</span>
+            <span style="color: #fbbf24; font-family: monospace; font-weight: 800;">+10 / 12 L</span>
+          </div>
+        </div>
+
+        <!-- DESSERTS COLUMN -->
+        <div class="menu-card" id="dessertCard">
+          <div>
+            <div class="card-header">
+              <div class="card-title">
+                <span>🥐</span>
+                <span id="dessertHeaderTitle">Vitrina Foodberry</span>
+              </div>
+              <span class="card-tag rose" id="dessertHeaderBadge">Craft Bakery</span>
+            </div>
+
+            <div id="dessertList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="card-footer-note">
+            <span id="freshDeliveryText">✨ Livrări proaspete zilnic la 08:00</span>
+            <span style="color: #fda4af; font-weight: 800;">SweetMe Bakery</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT 40%: SHOWCASE ROTATING SLIDER -->
+      <section class="slider-section">
+        <div class="slider-progress" id="sliderProgressBar">
+          <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+        </div>
+
+        <div class="slide-image-wrapper">
+          <img src="insta_hd/hd_6_720x1280.jpg" alt="Showcase" class="slide-image" id="slideImg">
+          <div class="slide-gradient"></div>
+          <div class="slide-badge-pill" id="slideBadge">Partener Oficial Foodberry</div>
+
+          <div class="slide-info">
+            <div class="slide-title" id="slideTitle">Deserturi Artizanale Proaspete</div>
+            <div class="slide-subtitle" id="slideSubtitle">Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană</div>
+            <div class="slide-details" id="slideDetails">Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTTOM FOOTER -->
+    <footer class="tv-footer">
+      <div class="qr-block">
+        <img src="amika_qr.svg" alt="QR" class="qr-img">
+        <div>
+          <div class="qr-title" id="qrTitleText">Card de Fidelitate Digital</div>
+          <div class="qr-sub" id="qrSubText">A 6-a cafea este CADOU! ☕</div>
+          <div class="qr-desc" id="qrDescText">Scanează cu camera telefonului • Precomandă rapidă</div>
+        </div>
+      </div>
+
+      <!-- LIVE ORDER BOARD -->
+      <div class="order-ticker">
+        <div class="ready-orders-box">
+          <div class="ready-label">
+            <span class="pulse-dot"></span>
+            <span id="readyLabelText">Gata de ridicare:</span>
+          </div>
+          <div class="ready-pills-list" id="readyPillsList">
+            <!-- Ready pills rendered here -->
+          </div>
+        </div>
+
+        <div class="preparing-orders-box">
+          <div class="prep-label" id="prepLabelText">În lucru:</div>
+          <div style="display: -webkit-box; display: flex; gap: 6px;" id="prepPillsList">
+            <!-- Preparing pills rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-right-info">
+        <div style="color: #34d399; font-weight: 800;">Amika Live Board ●</div>
+        <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 13px; color: #ffffff;">Cricova • Moldova</div>
+        <div style="color: #f59e0b; font-family: monospace;">Full HD 1080p</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- PURE ES5 COMPATIBLE SCRIPT (Works on Chromium 38 / webOS 3.0, 2016 Smart TVs) -->
+  <script>
+    var currentLang = 'ro';
+    var isAutoRotateLang = false;
+    var isFlashSaleActive = false;
+    var currentSlideIdx = 0;
+    var soundEnabled = true;
+
+    // 8 Coffee Items (Enlarged fonts)
+    var coffeeData = [
+      {
+        name_ro: 'Espresso Solo / Dublu',
+        name_ru: 'Эспрессо / Двойной',
+        vol: '40 ml',
+        desc_ro: '100% Arabica Briksa, ciocolată',
+        desc_ru: '100% арабика Briksa, темный шоколад',
+        price: 25,
+        badge_ro: '',
+        badge_ru: ''
+      },
+      {
+        name_ro: 'Cappuccino Cremoso',
+        name_ru: 'Капучино Классический',
+        vol: '250 ml',
+        desc_ro: 'Espresso dublu, micro-spumă catifelată',
+        desc_ru: 'Двойной эспрессо, нежная молочная пенка',
+        price: 40,
+        badge_ro: 'TOP',
+        badge_ru: 'ХИТ'
+      },
+      {
+        name_ro: 'Flat White Dublu',
+        name_ru: 'Флэт Уайт',
+        vol: '200 ml',
+        desc_ro: 'Gust intens de cafea, dublu ristretto',
+        desc_ru: 'Двойной шот ристретто, шелковая пенка',
+        price: 48,
+        badge_ro: 'BARISTA',
+        badge_ru: 'ВЫБОР'
+      },
+      {
+        name_ro: 'Caffè Latte Delicat',
+        name_ru: 'Латте Классический',
+        vol: '350 ml',
+        desc_ro: 'Lapte mătăsos, gust fin și cremos',
+        desc_ru: 'Большой объем нежного взбитого молока',
+        price: 45,
+        badge_ro: '',
+        badge_ru: ''
+      },
+      {
+        name_ro: 'Raf Vanilie & Lavandă',
+        name_ru: 'Раф Ваниль-Лаванда',
+        vol: '300 ml',
+        desc_ro: 'Specialitatea casei cu flori de lavandă',
+        desc_ru: 'Фирменный рецепт с натуральной лавандой',
+        price: 55,
+        badge_ro: 'SPECIALITATE',
+        badge_ru: 'ФИРМЕННЫЙ'
+      },
+      {
+        name_ro: 'Cold Brew Tonic & Portocală',
+        name_ru: 'Колд Брю Тоник Апельсин',
+        vol: '350 ml',
+        desc_ro: 'Infuzat la rece 16 ore, apă tonică',
+        desc_ru: '16 ч заваривания, тоник, сочный цитрус',
+        price: 55,
+        badge_ro: '',
+        badge_ru: ''
+      },
+      {
+        name_ro: 'Matcha Latte Ceremonial Uji',
+        name_ru: 'Матча Латте Удзи (Япония)',
+        vol: '300 ml',
+        desc_ro: 'Pudră verde bio, tel de bambus chasen',
+        desc_ru: 'Оригинальная церемониальная матча',
+        price: 55,
+        badge_ro: 'BIO',
+        badge_ru: 'ЯПОНИЯ'
+      },
+      {
+        name_ro: 'Ceai Cătină & Ghimbir',
+        name_ru: 'Облепиховый чай с имбирем',
+        vol: '400 ml',
+        desc_ro: 'Cătină moldovenească, miere, scorțișoară',
+        desc_ru: 'Местная облепиха, натуральный мед',
+        price: 45,
+        badge_ro: '',
+        badge_ru: ''
+      }
+    ];
+
+    // 6 Foodberry Desserts
+    var dessertData = [
+      {
+        name_ro: 'Croissant cu Migdale Foodberry',
+        name_ru: 'Миндальный круассан Foodberry',
+        desc_ro: 'Unt francez, cremă frangipane, fulgi',
+        desc_ru: 'Французское масло, миндальный крем франжипан',
+        price: 42,
+        disc: 29,
+        badge_ro: 'FOODBERRY',
+        badge_ru: 'FOODBERRY'
+      },
+      {
+        name_ro: 'Tartă Fistic & Zmeură Foodberry',
+        name_ru: 'Фисташковый тарт с малиной',
+        desc_ro: 'Ganache de fistic sicilian, confit',
+        desc_ru: 'Сицилийская фисташка, сочная малина',
+        price: 58,
+        disc: 41,
+        badge_ro: 'TOP DESSERT',
+        badge_ru: 'ТОП ДЕСЕРТ'
+      },
+      {
+        name_ro: 'Cheesecake San Sebastian',
+        name_ru: 'Чизкейк Сан-Себастьян',
+        desc_ro: 'Bască arsă, textură cremoasă mătăsoasă',
+        desc_ru: 'Тающая карамельная текстура внутри',
+        price: 65,
+        disc: 45,
+        badge_ro: 'CHEF PICK',
+        badge_ru: 'ШЕДЕВР'
+      },
+      {
+        name_ro: 'Éclair Mango & Maracuja',
+        name_ru: 'Эклер Манго-Маракуйя',
+        desc_ro: 'Pâte à choux, piure exotic de maracuja',
+        desc_ru: 'Заварное тесто, тропический крем',
+        price: 45,
+        disc: 31,
+        badge_ro: '',
+        badge_ru: ''
+      },
+      {
+        name_ro: 'Panini Prosciutto-Mozzarella',
+        name_ru: 'Панини Прошутто & Моцарелла',
+        desc_ro: 'Ciabatta la grill, roșii uscate, pesto',
+        desc_ru: 'Хрустящий гриль, моцарелла, томаты',
+        price: 58,
+        disc: 45,
+        badge_ro: 'GRILL',
+        badge_ru: 'ГРИЛЬ'
+      },
+      {
+        name_ro: 'Croissant Gourmet Somon & Avocado',
+        name_ru: 'Круассан с лососем и авокадо',
+        desc_ro: 'Somon puțin sărat, cremă de brânză',
+        desc_ru: 'Слабосоленый лосось, крем-чиз, руккола',
+        price: 68,
+        disc: 52,
+        badge_ro: 'MIC DEJUN',
+        badge_ru: 'ЗАВТРАК'
+      }
+    ];
+
+    // Slides Showcase (Real Instagram photos)
+    var slidesData = [
+      {
+        img: 'insta_hd/hd_6_720x1280.jpg',
+        badge_ro: 'Partener Oficial Foodberry',
+        badge_ru: 'Официальный партнер Foodberry',
+        title_ro: 'Deserturi Artizanale Proaspete',
+        title_ru: 'Крафтовые десерты Foodberry',
+        sub_ro: 'Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană',
+        sub_ru: 'Французское масло 82%, сицилийская фисташка и бельгийский шоколад',
+        desc_ro: 'Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.',
+        desc_ru: 'Свежая утренняя доставка напрямую из крафтовой кондитерской SweetMe.'
+      },
+      {
+        img: 'insta_hd/hd_17_720x1280.jpg',
+        badge_ro: 'Зерно недели • Specialty',
+        badge_ru: 'Зерно недели • Specialty',
+        title_ro: '100% Arabica Ethiopia Guji',
+        title_ru: '100% Arabica Ethiopia Guji',
+        sub_ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci',
+        sub_ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса',
+        desc_ro: 'Prăjire proaspătă artizanală de la partenerul nostru Briksa.',
+        desc_ru: 'Свежая местная обжарка от партнера Briksa. Шелковистая пенка.'
+      },
+      {
+        img: 'insta_hd/hd_8_720x1280.jpg',
+        badge_ro: 'Amika Café • Familie & Pasiune',
+        badge_ru: 'Amika Café • Семья и уют',
+        title_ro: 'Ospitalitate Caldă din Cricova',
+        title_ru: 'Тепло и забота в каждой чашке',
+        sub_ro: '„Ajutorul meu” — cafea pregătită și servită din suflet',
+        sub_ru: '«Мой главный помощник» — кофе, приготовленный с любовью',
+        desc_ro: 'Locul unde fiecare oaspete este întâmpinat ca un prieten drag. Str. Drumul Viilor 10.',
+        desc_ru: 'Локальная кофейня, где ценят каждого гостя. Крикова, str. Drumul Viilor 10.'
+      },
+      {
+        img: 'insta_hd/hd_2_720x1280.jpg',
+        badge_ro: 'Design & Atmosferă',
+        badge_ru: 'Интерьер & Атмосфера',
+        title_ro: 'Barul Amika & Terasa la Apus',
+        title_ru: 'Барная стойка Amika & Закаты',
+        sub_ro: 'Vedere panoramică spre viile Cricovei și leagăn la asfințit',
+        sub_ru: 'Панорамный вид на виноградники Крикова и качели на закате',
+        desc_ro: 'Vino să te bucuri de un latte fin sau un matcha într-o atmosferă luminoasă.',
+        desc_ru: 'Идеальное место для неспешного утра или вечера со спешелти кофе.'
+      },
+      {
+        img: 'insta_hd/hd_3_720x1280.jpg',
+        badge_ro: 'Băuturi Speciale Amika',
+        badge_ru: 'Авторские напитки Amika',
+        title_ro: 'Matcha Uji & Cold Brew Tonic',
+        title_ru: 'Церемониальная Матча & Колд Брю',
+        sub_ro: 'Ceai matcha ceremonial bătut cu tel de bambus și lapte Oatly',
+        sub_ru: 'Оригинальная матча из Японии, взбитая венчиком на овсяном молоке',
+        desc_ro: 'Sau încearcă deserturile trifles în pahar cu mascarpone și fructe.',
+        desc_ru: 'А также муссовые десерты в стаканчиках с лесными ягодами.'
+      }
+    ];
+
+    // Live Orders
+    var liveOrders = [
+      { id: '#102', customerName: 'Mihai', status: 'ready' }
+    ];
+
+    // MELODIC BOUTIQUE CHIME (G5 -> C6 -> E6)
+    function playMelodicChime() {
+      if (!soundEnabled) return;
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        var ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        var notes = [
+          { freq: 783.99, time: 0.0, dur: 0.9, gain: 0.22 },
+          { freq: 1046.50, time: 0.16, dur: 1.1, gain: 0.24 },
+          { freq: 1318.51, time: 0.32, dur: 1.5, gain: 0.20 }
+        ];
+
+        for (var i = 0; i < notes.length; i++) {
+          (function(n) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.time);
+
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime + n.time);
+            gain.gain.exponentialRampToValueAtTime(n.gain, ctx.currentTime + n.time + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + n.time + n.dur);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime + n.time);
+            osc.stop(ctx.currentTime + n.time + n.dur);
+          })(notes[i]);
+        }
+      } catch (e) {}
+    }
+
+    // RENDER MENU ITEMS
+    function renderMenu() {
+      var isRo = currentLang === 'ro';
+
+      // Headers & static labels
+      document.getElementById('coffeeHeaderTitle').innerText = isRo ? 'Cafea & Băuturi' : 'Кофе & Напитки';
+      document.getElementById('dessertHeaderTitle').innerText = isRo ? 'Vitrina Foodberry' : 'Десерты Foodberry';
+      document.getElementById('dessertHeaderBadge').innerText = isFlashSaleActive ? '-30% REDUCERE' : 'Craft Bakery';
+      document.getElementById('milkNoteText').innerText = isRo ? '🥛 Lapte alternativ: Oatly ovăz / migdale / fără lactoză' : '🥛 Альтернативное молоко: овсяное Oatly / миндаль';
+      document.getElementById('freshDeliveryText').innerText = isRo ? '✨ Livrări proaspete zilnic la 08:00' : '✨ Свежая доставка каждое утро к 08:00';
+      document.getElementById('qrTitleText').innerText = isRo ? 'Card de Fidelitate Digital' : 'Электронная Карта Гостя';
+      document.getElementById('qrSubText').innerText = isRo ? 'A 6-a cafea este CADOU! ☕' : '6-я чашка кофе в ПОДАРОК! ☕';
+      document.getElementById('qrDescText').innerText = isRo ? 'Scanează cu camera telefonului • Precomandă' : 'Наведи камеру телефона • Заказ с собой';
+      document.getElementById('readyLabelText').innerText = isRo ? 'Gata de ridicare:' : 'Готовы к выдаче:';
+      document.getElementById('prepLabelText').innerText = isRo ? 'În lucru:' : 'Готовятся:';
+      document.getElementById('marqueeCloseHour').innerText = isRo ? 'Închidere la 21:00' : 'До закрытия в 21:00';
+
+      // Coffee list
+      var coffeeHtml = '';
+      for (var c = 0; c < coffeeData.length; c++) {
+        var ci = coffeeData[c];
+        var name = isRo ? ci.name_ro : ci.name_ru;
+        var desc = isRo ? ci.desc_ro : ci.desc_ru;
+        var badge = isRo ? ci.badge_ro : ci.badge_ru;
+
+        coffeeHtml += '<div class="item-row">' +
+          '<div class="item-left">' +
+            '<div class="item-name-line">' +
+              '<span class="item-name">' + name + '</span>' +
+              (badge ? '<span class="item-badge">' + badge + '</span>' : '') +
+              '<span class="item-volume">' + ci.vol + '</span>' +
+            '</div>' +
+            '<div class="item-desc">' + desc + '</div>' +
+          '</div>' +
+          '<div class="item-price-block">' +
+            '<span class="item-price">' + ci.price + '</span>' +
+            '<span class="item-price-mdl">MDL</span>' +
+          '</div>' +
+        '</div>';
+      }
+      document.getElementById('coffeeList').innerHTML = coffeeHtml;
+
+      // Dessert list
+      var dessertHtml = '';
+      for (var d = 0; d < dessertData.length; d++) {
+        var di = dessertData[d];
+        var dName = isRo ? di.name_ro : di.name_ru;
+        var dDesc = isRo ? di.desc_ro : di.desc_ru;
+        var dBadge = isRo ? di.badge_ro : di.badge_ru;
+
+        var priceMarkup = '';
+        if (isFlashSaleActive) {
+          priceMarkup = '<span class="item-price-old">' + di.price + '</span>' +
+            '<span class="item-price discounted">' + di.disc + '</span>' +
+            '<span class="item-price-mdl" style="color: #fda4af;">L</span>';
+        } else {
+          priceMarkup = '<span class="item-price">' + di.price + '</span>' +
+            '<span class="item-price-mdl">MDL</span>';
+        }
+
+        dessertHtml += '<div class="item-row">' +
+          '<div class="item-left">' +
+            '<div class="item-name-line">' +
+              '<span class="item-name">' + dName + '</span>' +
+              (dBadge && !isFlashSaleActive ? '<span class="item-badge rose">' + dBadge + '</span>' : '') +
+            '</div>' +
+            '<div class="item-desc">' + dDesc + '</div>' +
+          '</div>' +
+          '<div class="item-price-block">' +
+            priceMarkup +
+          '</div>' +
+        '</div>';
+      }
+      document.getElementById('dessertList').innerHTML = dessertHtml;
+
+      // Update slide texts
+      renderSlide();
+      renderOrders();
+    }
+
+    // RENDER ACTIVE SLIDE
+    function renderSlide() {
+      var isRo = currentLang === 'ro';
+      var sl = slidesData[currentSlideIdx];
+      document.getElementById('slideImg').src = sl.img;
+      document.getElementById('slideBadge').innerText = isRo ? sl.badge_ro : sl.badge_ru;
+      document.getElementById('slideTitle').innerText = isRo ? sl.title_ro : sl.title_ru;
+      document.getElementById('slideSubtitle').innerText = isRo ? sl.sub_ro : sl.sub_ru;
+      document.getElementById('slideDetails').innerText = isRo ? sl.desc_ro : sl.desc_ru;
+
+      // Update progress bar
+      var bars = document.getElementById('sliderProgressBar').children;
+      for (var b = 0; b < bars.length; b++) {
+        var fill = bars[b].children[0];
+        if (b === currentSlideIdx) {
+          fill.style.width = '100%';
+        } else if (b < currentSlideIdx) {
+          fill.style.width = '100%';
+        } else {
+          fill.style.width = '0%';
+        }
+      }
+    }
+
+    // RENDER ORDER TICKER
+    function renderOrders() {
+      var readyHtml = '';
+      var prepHtml = '';
+
+      for (var i = 0; i < liveOrders.length; i++) {
+        var ord = liveOrders[i];
+        if (ord.status === 'ready') {
+          readyHtml += '<span class="ready-pill">' +
+            '<span>' + ord.id + '</span>' +
+            '<span class="ready-pill-name">(' + (ord.customerName || 'Oaspete') + ')</span>' +
+          '</span>';
+        } else if (ord.status === 'preparing' || ord.status === 'new') {
+          prepHtml += '<span class="prep-pill">' + ord.id + '</span>';
+        }
+      }
+
+      if (!readyHtml) {
+        readyHtml = '<span style="font-size: 12px; color: #78716c; font-style: italic;">' +
+          (currentLang === 'ro' ? 'Toate comenzile au fost preluate' : 'Все заказы выданы') +
+        '</span>';
+      }
+
+      document.getElementById('readyPillsList').innerHTML = readyHtml;
+      document.getElementById('prepPillsList').innerHTML = prepHtml || '<span style="font-size: 11px; color: #78716c;">—</span>';
+    }
+
+    // TRIGGER POPUP ORDER BANNER
+    var bannerTimer = null;
+    function triggerOrderCall(orderId, customerName) {
+      playMelodicChime();
+      document.getElementById('callOrderId').innerText = orderId || '#102';
+      document.getElementById('callCustomerName').innerText = '— ' + (customerName || 'Oaspete');
+      document.getElementById('callBannerTitle').innerText = currentLang === 'ro' ? 'COMANDĂ GATA DE RIDICARE!' : 'ЗАКАЗ ГОТОВ К ВЫДАЧЕ!';
+      var banner = document.getElementById('callOrderBanner');
+      banner.className = 'active';
+
+      if (bannerTimer) clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(function() {
+        banner.className = '';
+      }, 7000);
+
+      // Add to live orders if not exists or update
+      var exists = false;
+      for (var i = 0; i < liveOrders.length; i++) {
+        if (liveOrders[i].id === orderId) {
+          liveOrders[i].status = 'ready';
+          liveOrders[i].customerName = customerName;
+          exists = true;
+          break;
+        }
+      }
+      if (!exists) {
+        liveOrders.unshift({ id: orderId, customerName: customerName, status: 'ready' });
+      }
+      renderOrders();
+    }
+
+    // TOGGLE FLASH SALE
+    function toggleFlashSale(mode) {
+      if (mode === 'active') {
+        isFlashSaleActive = true;
+      } else if (mode === 'inactive') {
+        isFlashSaleActive = false;
+      } else {
+        isFlashSaleActive = !isFlashSaleActive;
+      }
+
+      var marquee = document.getElementById('flashSaleMarquee');
+      var card = document.getElementById('dessertCard');
+      var btn = document.getElementById('btnFlashSale');
+
+      if (isFlashSaleActive) {
+        marquee.className = 'active';
+        card.className = 'menu-card flash-card';
+        btn.className = 'btn-toggle flash-active';
+      } else {
+        marquee.className = '';
+        card.className = 'menu-card';
+        btn.className = 'btn-toggle';
+      }
+      renderMenu();
+    }
+
+    // LANGUAGE MODE
+    function setLangMode(mode) {
+      if (mode === 'auto') {
+        isAutoRotateLang = true;
+        document.getElementById('btnLangAuto').className = 'btn-toggle active';
+        document.getElementById('btnLangRo').className = 'btn-toggle';
+        document.getElementById('btnLangRu').className = 'btn-toggle';
+      } else {
+        isAutoRotateLang = false;
+        currentLang = mode;
+        document.getElementById('btnLangAuto').className = 'btn-toggle';
+        document.getElementById('btnLangRo').className = mode === 'ro' ? 'btn-toggle active' : 'btn-toggle';
+        document.getElementById('btnLangRu').className = mode === 'ru' ? 'btn-toggle active' : 'btn-toggle';
+        renderMenu();
+      }
+    }
+
+    // FULLSCREEN
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        var el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }
+
+    // CENTRAL COMMAND DISPATCHER
+    var processedCmds = {};
+    function handleRemoteCommand(cmd) {
+      if (!cmd || typeof cmd !== 'object') return;
+      var id = cmd._cmdId || cmd.id || (cmd.type + '_' + cmd.ts);
+      if (id && processedCmds[id]) return;
+      if (id) processedCmds[id] = true;
+
+      if (cmd.type === 'CHIME') {
+        playMelodicChime();
+      } else if (cmd.type === 'CALL_ORDER') {
+        triggerOrderCall(cmd.orderId, cmd.customerName);
+      } else if (cmd.type === 'SET_FLASH_SALE') {
+        toggleFlashSale(cmd.mode);
+      } else if (cmd.type === 'SET_SLIDE' && typeof cmd.index === 'number') {
+        currentSlideIdx = cmd.index % slidesData.length;
+        renderSlide();
+      } else if (cmd.type === 'SET_LANG_MODE') {
+        setLangMode(cmd.mode);
+      } else if (cmd.type === 'SET_LANG' && cmd.lang) {
+        setLangMode(cmd.lang);
+      } else if (cmd.type === 'ORDERS_SYNC' && Array.isArray(cmd.orders)) {
+        liveOrders = cmd.orders;
+        renderOrders();
+      } else if (cmd.type === 'ORDER_STATUS_UPDATE' && cmd.orderId) {
+        for (var i = 0; i < liveOrders.length; i++) {
+          if (liveOrders[i].id === cmd.orderId) {
+            liveOrders[i].status = cmd.status;
+            break;
+          }
+        }
+        renderOrders();
+      } else if (cmd.type === 'CLEAR_READY_ORDERS') {
+        for (var k = 0; k < liveOrders.length; k++) {
+          if (liveOrders[k].status === 'ready') liveOrders[k].status = 'completed';
+        }
+        renderOrders();
+      }
+    }
+
+    // MULTI-CLUSTER REAL-TIME SSE CONNECTION
+    function initCloudRelay() {
+      var sseUrls = [
+        'https://ntfy.tedomum.fr/amika_cricova_tv_control/sse',
+        'https://ntfy.adminforge.de/amika_cricova_tv_control/sse'
+      ];
+      var activeCount = 0;
+
+      function updateStatus() {
+        var dot = document.getElementById('cloudDot');
+        var text = document.getElementById('cloudStatusText');
+        if (activeCount > 0) {
+          dot.style.background = '#10b981';
+          dot.style.boxShadow = '0 0 10px #10b981';
+          text.innerText = 'Облако: Пульт подключен';
+        } else {
+          dot.style.background = '#f59e0b';
+          dot.style.boxShadow = '0 0 10px #f59e0b';
+          text.innerText = 'Подключение к пульту...';
+        }
+      }
+
+      for (var i = 0; i < sseUrls.length; i++) {
+        (function(url) {
+          try {
+            var sse = new EventSource(url);
+            sse.onopen = function() {
+              activeCount++;
+              updateStatus();
+            };
+            sse.onerror = function() {
+              activeCount = Math.max(0, activeCount - 1);
+              updateStatus();
+            };
+            sse.addEventListener('message', function(e) {
+              try {
+                var payload = JSON.parse(e.data);
+                if (payload.event === 'message' && payload.message) {
+                  var cmd = JSON.parse(payload.message);
+                  handleRemoteCommand(cmd);
+                }
+              } catch (err) {}
+            });
+          } catch (e) {}
+        })(sseUrls[i]);
+      }
+
+      // Local storage fallback
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'amika_tv_command' && e.newValue) {
+          try {
+            var c = JSON.parse(e.newValue);
+            handleRemoteCommand(c);
+          } catch (err) {}
+        }
+      });
+
+      // BroadcastChannel fallback
+      try {
+        var bc = new BroadcastChannel('amika_tv_bus');
+        bc.onmessage = function(ev) {
+          handleRemoteCommand(ev.data);
+        };
+      } catch (e) {}
+    }
+
+    // CLOCK TICKER
+    function updateClock() {
+      var d = new Date();
+      var h = d.getHours(); var m = d.getMinutes(); var s = d.getSeconds();
+      var timeStr = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      document.getElementById('clockTime').innerText = timeStr;
+
+      var days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+      var days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+      var months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+      var months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+      var dateStr = currentLang === 'ro'
+        ? days_ro[d.getDay()] + ', ' + d.getDate() + ' ' + months_ro[d.getMonth()]
+        : days_ru[d.getDay()] + ', ' + d.getDate() + ' ' + months_ru[d.getMonth()];
+      document.getElementById('clockDate').innerText = dateStr;
+    }
+
+    // INIT LOOPS
+    window.onload = function() {
+      renderMenu();
+      initCloudRelay();
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // Auto-advance slides every 7 seconds
+      setInterval(function() {
+        currentSlideIdx = (currentSlideIdx + 1) % slidesData.length;
+        renderSlide();
+      }, 7000);
+
+      // Auto-rotate language every 15 seconds if active
+      setInterval(function() {
+        if (isAutoRotateLang) {
+          currentLang = currentLang === 'ro' ? 'ru' : 'ro';
+          renderMenu();
+        }
+      }, 15000);
+    };
+
+    // KEYBOARD SHORTCUTS
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'l' || e.key === 'L') setLangMode(currentLang === 'ro' ? 'ru' : 'ro');
+      if (e.key === 's' || e.key === 'S') toggleFlashSale();
+      if (e.key === 'ArrowRight') {
+        currentSlideIdx = (currentSlideIdx + 1) % slidesData.length;
+        renderSlide();
+      }
+      if (e.key === 'ArrowLeft') {
+        currentSlideIdx = (currentSlideIdx - 1 + slidesData.length) % slidesData.length;
+        renderSlide();
+      }
+    });
+  </script>
+</body>
+</html>
