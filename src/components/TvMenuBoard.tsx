@@ -55,6 +55,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   // Active showcase slide
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [remoteToast, setRemoteToast] = useState<string | null>(null);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
   // Sound chime helper
   const playTvChime = (freq = 659.25) => {
@@ -76,6 +78,30 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     }
   };
 
+  // Central command dispatcher for remote control
+  const handleRemoteCommand = (msg: Record<string, unknown>, source = 'Пульт') => {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'SET_FLASH_SALE' && typeof msg.mode === 'string') {
+      setFlashSaleMode(msg.mode as 'auto' | 'active' | 'inactive');
+      setRemoteToast(`🔥 ${source}: Режим распродажи ${msg.mode === 'active' ? 'ВКЛЮЧЕН' : msg.mode === 'auto' ? 'АВТО' : 'ВЫКЛЮЧЕН'}`);
+    } else if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') {
+      setCurrentSlideIndex(msg.index);
+      setIsPaused(true);
+      setTimeout(() => setIsPaused(false), 20000); // Resume auto-sliding after 20s
+      setRemoteToast(`📸 ${source}: Слайд №${msg.index + 1}`);
+    } else if (msg.type === 'SET_LANG' && typeof msg.lang === 'string') {
+      setLang(msg.lang as Language);
+      setRemoteToast(`🌐 ${source}: Язык ${msg.lang.toUpperCase()}`);
+    } else if (msg.type === 'CHIME') {
+      playTvChime(typeof msg.freq === 'number' ? msg.freq : 880);
+      setRemoteToast(`🔔 ${source}: Звуковой сигнал`);
+    } else if (msg.type === 'ORDER_READY') {
+      playTvChime(880);
+      setRemoteToast(`✅ ${source}: Заказ готов к выдаче!`);
+    }
+    setTimeout(() => setRemoteToast(null), 3500);
+  };
+
   // Clock ticker & Auto Flash Sale at 20:00
   useEffect(() => {
     const timer = setInterval(() => {
@@ -85,44 +111,82 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Listen to remote commands from Barista Screen via BroadcastChannel & Storage event
+  // Listen to remote commands via 1) BroadcastChannel 2) Storage 3) Cloud SSE / Polling (ntfy.sh)
   useEffect(() => {
+    // 1. BroadcastChannel (Same-device tabs/HDMI window)
     let channel: BroadcastChannel | null = null;
     try {
       channel = new BroadcastChannel('amika_tv_bus');
       channel.onmessage = (event) => {
-        const msg = event.data;
-        if (!msg) return;
-        if (msg.type === 'SET_FLASH_SALE') {
-          setFlashSaleMode(msg.mode);
-        } else if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') {
-          setCurrentSlideIndex(msg.index);
-        } else if (msg.type === 'SET_LANG') {
-          setLang(msg.lang);
-        } else if (msg.type === 'CHIME') {
-          playTvChime(msg.freq || 880);
-        }
+        handleRemoteCommand(event.data, 'Локальный пульт');
       };
-    } catch {
-      // BroadcastChannel might not be supported in older Smart TV browsers
-    }
+    } catch {}
 
+    // 2. Storage event
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'amika_tv_command' && e.newValue) {
         try {
           const msg = JSON.parse(e.newValue);
-          if (msg.type === 'SET_FLASH_SALE') setFlashSaleMode(msg.mode);
-          if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') setCurrentSlideIndex(msg.index);
-          if (msg.type === 'SET_LANG') setLang(msg.lang);
-          if (msg.type === 'CHIME') playTvChime(msg.freq || 880);
+          handleRemoteCommand(msg, 'Локальный пульт');
         } catch {}
       }
     };
     window.addEventListener('storage', handleStorage);
 
+    // 3. Cross-Device Cloud Realtime via ntfy.sh Server-Sent Events (Phone ➜ Smart TV across internet)
+    const topic = 'amika_cricova_tv_control';
+    let sse: EventSource | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    const processedIds = new Set<string>();
+
+    try {
+      sse = new EventSource(`https://ntfy.sh/${topic}/sse`);
+      sse.onopen = () => setIsCloudConnected(true);
+      sse.onerror = () => setIsCloudConnected(false);
+      sse.addEventListener('message', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.id && processedIds.has(payload.id)) return;
+          if (payload.id) processedIds.add(payload.id);
+
+          if (payload.event === 'message' && payload.message) {
+            const cmd = JSON.parse(payload.message);
+            handleRemoteCommand(cmd, 'Смартфон');
+          }
+        } catch {}
+      });
+    } catch {
+      setIsCloudConnected(false);
+    }
+
+    // Backup polling every 2.5 seconds (ensures rock-solid delivery even on strict Smart TV firewalls)
+    pollInterval = setInterval(async () => {
+      try {
+        const resp = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=5s`, { cache: 'no-store' });
+        if (resp.ok) {
+          setIsCloudConnected(true);
+          const text = await resp.text();
+          for (const line of text.split('\n')) {
+            if (!line.trim()) continue;
+            try {
+              const item = JSON.parse(line);
+              if (item.id && processedIds.has(item.id)) continue;
+              if (item.id) processedIds.add(item.id);
+              if (item.event === 'message' && item.message) {
+                const cmd = JSON.parse(item.message);
+                handleRemoteCommand(cmd, 'Смартфон');
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }, 2500);
+
     return () => {
       channel?.close();
       window.removeEventListener('storage', handleStorage);
+      sse?.close();
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, []);
 
@@ -452,6 +516,21 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               or. Cricova • str. Drumul Viilor 10 • Prăjire proaspătă Briksa
             </p>
           </div>
+        </div>
+
+        {/* Remote control feedback toast & Cloud Status */}
+        <div className="flex items-center gap-3">
+          {remoteToast ? (
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/90 text-indigo-200 border border-indigo-400 text-xs font-bold shadow-lg shadow-indigo-950/50 animate-in fade-in zoom-in-95">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+              <span>{remoteToast}</span>
+            </div>
+          ) : (
+            <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-xl bg-stone-950/60 border border-stone-800 text-stone-400">
+              <span className={`w-2 h-2 rounded-full ${isCloudConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
+              <span>{isCloudConnected ? 'Облако: Пульт подключен' : 'Автономный режим'}</span>
+            </div>
+          )}
         </div>
 
         {/* Live Clock & Status */}

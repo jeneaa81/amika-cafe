@@ -26,14 +26,31 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   const [broadcastSent, setBroadcastSent] = useState<boolean>(false);
   const [tvCommandToast, setTvCommandToast] = useState<string | null>(null);
 
-  // Helper to send real-time commands to the TV Screen
-  const sendTvCommand = (cmd: Record<string, unknown>, label?: string) => {
+  // Helper to send real-time commands to the TV Screen across the internet
+  const sendTvCommand = async (cmd: Record<string, unknown>, label?: string) => {
+    // 1. Same-device local channel (BroadcastChannel)
     try {
       const channel = new BroadcastChannel('amika_tv_bus');
       channel.postMessage(cmd);
       channel.close();
     } catch {}
-    localStorage.setItem('amika_tv_command', JSON.stringify({ ...cmd, ts: Date.now() }));
+
+    // 2. Local storage fallback
+    try {
+      localStorage.setItem('amika_tv_command', JSON.stringify({ ...cmd, ts: Date.now() }));
+    } catch {}
+
+    // 3. Cross-device Real-Time Cloud Relay (Phone ➜ Smart TV across internet)
+    try {
+      await fetch('https://ntfy.sh/amika_cricova_tv_control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cmd),
+      });
+    } catch (e) {
+      console.warn('Cloud relay error:', e);
+    }
+
     if (label) {
       setTvCommandToast(label);
       setTimeout(() => setTvCommandToast(null), 3000);
@@ -435,6 +452,11 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   <span>{language === 'ro' ? 'Deschide TV' : 'Открыть ТВ'}</span>
                 </button>
               )}
+            </div>
+
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-500/30 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>{language === 'ro' ? 'Canal sincronizare TV: ' : 'Облачный канал связи с ТВ: '}<b>amika_cricova_tv_control</b></span>
             </div>
 
             <p className="text-xs text-stone-300 bg-stone-950/60 p-2.5 rounded-xl border border-stone-800">
