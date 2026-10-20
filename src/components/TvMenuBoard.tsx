@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Language, Order } from '../types';
+import { playMelodicChime } from '../utils/audio';
 import {
   Clock,
   Sparkles,
@@ -13,6 +14,7 @@ import {
   X,
   Volume2,
   VolumeX,
+  Bell,
 } from 'lucide-react';
 
 interface TvMenuBoardProps {
@@ -58,47 +60,91 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const [remoteToast, setRemoteToast] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
-  // Sound chime helper
-  const playTvChime = (freq = 659.25) => {
-    if (!soundEnabled) return;
-    try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    } catch {
-      // Audio might need user gesture
+  // Live synchronized orders
+  const [liveOrders, setLiveOrders] = useState<Order[]>(orders);
+  const [calledOrderPopup, setCalledOrderPopup] = useState<{ id: string; name: string } | null>(null);
+
+  // Sync when prop orders changes
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      setLiveOrders(orders);
     }
+  }, [orders]);
+
+  // Harmonious melodic coffee shop chime (3-note ascending boutique major chord)
+  const triggerMelodicChime = () => {
+    if (!soundEnabled) return;
+    playMelodicChime();
   };
 
   // Central command dispatcher for remote control
   const handleRemoteCommand = (msg: Record<string, unknown>, source = 'Пульт') => {
     if (!msg || typeof msg !== 'object') return;
+
     if (msg.type === 'SET_FLASH_SALE' && typeof msg.mode === 'string') {
       setFlashSaleMode(msg.mode as 'auto' | 'active' | 'inactive');
-      setRemoteToast(`🔥 ${source}: Режим распродажи ${msg.mode === 'active' ? 'ВКЛЮЧЕН' : msg.mode === 'auto' ? 'АВТО' : 'ВЫКЛЮЧЕН'}`);
+      setRemoteToast(`🔥 ${source}: Режим распродажи ${msg.mode === 'active' ? 'ВКЛЮЧЕН (-30%)' : msg.mode === 'auto' ? 'АВТО (20:00)' : 'ВЫКЛЮЧЕН'}`);
     } else if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') {
       setCurrentSlideIndex(msg.index);
       setIsPaused(true);
       setTimeout(() => setIsPaused(false), 20000); // Resume auto-sliding after 20s
       setRemoteToast(`📸 ${source}: Слайд №${msg.index + 1}`);
+    } else if (msg.type === 'SET_LANG_MODE' && typeof msg.mode === 'string') {
+      if (msg.mode === 'auto') {
+        setAutoRotateLang(true);
+        setRemoteToast(`🔄 ${source}: Авто-ротация языка (RO ⇄ RU каждые 15 сек)`);
+      } else {
+        setAutoRotateLang(false);
+        setLang(msg.mode as Language);
+        setRemoteToast(`🌐 ${source}: Язык ${msg.mode.toUpperCase()}`);
+      }
     } else if (msg.type === 'SET_LANG' && typeof msg.lang === 'string') {
+      setAutoRotateLang(false);
       setLang(msg.lang as Language);
       setRemoteToast(`🌐 ${source}: Язык ${msg.lang.toUpperCase()}`);
     } else if (msg.type === 'CHIME') {
-      playTvChime(typeof msg.freq === 'number' ? msg.freq : 880);
-      setRemoteToast(`🔔 ${source}: Звуковой сигнал`);
-    } else if (msg.type === 'ORDER_READY') {
-      playTvChime(880);
-      setRemoteToast(`✅ ${source}: Заказ готов к выдаче!`);
+      triggerMelodicChime();
+      setRemoteToast(`🔔 ${source}: Мелодичный гонг`);
+    } else if (msg.type === 'CALL_ORDER') {
+      const orderId = String(msg.orderId || '#102');
+      const customerName = String(msg.customerName || 'Oaspete');
+      triggerMelodicChime();
+      setCalledOrderPopup({ id: orderId, name: customerName });
+      setTimeout(() => setCalledOrderPopup(null), 7000);
+
+      // Add/update to liveOrders
+      setLiveOrders((prev) => {
+        const exists = prev.find((o) => o.id === orderId);
+        if (exists) {
+          return prev.map((o) => (o.id === orderId ? { ...o, status: 'ready', customerName } : o));
+        } else {
+          return [
+            {
+              id: orderId,
+              items: [],
+              totalAmount: 82,
+              pickupTime: 'Acum',
+              paymentMethod: 'pickup',
+              customerName: customerName,
+              customerPhone: '',
+              status: 'ready',
+              createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+            ...prev,
+          ];
+        }
+      });
+      setRemoteToast(`🔔 ${source}: Вызов заказа ${orderId} (${customerName})`);
+    } else if (msg.type === 'ORDERS_SYNC' && Array.isArray(msg.orders)) {
+      setLiveOrders(msg.orders as Order[]);
+    } else if (msg.type === 'ORDER_STATUS_UPDATE' && typeof msg.orderId === 'string') {
+      const s = msg.status as Order['status'];
+      setLiveOrders((prev) => prev.map((o) => (o.id === msg.orderId ? { ...o, status: s } : o)));
+    } else if (msg.type === 'CLEAR_READY_ORDERS') {
+      setLiveOrders((prev) => prev.map((o) => (o.status === 'ready' ? { ...o, status: 'completed' } : o)));
+      setRemoteToast(`✨ ${source}: Выданные заказы очищены`);
     }
+
     setTimeout(() => setRemoteToast(null), 3500);
   };
 
@@ -331,14 +377,14 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
 
   // Orders readiness tracking: notify with sound when an order becomes ready
   const prevReadyOrdersRef = useRef<string[]>([]);
-  const readyOrders = orders.filter((o) => o.status === 'ready');
-  const preparingOrders = orders.filter((o) => o.status === 'preparing' || o.status === 'new');
+  const readyOrders = liveOrders.filter((o) => o.status === 'ready');
+  const preparingOrders = liveOrders.filter((o) => o.status === 'preparing' || o.status === 'new');
 
   useEffect(() => {
     const currentReadyIds = readyOrders.map((o) => o.id);
     const newReady = currentReadyIds.filter((id) => !prevReadyOrdersRef.current.includes(id));
     if (newReady.length > 0 && prevReadyOrdersRef.current.length > 0) {
-      playTvChime(880); // Sound notification on TV!
+      triggerMelodicChime(); // Melodic chime on TV!
     }
     prevReadyOrdersRef.current = currentReadyIds;
   }, [readyOrders]);
@@ -480,6 +526,27 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           </div>
           <div className="flex items-center gap-2 font-mono font-bold text-xs md:text-sm bg-black/40 px-3 py-1 rounded-full border border-amber-300/40">
             <span>{lang === 'ro' ? 'Închidere la 21:00' : 'До закрытия в 21:00'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP CALLING BANNER WHEN ORDER IS READY */}
+      {calledOrderPopup && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white px-8 py-4 rounded-3xl shadow-2xl shadow-emerald-950/80 border-2 border-emerald-300 flex items-center gap-5 animate-in zoom-in-95 duration-200">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <Bell className="w-7 h-7 text-white animate-bounce" />
+          </div>
+          <div>
+            <div className="text-xs uppercase font-extrabold tracking-widest text-emerald-100 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-emerald-200" />
+              <span>{lang === 'ro' ? 'Comandă gata de ridicare!' : 'Заказ готов к выдаче!'}</span>
+            </div>
+            <div className="text-3xl font-black font-mono tracking-tight text-white flex items-center gap-3">
+              <span>{calledOrderPopup.id}</span>
+              <span className="text-xl font-sans font-bold text-emerald-100">
+                — {calledOrderPopup.name}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -662,35 +729,35 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5 xl:space-y-2">
                   {coffeeItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-1.5 rounded-xl hover:bg-stone-800/40 transition group"
+                      className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
                     >
-                      <div className="pr-2 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-stone-100 group-hover:text-amber-300 transition">
+                      <div className="pr-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-base xl:text-lg 2xl:text-xl text-white group-hover:text-amber-300 transition tracking-tight">
                             {item.name[lang]}
                           </span>
                           {item.badge && (
-                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
                               {item.badge[lang]}
                             </span>
                           )}
-                          <span className="text-[10px] text-stone-500 font-mono">
+                          <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
                             {item.volume}
                           </span>
                         </div>
-                        <p className="text-[10px] text-stone-400 line-clamp-1">
+                        <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
                           {item.notes[lang]}
                         </p>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="text-base font-black text-amber-400 font-mono">
+                        <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight">
                           {item.price}{' '}
-                          <span className="text-[10px] font-semibold text-stone-400">MDL</span>
+                          <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                         </span>
                       </div>
                     </div>
@@ -733,43 +800,43 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5 xl:space-y-2">
                   {dessertItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-1.5 rounded-xl hover:bg-stone-800/40 transition group"
+                      className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
                     >
-                      <div className="pr-2 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-stone-100 group-hover:text-amber-300 transition">
+                      <div className="pr-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-base xl:text-lg 2xl:text-xl text-white group-hover:text-amber-300 transition tracking-tight">
                             {item.name[lang]}
                           </span>
                           {item.badge && !isFlashSaleActive && (
-                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40">
                               {item.badge[lang]}
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-stone-400 line-clamp-1">
+                        <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
                           {item.desc[lang]}
                         </p>
                       </div>
 
                       <div className="text-right shrink-0">
                         {isFlashSaleActive ? (
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xs text-stone-500 line-through font-mono">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm xl:text-base text-stone-500 line-through font-mono">
                               {item.price}
                             </span>
-                            <span className="text-base font-black text-rose-400 font-mono animate-bounce">
+                            <span className="text-lg xl:text-2xl font-black text-rose-400 font-mono animate-bounce">
                               {item.discountPrice}{' '}
-                              <span className="text-[10px] font-semibold text-rose-300">L</span>
+                              <span className="text-xs xl:text-sm font-bold text-rose-300">L</span>
                             </span>
                           </div>
                         ) : (
-                          <span className="text-base font-black text-amber-400 font-mono">
+                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight">
                             {item.price}{' '}
-                            <span className="text-[10px] font-semibold text-stone-400">MDL</span>
+                            <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                           </span>
                         )}
                       </div>
@@ -933,16 +1000,16 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 readyOrders.map((o) => (
                   <span
                     key={o.id}
-                    className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-mono font-black text-sm flex items-center gap-1.5 shadow-sm animate-pulse"
+                    className="px-3.5 py-1.5 rounded-2xl bg-emerald-500/25 border-2 border-emerald-400 text-emerald-200 font-mono font-black text-base xl:text-lg flex items-center gap-2 shadow-lg shadow-emerald-950/50 animate-pulse shrink-0"
                   >
                     <span>{o.id}</span>
-                    <span className="text-xs font-sans font-bold text-white">
+                    <span className="text-sm xl:text-base font-sans font-extrabold text-white">
                       ({o.customerName})
                     </span>
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-stone-500 italic">
+                <span className="text-xs xl:text-sm text-stone-400 italic">
                   {lang === 'ro' ? 'Toate comenzile au fost preluate' : 'Все заказы выданы'}
                 </span>
               )}
@@ -952,23 +1019,23 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           {/* PREPARING ORDERS */}
           <div className="hidden xl:flex items-center gap-3 border-l border-stone-800 pl-4 shrink-0">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="text-xs xl:text-sm font-extrabold text-amber-400 uppercase tracking-wider">
                 {lang === 'ro' ? 'În lucru:' : 'Готовятся:'}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              {preparingOrders.slice(0, 2).map((o) => (
+              {preparingOrders.slice(0, 3).map((o) => (
                 <span
                   key={o.id}
-                  className="px-2.5 py-0.5 rounded-lg bg-stone-900 border border-stone-800 text-stone-300 font-mono font-bold text-xs"
+                  className="px-3 py-1 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 font-mono font-bold text-xs xl:text-sm"
                 >
                   {o.id}
                 </span>
               ))}
               {preparingOrders.length === 0 && (
-                <span className="text-xs text-stone-500 italic">—</span>
+                <span className="text-xs xl:text-sm text-stone-500 italic">—</span>
               )}
             </div>
           </div>

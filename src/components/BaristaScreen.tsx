@@ -3,6 +3,8 @@ import type { Order, OrderStatus, Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { Clock, CheckCircle, Send, Cake, Coffee, Tv, Flame, Bell, Volume2, ExternalLink, Sparkles } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
+import { playMelodicChime } from '../utils/audio';
+import { sendTvCommand } from '../utils/tvSync';
 
 interface BaristaScreenProps {
   language: Language;
@@ -25,43 +27,37 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   const [discountPercent, setDiscountPercent] = useState<number>(30);
   const [broadcastSent, setBroadcastSent] = useState<boolean>(false);
   const [tvCommandToast, setTvCommandToast] = useState<string | null>(null);
-
-  // Helper to send real-time commands to the TV Screen across the internet
-  const sendTvCommand = async (cmd: Record<string, unknown>, label?: string) => {
-    // 1. Same-device local channel (BroadcastChannel)
-    try {
-      const channel = new BroadcastChannel('amika_tv_bus');
-      channel.postMessage(cmd);
-      channel.close();
-    } catch {}
-
-    // 2. Local storage fallback
-    try {
-      localStorage.setItem('amika_tv_command', JSON.stringify({ ...cmd, ts: Date.now() }));
-    } catch {}
-
-    // 3. Cross-device Real-Time Cloud Relay (Phone ➜ Smart TV across internet)
-    try {
-      await fetch('https://ntfy.sh/amika_cricova_tv_control', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cmd),
-      });
-    } catch (e) {
-      console.warn('Cloud relay error:', e);
-    }
-
-    if (label) {
-      setTvCommandToast(label);
-      setTimeout(() => setTvCommandToast(null), 3000);
-    }
-  };
+  const [remoteLangMode, setRemoteLangMode] = useState<'auto' | 'ro' | 'ru'>('auto');
 
   const handleUpdateStatus = (orderId: string, nextStatus: OrderStatus) => {
     onUpdateOrderStatus(orderId, nextStatus);
+    const order = orders.find((o) => o.id === orderId);
+    const updatedOrders = orders.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
+
     if (nextStatus === 'ready') {
-      sendTvCommand({ type: 'CHIME', freq: 880 });
+      playMelodicChime();
+      sendTvCommand(
+        {
+          type: 'CALL_ORDER',
+          orderId,
+          customerName: order?.customerName || 'Oaspete',
+        },
+        setTvCommandToast,
+        `🔔 Заказ ${orderId} (${order?.customerName || 'Гость'}) вызван на экран ТВ!`
+      );
+    } else {
+      sendTvCommand(
+        {
+          type: 'ORDER_STATUS_UPDATE',
+          orderId,
+          status: nextStatus,
+        },
+        setTvCommandToast,
+        `Статус заказа ${orderId}: ${nextStatus}`
+      );
     }
+
+    sendTvCommand({ type: 'ORDERS_SYNC', orders: updatedOrders });
   };
 
   // Filter only desserts for flash sale
@@ -71,10 +67,11 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
   const handleSendBroadcast = () => {
     setBroadcastSent(true);
-    sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'active' }, '🔥 Flash-распродажа отправлена на ТВ и в Telegram!');
-    setTimeout(() => {
-      // Auto-hide alert after 8 seconds
-    }, 8000);
+    sendTvCommand(
+      { type: 'SET_FLASH_SALE', mode: 'active' },
+      setTvCommandToast,
+      '🔥 Flash-распродажа отправлена на ТВ и в Telegram!'
+    );
   };
 
   return (
@@ -473,19 +470,37 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'active' }, '🔥 Включен режим Flash-распродажи на ТВ')}
+                onClick={() =>
+                  sendTvCommand(
+                    { type: 'SET_FLASH_SALE', mode: 'active' },
+                    setTvCommandToast,
+                    '🔥 Включен режим Flash-распродажи на ТВ'
+                  )
+                }
                 className="py-2.5 px-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition active:scale-95 text-center"
               >
                 🔥 Включить (-30%)
               </button>
               <button
-                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'auto' }, '⏰ Включен авто-режим (активация в 20:00)')}
+                onClick={() =>
+                  sendTvCommand(
+                    { type: 'SET_FLASH_SALE', mode: 'auto' },
+                    setTvCommandToast,
+                    '⏰ Включен авто-режим (активация в 20:00)'
+                  )
+                }
                 className="py-2.5 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition active:scale-95 text-center"
               >
                 ⏰ Авто (20:00)
               </button>
               <button
-                onClick={() => sendTvCommand({ type: 'SET_FLASH_SALE', mode: 'inactive' }, 'Обычный дневной режим')}
+                onClick={() =>
+                  sendTvCommand(
+                    { type: 'SET_FLASH_SALE', mode: 'inactive' },
+                    setTvCommandToast,
+                    'Обычный дневной режим на ТВ'
+                  )
+                }
                 className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95 text-center"
               >
                 Выключить
@@ -510,7 +525,13 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
               ].map((s) => (
                 <button
                   key={s.idx}
-                  onClick={() => sendTvCommand({ type: 'SET_SLIDE', index: s.idx }, `Слайд переключен: ${s.title}`)}
+                  onClick={() =>
+                    sendTvCommand(
+                      { type: 'SET_SLIDE', index: s.idx },
+                      setTvCommandToast,
+                      `Слайд переключен: ${s.title}`
+                    )
+                  }
                   className="py-2.5 px-3 rounded-xl bg-stone-950 hover:bg-stone-800 text-stone-200 border border-stone-800 text-xs font-medium text-left flex items-center justify-between transition active:scale-98"
                 >
                   <span>{s.title}</span>
@@ -520,32 +541,152 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             </div>
           </div>
 
-          {/* 3. Language & Audio Chime */}
-          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-2.5">
+          {/* 3. Language & Melodic Audio Chime */}
+          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-3">
             <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
               <Volume2 className="w-4 h-4 text-emerald-400" />
-              <span>{language === 'ro' ? 'Sunet & Limbă pe TV' : 'Звук и Язык на ТВ'}</span>
+              <span>{language === 'ro' ? 'Sunet Melodios & Limbă pe TV' : 'Звук и Язык на ТВ'}</span>
             </span>
 
-            <div className="grid grid-cols-3 gap-2">
+            {/* Melodic Gong button */}
+            <button
+              onClick={() => {
+                playMelodicChime();
+                sendTvCommand({ type: 'CHIME' }, setTvCommandToast, '🔔 Мелодичный гонг воспроизведен на ТВ!');
+              }}
+              className="w-full py-3 px-3 rounded-2xl bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/50 text-xs font-bold transition active:scale-98 flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
+            >
+              <Bell className="w-4 h-4 text-emerald-400 animate-bounce" />
+              <span>🔔 Гонг ТВ (Мелодичный звон бутика)</span>
+            </button>
+
+            {/* Language Selection: RO / RU / Auto RO⇄RU */}
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-semibold text-stone-400 flex items-center justify-between">
+                <span>{language === 'ro' ? 'Regim limbă ecran:' : 'Режим отображения языка на ТВ:'}</span>
+                <span className="text-amber-400 font-bold uppercase">{remoteLangMode}</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    setRemoteLangMode('ro');
+                    sendTvCommand({ type: 'SET_LANG_MODE', mode: 'ro' }, setTvCommandToast, '🌐 Язык на ТВ: Română');
+                  }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
+                    remoteLangMode === 'ro'
+                      ? 'bg-amber-600 text-stone-950 border-amber-400 shadow-md font-extrabold'
+                      : 'bg-stone-800 hover:bg-stone-750 text-stone-200 border-stone-700'
+                  }`}
+                >
+                  🇷🇴 RO
+                </button>
+
+                <button
+                  onClick={() => {
+                    setRemoteLangMode('ru');
+                    sendTvCommand({ type: 'SET_LANG_MODE', mode: 'ru' }, setTvCommandToast, '🌐 Язык на ТВ: Русский');
+                  }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
+                    remoteLangMode === 'ru'
+                      ? 'bg-amber-600 text-stone-950 border-amber-400 shadow-md font-extrabold'
+                      : 'bg-stone-800 hover:bg-stone-750 text-stone-200 border-stone-700'
+                  }`}
+                >
+                  🇷🇺 RU
+                </button>
+
+                <button
+                  onClick={() => {
+                    setRemoteLangMode('auto');
+                    sendTvCommand(
+                      { type: 'SET_LANG_MODE', mode: 'auto' },
+                      setTvCommandToast,
+                      '🔄 Авто-смена языка каждые 15 сек (RO ⇄ RU)'
+                    );
+                  }}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-bold transition active:scale-95 border ${
+                    remoteLangMode === 'auto'
+                      ? 'bg-emerald-600 text-white border-emerald-400 shadow-md font-extrabold animate-pulse'
+                      : 'bg-stone-800 hover:bg-stone-750 text-emerald-400 border-stone-700'
+                  }`}
+                  title="Автоматическая смена языка каждые 15 секунд"
+                >
+                  🔄 RO ⇄ RU (Авто)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Live Order Calling on TV */}
+          <div className="p-4 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Bell className="w-4 h-4 text-emerald-400" />
+                <span>{language === 'ro' ? 'Apel Comenzi pe TV' : 'Вызов заказов на экран ТВ'}</span>
+              </span>
               <button
-                onClick={() => sendTvCommand({ type: 'CHIME', freq: 880 }, '🔔 Тестовый звуковой гонг отправлен на ТВ!')}
-                className="py-2.5 px-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1"
+                onClick={() =>
+                  sendTvCommand(
+                    { type: 'CLEAR_READY_ORDERS' },
+                    setTvCommandToast,
+                    '✨ Выданные заказы очищены на экране ТВ'
+                  )
+                }
+                className="text-[11px] text-amber-400/90 hover:text-amber-300 underline font-medium"
               >
-                <Bell className="w-3.5 h-3.5" />
-                <span>Гонг ТВ</span>
+                {language === 'ro' ? 'Curăță panoul' : 'Очистить табло'}
               </button>
+            </div>
+
+            <div className="space-y-1.5">
+              {orders.filter((o) => o.status !== 'completed').map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => {
+                    playMelodicChime();
+                    sendTvCommand(
+                      { type: 'CALL_ORDER', orderId: o.id, customerName: o.customerName },
+                      setTvCommandToast,
+                      `🔔 Вызов заказа ${o.id} (${o.customerName}) отправлен на ТВ!`
+                    );
+                  }}
+                  className="w-full py-2.5 px-3 rounded-2xl bg-stone-950 hover:bg-stone-850 text-stone-200 border border-stone-800 text-xs font-semibold flex items-center justify-between transition active:scale-98 shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-black text-amber-400">{o.id}</span>
+                    <span className="text-white font-bold">{o.customerName}</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        o.status === 'ready'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}
+                    >
+                      {o.status === 'ready' ? 'ГОТОВ' : 'В РАБОТЕ'}
+                    </span>
+                  </div>
+                  <span className="text-emerald-400 font-bold flex items-center gap-1 bg-emerald-950/60 px-2 py-1 rounded-xl border border-emerald-500/30">
+                    <Bell className="w-3.5 h-3.5" />
+                    <span>Позвать на ТВ</span>
+                  </span>
+                </button>
+              ))}
+
+              {/* Demo test call button */}
               <button
-                onClick={() => sendTvCommand({ type: 'SET_LANG', lang: 'ro' }, 'Язык на ТВ: Română')}
-                className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-200 border border-stone-700 text-xs font-bold transition active:scale-95"
+                onClick={() => {
+                  playMelodicChime();
+                  sendTvCommand(
+                    { type: 'CALL_ORDER', orderId: '#104', customerName: 'Elena' },
+                    setTvCommandToast,
+                    '🔔 Демо-вызов #104 Elena отправлен на ТВ!'
+                  );
+                }}
+                className="w-full py-2.5 px-3 rounded-2xl bg-stone-950/40 hover:bg-stone-900 text-stone-400 hover:text-stone-200 border border-dashed border-stone-700 text-xs font-medium flex items-center justify-center gap-1.5 transition active:scale-98"
               >
-                🇷🇴 RO
-              </button>
-              <button
-                onClick={() => sendTvCommand({ type: 'SET_LANG', lang: 'ru' }, 'Язык на ТВ: Русский')}
-                className="py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-200 border border-stone-700 text-xs font-bold transition active:scale-95"
-              >
-                🇷🇺 RU
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Тест: позвать заказ #104 (Elena)</span>
               </button>
             </div>
           </div>

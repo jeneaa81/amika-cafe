@@ -10,6 +10,7 @@ import { TvMenuBoard } from './components/TvMenuBoard';
 import { BottomNav } from './components/BottomNav';
 import { PRODUCTS } from './data/products';
 import { TRANSLATIONS } from './data/translations';
+import { sendTvCommand } from './utils/tvSync';
 import type {
   Language,
   Category,
@@ -237,16 +238,22 @@ export function App() {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      sendTvCommand({ type: 'ORDERS_SYNC', orders: next });
+      return next;
+    });
     return newOrder;
   };
 
   // Update order status in Barista Screen
   const handleUpdateOrderStatus = (orderId: string, nextStatus: OrderStatus) => {
     playChime(523.25);
-    setOrders((prev) =>
-      prev.map((order) => (order.id === orderId ? { ...order, status: nextStatus } : order))
-    );
+    setOrders((prev) => {
+      const next = prev.map((order) => (order.id === orderId ? { ...order, status: nextStatus } : order));
+      sendTvCommand({ type: 'ORDERS_SYNC', orders: next });
+      return next;
+    });
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
