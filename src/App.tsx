@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Header } from './components/Header';
+import { Header, type AppViewMode } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { ProductCard } from './components/ProductCard';
 import { ProductCustomizerModal } from './components/ProductCustomizerModal';
 import { LoyaltyModal } from './components/LoyaltyModal';
 import { CartModal } from './components/CartModal';
 import { BaristaScreen } from './components/BaristaScreen';
+import { AdminBuilder } from './components/AdminBuilder';
 import { TvMenuBoard } from './components/TvMenuBoard';
 import { BottomNav } from './components/BottomNav';
 import { PRODUCTS } from './data/products';
@@ -47,10 +48,25 @@ export function App() {
   const [language, setLanguage] = useState<Language>('ro');
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isBaristaMode, setIsBaristaMode] = useState<boolean>(() => {
+  const [viewMode, setViewMode] = useState<AppViewMode>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('mode') === 'admin' || window.location.hash === '#admin';
+    const mode = params.get('mode');
+    if (mode === 'admin' || window.location.hash === '#admin') return 'admin';
+    if (mode === 'barista' || window.location.hash === '#barista') return 'barista';
+    return 'client';
   });
+
+  const handleChangeViewMode = (nextMode: AppViewMode) => {
+    setViewMode(nextMode);
+    const url = new URL(window.location.href);
+    if (nextMode === 'client') {
+      url.searchParams.delete('mode');
+    } else {
+      url.searchParams.set('mode', nextMode);
+    }
+    window.history.pushState(null, '', url.pathname + (url.search ? url.search : ''));
+  };
+
   const [isTvMode, setIsTvMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('mode') === 'tv' || window.location.hash === '#tv';
@@ -279,21 +295,29 @@ export function App() {
       <Header
         language={language}
         onLanguageChange={setLanguage}
-        isBaristaMode={isBaristaMode}
-        onToggleBaristaMode={() => setIsBaristaMode(!isBaristaMode)}
+        viewMode={viewMode}
+        onChangeViewMode={handleChangeViewMode}
         onOpenLoyalty={() => setIsLoyaltyModalOpen(true)}
         onOpenTvMode={handleOpenTvMode}
         stampsCount={loyaltyCard.currentStamps}
       />
 
-      {/* VIEW: BARISTA TERMINAL vs CLIENT VIEW */}
-      {isBaristaMode ? (
+      {/* VIEW: ADMIN CABINET (Tablet / PC) vs BARISTA TERMINAL vs CLIENT VIEW */}
+      {viewMode === 'admin' ? (
+        <main className="flex-1 w-full">
+          <AdminBuilder
+            language={language}
+            onExitAdminMode={() => handleChangeViewMode('client')}
+            onOpenTvMode={handleOpenTvMode}
+          />
+        </main>
+      ) : viewMode === 'barista' ? (
         <main className="flex-1">
           <BaristaScreen
             language={language}
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
-            onExitBaristaMode={() => setIsBaristaMode(false)}
+            onExitBaristaMode={() => handleChangeViewMode('client')}
             onOpenTvMode={handleOpenTvMode}
           />
         </main>
@@ -455,42 +479,44 @@ export function App() {
         />
       )}
 
-      {/* BOTTOM MOBILE NAVIGATION BAR */}
-      <BottomNav
-        activeTab={
-          isBaristaMode
-            ? 'barista'
-            : isCartModalOpen
-            ? 'cart'
-            : isLoyaltyModalOpen
-            ? 'loyalty'
-            : 'menu'
-        }
-        onChangeTab={(tab) => {
-          if (tab === 'menu') {
-            setIsBaristaMode(false);
-            setIsCartModalOpen(false);
-            setIsLoyaltyModalOpen(false);
-          } else if (tab === 'loyalty') {
-            setIsBaristaMode(false);
-            setIsCartModalOpen(false);
-            setIsLoyaltyModalOpen(true);
-          } else if (tab === 'cart') {
-            setIsBaristaMode(false);
-            setIsLoyaltyModalOpen(false);
-            setIsCartModalOpen(true);
-          } else if (tab === 'barista') {
-            setIsCartModalOpen(false);
-            setIsLoyaltyModalOpen(false);
-            setIsBaristaMode(true);
+      {/* BOTTOM MOBILE NAVIGATION BAR (For Client & Barista views) */}
+      {viewMode !== 'admin' && (
+        <BottomNav
+          activeTab={
+            viewMode === 'barista'
+              ? 'barista'
+              : isCartModalOpen
+              ? 'cart'
+              : isLoyaltyModalOpen
+              ? 'loyalty'
+              : 'menu'
           }
-        }}
-        language={language}
-        cartCount={cartCount}
-        cartTotal={cartTotal}
-        stampsCount={loyaltyCard.currentStamps}
-        isBaristaMode={isBaristaMode}
-      />
+          onChangeTab={(tab) => {
+            if (tab === 'menu') {
+              handleChangeViewMode('client');
+              setIsCartModalOpen(false);
+              setIsLoyaltyModalOpen(false);
+            } else if (tab === 'loyalty') {
+              handleChangeViewMode('client');
+              setIsCartModalOpen(false);
+              setIsLoyaltyModalOpen(true);
+            } else if (tab === 'cart') {
+              handleChangeViewMode('client');
+              setIsLoyaltyModalOpen(false);
+              setIsCartModalOpen(true);
+            } else if (tab === 'barista') {
+              setIsCartModalOpen(false);
+              setIsLoyaltyModalOpen(false);
+              handleChangeViewMode('barista');
+            }
+          }}
+          language={language}
+          cartCount={cartCount}
+          cartTotal={cartTotal}
+          stampsCount={loyaltyCard.currentStamps}
+          isBaristaMode={viewMode === 'barista'}
+        />
+      )}
     </div>
   );
 }

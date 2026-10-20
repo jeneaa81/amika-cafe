@@ -1341,14 +1341,9 @@
         })(sseUrls[i]);
       }
 
-      // Local storage fallback
+      // Local storage fallback (only on explicit command / Save button click)
       window.addEventListener('storage', function(e) {
-        if (e.key === STORAGE_KEY && e.newValue) {
-          try {
-            var cfg = JSON.parse(e.newValue);
-            applyNewConfig(cfg, true);
-          } catch (err) {}
-        } else if (e.key === 'amika_tv_command' && e.newValue) {
+        if (e.key === 'amika_tv_command' && e.newValue) {
           try {
             var c = JSON.parse(e.newValue);
             handleRemoteCommand(c);

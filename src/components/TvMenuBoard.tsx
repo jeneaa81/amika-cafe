@@ -5,7 +5,6 @@ import {
   type TvBoardConfig,
   loadTvConfig,
   saveTvConfigLocal,
-  STORAGE_KEY_TV_CONFIG,
 } from '../utils/menuStore';
 import {
   Clock,
@@ -176,15 +175,10 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     } catch {}
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY_TV_CONFIG && e.newValue) {
-        try {
-          const cfg = JSON.parse(e.newValue) as TvBoardConfig;
-          applyRemoteConfig(cfg, 'Админ');
-        } catch {}
-      } else if (e.key === 'amika_tv_command' && e.newValue) {
+      if (e.key === 'amika_tv_command' && e.newValue) {
         try {
           const msg = JSON.parse(e.newValue);
-          handleRemoteCommand(msg, 'Локальный пульт');
+          handleRemoteCommand(msg, 'Админ / Пульт');
         } catch {}
       }
     };

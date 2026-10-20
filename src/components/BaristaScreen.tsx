@@ -12,14 +12,12 @@ import {
   Volume2,
   ExternalLink,
   Sparkles,
-  Settings,
   MessageSquare,
 } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 import { playMelodicChime } from '../utils/audio';
 import { sendTvCommand } from '../utils/tvSync';
-import { type TvBoardConfig, loadTvConfig, saveTvConfigLocal } from '../utils/menuStore';
-import { AdminBuilder } from './AdminBuilder';
+import { type TvBoardConfig, loadTvConfig } from '../utils/menuStore';
 
 interface BaristaScreenProps {
   language: Language;
@@ -37,8 +35,8 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   onOpenTvMode,
 }) => {
   const t = TRANSLATIONS[language];
-  const [activeTab, setActiveTab] = useState<'admin' | 'orders' | 'tv_remote'>('admin');
-  const [tvConfig, setTvConfig] = useState<TvBoardConfig>(() => loadTvConfig());
+  const [activeTab, setActiveTab] = useState<'orders' | 'tv_remote'>('orders');
+  const [tvConfig] = useState<TvBoardConfig>(() => loadTvConfig());
 
   const [selectedDessertId, setSelectedDessertId] = useState<string>('fb-01');
   const discountPercent = 30;
@@ -51,11 +49,6 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
     phone: string;
     itemsSummary: string;
   } | null>(null);
-
-  const handleChangeConfig = (newCfg: TvBoardConfig) => {
-    setTvConfig(newCfg);
-    saveTvConfigLocal(newCfg);
-  };
 
   // Update pre-order status & notify customer directly (without cluttering TV screen)
   const handleUpdateStatus = (orderId: string, nextStatus: OrderStatus) => {
@@ -99,13 +92,13 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         <div>
           <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Кабинет Управления Amika</span>
+            <span>Рабочее место Бариста</span>
           </div>
           <h2 className="text-lg font-bold text-white font-serif mt-0.5">
-            Админ-панель & Бариста
+            Предзаказы & Пульт ТВ
           </h2>
           <p className="text-[11px] text-stone-400">
-            Cricova • str. Drumul Viilor 10
+            Cricova • str. Drumul Viilor 10 (без настроек админки)
           </p>
         </div>
 
@@ -130,29 +123,17 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Navigation Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
-        <button
-          onClick={() => setActiveTab('admin')}
-          className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
-            activeTab === 'admin'
-              ? 'bg-amber-600 text-stone-950 shadow-md font-extrabold'
-              : 'text-stone-400 hover:text-stone-200'
-          }`}
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span className="truncate">Меню & Фото</span>
-        </button>
-
+      {/* Main Navigation Tabs (Strictly Barista tools: Pre-orders & TV Remote) */}
+      <div className="grid grid-cols-2 gap-2 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
             activeTab === 'orders'
               ? 'bg-emerald-600 text-white shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Clock className="w-3.5 h-3.5" />
+          <Clock className="w-4 h-4" />
           <span className="truncate">
             Предзаказы ({orders.filter((o) => o.status !== 'completed').length})
           </span>
@@ -160,27 +141,18 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
         <button
           onClick={() => setActiveTab('tv_remote')}
-          className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
             activeTab === 'tv_remote'
               ? 'bg-indigo-600 text-white shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Tv className="w-3.5 h-3.5" />
-          <span className="truncate">Пульт ТВ</span>
+          <Tv className="w-4 h-4" />
+          <span className="truncate">Пульт ТВ & Скидка -30%</span>
         </button>
       </div>
 
-      {/* ================= TAB 1: ADMIN CABINET (EDIT 2 COLUMNS + PHOTO CAROUSEL) ================= */}
-      {activeTab === 'admin' && (
-        <AdminBuilder
-          language={language}
-          config={tvConfig}
-          onChangeConfig={handleChangeConfig}
-        />
-      )}
-
-      {/* ================= TAB 2: PRE-ORDERS & CLIENT NOTIFICATION ================= */}
+      {/* ================= TAB 1: PRE-ORDERS & CLIENT NOTIFICATION ================= */}
       {activeTab === 'orders' && (
         <div className="space-y-3">
           {/* Client Notification Confirmation Box */}
