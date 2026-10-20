@@ -47,7 +47,10 @@ export function App() {
   const [language, setLanguage] = useState<Language>('ro');
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isBaristaMode, setIsBaristaMode] = useState<boolean>(false);
+  const [isBaristaMode, setIsBaristaMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'admin' || window.location.hash === '#admin';
+  });
   const [isTvMode, setIsTvMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('mode') === 'tv' || window.location.hash === '#tv';
@@ -296,6 +299,25 @@ export function App() {
         </main>
       ) : (
         <main className="flex-1 max-w-md mx-auto w-full px-4 pt-3 space-y-4">
+          {/* CLIENT PRE-ORDER READY NOTIFICATION BANNER */}
+          {orders.filter((o) => o.status === 'ready').map((readyOrd) => (
+            <div
+              key={readyOrd.id}
+              className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl border border-emerald-300 flex items-center justify-between gap-3 animate-pulse"
+            >
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                  {language === 'ro' ? '🔔 Comandă Gata!' : '🔔 Ваш предзаказ готов!'}
+                </div>
+                <div className="text-xs font-extrabold">
+                  {language === 'ro'
+                    ? `${readyOrd.id} (${readyOrd.customerName}) vă așteaptă la bar fără coadă! ☕`
+                    : `Заказ ${readyOrd.id} (${readyOrd.customerName}) ждёт вас на баре без очереди! ☕`}
+                </div>
+              </div>
+            </div>
+          ))}
+
           {/* HERO PROMO CARD */}
           <div className="relative rounded-3xl p-5 overflow-hidden bg-gradient-to-br from-amber-950/80 via-stone-900 to-stone-900 border border-amber-500/30 shadow-2xl">
             {/* Background glow & elements */}

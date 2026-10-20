@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Language, Order } from '../types';
 import { playMelodicChime } from '../utils/audio';
 import {
+  type TvBoardConfig,
+  loadTvConfig,
+  saveTvConfigLocal,
+  STORAGE_KEY_TV_CONFIG,
+} from '../utils/menuStore';
+import {
   Clock,
   Sparkles,
   Flame,
@@ -14,7 +20,6 @@ import {
   X,
   Volume2,
   VolumeX,
-  Bell,
 } from 'lucide-react';
 
 interface TvMenuBoardProps {
@@ -24,23 +29,14 @@ interface TvMenuBoardProps {
   onExitTvMode: () => void;
 }
 
-interface ShowcaseSlide {
-  id: string;
-  badge: { ro: string; ru: string };
-  title: { ro: string; ru: string };
-  subtitle: { ro: string; ru: string };
-  details: { ro: string; ru: string };
-  image: string;
-  priceTag?: { ro: string; ru: string };
-  accentColor: string;
-}
-
 export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   language: initialLanguage,
-  orders,
   onExitTvMode,
 }) => {
   const baseUrl = import.meta.env.BASE_URL;
+
+  // Dynamic Menu & Carousel Configuration (editable from Admin Cabinet)
+  const [boardConfig, setBoardConfig] = useState<TvBoardConfig>(() => loadTvConfig());
 
   // Language state (can auto-alternate or be manually set)
   const [lang, setLang] = useState<Language>(initialLanguage);
@@ -60,31 +56,52 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const [remoteToast, setRemoteToast] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
-  // Live synchronized orders
-  const [liveOrders, setLiveOrders] = useState<Order[]>(orders);
-  const [calledOrderPopup, setCalledOrderPopup] = useState<{ id: string; name: string } | null>(null);
+  const visibleSlides = boardConfig.slides.filter((s) => s.visible !== false);
+  const slides = visibleSlides.length > 0 ? visibleSlides : boardConfig.slides;
+  const visibleCoffeeItems = boardConfig.coffeeItems.filter((c) => c.visible !== false);
+  const visibleDessertItems = boardConfig.dessertItems.filter((d) => d.visible !== false);
 
-  // Sync when prop orders changes
-  useEffect(() => {
-    if (orders && orders.length > 0) {
-      setLiveOrders(orders);
-    }
-  }, [orders]);
-
-  // Harmonious melodic coffee shop chime (3-note ascending boutique major chord)
   const triggerMelodicChime = () => {
     if (!soundEnabled) return;
     playMelodicChime();
   };
 
-  // Command deduplication across multi-cluster relays
   const processedCmdIdsRef = useRef<Set<string>>(new Set());
+  const lastFetchedUrlRef = useRef<string>('');
+
+  const applyRemoteConfig = (cfg: TvBoardConfig, sourceLabel = 'Админ') => {
+    if (!cfg || !Array.isArray(cfg.coffeeItems) || !Array.isArray(cfg.slides)) return;
+    setBoardConfig(cfg);
+    saveTvConfigLocal(cfg);
+    setCurrentSlideIndex(0);
+    triggerMelodicChime();
+    setRemoteToast(`✨ ${sourceLabel}: Меню и фотогалерея обновлены!`);
+    setTimeout(() => setRemoteToast(null), 4000);
+  };
+
+  const fetchConfigFromUrl = async (url: string, notify = true) => {
+    if (!url || url === lastFetchedUrlRef.current) return;
+    lastFetchedUrlRef.current = url;
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const cfg = (await resp.json()) as TvBoardConfig;
+        if (cfg && Array.isArray(cfg.coffeeItems)) {
+          if (notify) {
+            applyRemoteConfig(cfg, 'Админ-панель');
+          } else {
+            setBoardConfig(cfg);
+            saveTvConfigLocal(cfg);
+          }
+        }
+      }
+    } catch {}
+  };
 
   // Central command dispatcher for remote control
   const handleRemoteCommand = (msg: Record<string, unknown>, source = 'Пульт') => {
     if (!msg || typeof msg !== 'object') return;
 
-    // Deduplicate commands across multiple cloud clusters or local channels
     const cmdId =
       typeof msg._cmdId === 'string'
         ? msg._cmdId
@@ -101,13 +118,23 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       }
     }
 
-    if (msg.type === 'SET_FLASH_SALE' && typeof msg.mode === 'string') {
+    if (msg.type === 'CONFIG_SYNC' && msg.config) {
+      applyRemoteConfig(msg.config as TvBoardConfig, source);
+      return;
+    } else if (msg.type === 'CONFIG_URL_SYNC' && typeof msg.url === 'string') {
+      fetchConfigFromUrl(msg.url, true);
+      return;
+    } else if (msg.type === 'SET_FLASH_SALE' && typeof msg.mode === 'string') {
       setFlashSaleMode(msg.mode as 'auto' | 'active' | 'inactive');
-      setRemoteToast(`🔥 ${source}: Режим распродажи ${msg.mode === 'active' ? 'ВКЛЮЧЕН (-30%)' : msg.mode === 'auto' ? 'АВТО (20:00)' : 'ВЫКЛЮЧЕН'}`);
+      setRemoteToast(
+        `🔥 ${source}: Режим распродажи ${
+          msg.mode === 'active' ? 'ВКЛЮЧЕН (-30%)' : msg.mode === 'auto' ? 'АВТО (20:00)' : 'ВЫКЛЮЧЕН'
+        }`
+      );
     } else if (msg.type === 'SET_SLIDE' && typeof msg.index === 'number') {
-      setCurrentSlideIndex(msg.index);
+      setCurrentSlideIndex(msg.index % Math.max(1, slides.length));
       setIsPaused(true);
-      setTimeout(() => setIsPaused(false), 20000); // Resume auto-sliding after 20s
+      setTimeout(() => setIsPaused(false), 20000);
       setRemoteToast(`📸 ${source}: Слайд №${msg.index + 1}`);
     } else if (msg.type === 'SET_LANG_MODE' && typeof msg.mode === 'string') {
       if (msg.mode === 'auto') {
@@ -125,61 +152,21 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     } else if (msg.type === 'CHIME') {
       triggerMelodicChime();
       setRemoteToast(`🔔 ${source}: Мелодичный гонг`);
-    } else if (msg.type === 'CALL_ORDER') {
-      const orderId = String(msg.orderId || '#102');
-      const customerName = String(msg.customerName || 'Oaspete');
-      triggerMelodicChime();
-      setCalledOrderPopup({ id: orderId, name: customerName });
-      setTimeout(() => setCalledOrderPopup(null), 7000);
-
-      // Add/update to liveOrders
-      setLiveOrders((prev) => {
-        const exists = prev.find((o) => o.id === orderId);
-        if (exists) {
-          return prev.map((o) => (o.id === orderId ? { ...o, status: 'ready', customerName } : o));
-        } else {
-          return [
-            {
-              id: orderId,
-              items: [],
-              totalAmount: 82,
-              pickupTime: 'Acum',
-              paymentMethod: 'pickup',
-              customerName: customerName,
-              customerPhone: '',
-              status: 'ready',
-              createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            },
-            ...prev,
-          ];
-        }
-      });
-      setRemoteToast(`🔔 ${source}: Вызов заказа ${orderId} (${customerName})`);
-    } else if (msg.type === 'ORDERS_SYNC' && Array.isArray(msg.orders)) {
-      setLiveOrders(msg.orders as Order[]);
-    } else if (msg.type === 'ORDER_STATUS_UPDATE' && typeof msg.orderId === 'string') {
-      const s = msg.status as Order['status'];
-      setLiveOrders((prev) => prev.map((o) => (o.id === msg.orderId ? { ...o, status: s } : o)));
-    } else if (msg.type === 'CLEAR_READY_ORDERS') {
-      setLiveOrders((prev) => prev.map((o) => (o.status === 'ready' ? { ...o, status: 'completed' } : o)));
-      setRemoteToast(`✨ ${source}: Выданные заказы очищены`);
     }
 
     setTimeout(() => setRemoteToast(null), 3500);
   };
 
-  // Clock ticker & Auto Flash Sale at 20:00
+  // Clock ticker
   useEffect(() => {
     const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
+      setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Listen to remote commands via 1) BroadcastChannel 2) Storage 3) Multi-Cluster Cloud SSE
+  // Listen to remote commands & admin config updates
   useEffect(() => {
-    // 1. BroadcastChannel (Same-device tabs/HDMI window)
     let channel: BroadcastChannel | null = null;
     try {
       channel = new BroadcastChannel('amika_tv_bus');
@@ -188,9 +175,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       };
     } catch {}
 
-    // 2. Storage event
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'amika_tv_command' && e.newValue) {
+      if (e.key === STORAGE_KEY_TV_CONFIG && e.newValue) {
+        try {
+          const cfg = JSON.parse(e.newValue) as TvBoardConfig;
+          applyRemoteConfig(cfg, 'Админ');
+        } catch {}
+      } else if (e.key === 'amika_tv_command' && e.newValue) {
         try {
           const msg = JSON.parse(e.newValue);
           handleRemoteCommand(msg, 'Локальный пульт');
@@ -199,7 +190,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     };
     window.addEventListener('storage', handleStorage);
 
-    // 3. Multi-Cluster Cross-Device Cloud Realtime via redundant European SSE streams
     const sseEndpoints = [
       'https://ntfy.tedomum.fr/amika_cricova_tv_control/sse',
       'https://ntfy.adminforge.de/amika_cricova_tv_control/sse',
@@ -228,6 +218,10 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         sse.addEventListener('message', (event) => {
           try {
             const payload = JSON.parse(event.data);
+            if (payload.attachment?.url) {
+              fetchConfigFromUrl(payload.attachment.url, true);
+              return;
+            }
             if (payload.event === 'message' && payload.message) {
               const cmd = JSON.parse(payload.message);
               if (!cmd._cmdId && payload.id) cmd._cmdId = payload.id;
@@ -235,9 +229,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
             }
           } catch {}
         });
-      } catch (err) {
-        console.warn('SSE stream error:', url, err);
-      }
+      } catch {}
     });
 
     return () => {
@@ -247,7 +239,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     };
   }, []);
 
-  // Determine if flash sale is active
   const isFlashSaleActive =
     flashSaleMode === 'active' ||
     (flashSaleMode === 'auto' && currentTime.getHours() >= 20);
@@ -261,100 +252,15 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     return () => clearInterval(interval);
   }, [autoRotateLang]);
 
-  // Showcase Slides using real Instagram HD photos of Amika Café & Foodberry
-  const slides: ShowcaseSlide[] = [
-    {
-      id: 'foodberry-craft',
-      badge: { ro: 'Partener Oficial Foodberry', ru: 'Официальный партнер Foodberry' },
-      title: { ro: 'Deserturi Artizanale Proaspete', ru: 'Крафтовые десерты Foodberry' },
-      subtitle: {
-        ro: 'Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană',
-        ru: 'Французское масло 82%, сицилийская фисташка и бельгийский шоколад',
-      },
-      details: {
-        ro: 'Livrări proaspete zilnic din laboratorul SweetMe / Foodberry direct în vitrina Amika Café.',
-        ru: 'Свежая утренняя доставка напрямую из крафтовой кондитерской SweetMe / Foodberry.',
-      },
-      image: `${baseUrl}insta_hd/hd_6_720x1280.jpg`,
-      priceTag: { ro: 'De la 42 L', ru: 'От 42 MDL' },
-      accentColor: 'from-rose-500/30 to-amber-500/20',
-    },
-    {
-      id: 'coffee-origin',
-      badge: { ro: 'Зерно недели • Specialty', ru: 'Зерно недели • Specialty' },
-      title: { ro: '100% Arabica Ethiopia Guji', ru: '100% Arabica Ethiopia Guji' },
-      subtitle: {
-        ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci',
-        ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса',
-      },
-      details: {
-        ro: 'Prăjire proaspătă artizanală de la partenerul nostru Briksa. Întreabă barista despre preparare.',
-        ru: 'Свежая местная обжарка от партнера Briksa. Идеальный баланс сладости и шелковистой пенки.',
-      },
-      image: `${baseUrl}insta_hd/hd_17_720x1280.jpg`,
-      priceTag: { ro: 'Specialty Briksa', ru: 'Обжарка Briksa' },
-      accentColor: 'from-amber-600/30 to-stone-900',
-    },
-    {
-      id: 'family-soul',
-      badge: { ro: 'Amika Café • Familie & Pasiune', ru: 'Amika Café • Семья и уют' },
-      title: { ro: 'Ospitalitate Caldă din Cricova', ru: 'Тепло и забота в каждой чашке' },
-      subtitle: {
-        ro: '„Ajutorul meu” — cafea pregătită și servită din suflet',
-        ru: '«Мой главный помощник» — кофе, приготовленный с любовью',
-      },
-      details: {
-        ro: 'Locul unde fiecare oaspete este întâmpinat ca un prieten drag. Str. Drumul Viilor 10.',
-        ru: 'Локальная кофейня, где ценят каждого гостя. Крикова, str. Drumul Viilor 10.',
-      },
-      image: `${baseUrl}insta_hd/hd_8_720x1280.jpg`,
-      priceTag: { ro: 'Cricova cu drag', ru: 'С любовью из Крикова' },
-      accentColor: 'from-amber-700/30 to-emerald-950/30',
-    },
-    {
-      id: 'bar-ambiance',
-      badge: { ro: 'Design & Atmosferă', ru: 'Интерьер & Атмосфера' },
-      title: { ro: 'Barul Amika & Terasa la Apus', ru: 'Барная стойка Amika & Закаты' },
-      subtitle: {
-        ro: 'Vedere panoramică spre viile Cricovei și leagăn la asfințit',
-        ru: 'Панорамный вид на виноградники Крикова и качели на закате',
-      },
-      details: {
-        ro: 'Vino să te bucuri de un latte fin sau un matcha ceremonial într-o atmosferă luminoasă și calmă.',
-        ru: 'Идеальное место для неспешного утра или романтического вечера с чашкой спешелти кофе.',
-      },
-      image: `${baseUrl}insta_hd/hd_2_720x1280.jpg`,
-      priceTag: { ro: '08:00 – 21:00', ru: '08:00 – 21:00' },
-      accentColor: 'from-amber-500/20 to-stone-900',
-    },
-    {
-      id: 'matcha-coldbrew',
-      badge: { ro: 'Băuturi Speciale Amika', ru: 'Авторские напитки Amika' },
-      title: { ro: 'Matcha Uji & Cold Brew Tonic', ru: 'Церемониальная Матча & Колд Брю' },
-      subtitle: {
-        ro: 'Ceai matcha ceremonial bătut cu tel de bambus și lapte Oatly',
-        ru: 'Оригинальная матча из Японии, взбитая венчиком на овсяном молоке',
-      },
-      details: {
-        ro: 'Sau încearcă deserturile trifles în pahar cu cremă fină de mascarpone și fructe proaspete.',
-        ru: 'А также порционные муссовые десерты в стаканчиках со свежими лесными ягодами.',
-      },
-      image: `${baseUrl}insta_hd/hd_3_720x1280.jpg`,
-      priceTag: { ro: 'Bio Japonia', ru: 'Удзи Япония' },
-      accentColor: 'from-emerald-600/30 to-amber-700/20',
-    },
-  ];
-
   // Auto-advance showcase slides every 7 seconds
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || slides.length === 0) return;
     const interval = setInterval(() => {
       setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
     }, 7000);
     return () => clearInterval(interval);
   }, [isPaused, slides.length]);
 
-  // Fullscreen toggle handler
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
@@ -363,14 +269,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     }
   };
 
-  // Keyboard controls for presentations
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'f' || e.key === 'F') {
         handleToggleFullscreen();
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' && slides.length > 0) {
         setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === 'ArrowLeft' && slides.length > 0) {
         setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
       } else if (e.key === 'l' || e.key === 'L') {
         setLang((prev) => (prev === 'ro' ? 'ru' : 'ro'));
@@ -386,127 +291,12 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [slides.length, onExitTvMode]);
 
-  // Orders readiness tracking: notify with sound when an order becomes ready
-  const prevReadyOrdersRef = useRef<string[]>([]);
-  const readyOrders = liveOrders.filter((o) => o.status === 'ready');
-  const preparingOrders = liveOrders.filter((o) => o.status === 'preparing' || o.status === 'new');
-
-  useEffect(() => {
-    const currentReadyIds = readyOrders.map((o) => o.id);
-    const newReady = currentReadyIds.filter((id) => !prevReadyOrdersRef.current.includes(id));
-    if (newReady.length > 0 && prevReadyOrdersRef.current.length > 0) {
-      triggerMelodicChime(); // Melodic chime on TV!
-    }
-    prevReadyOrdersRef.current = currentReadyIds;
-  }, [readyOrders]);
-
-  const activeSlide = slides[currentSlideIndex];
-
-  // Coffee menu items
-  const coffeeItems = [
-    {
-      name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' },
-      volume: '40 ml',
-      notes: { ro: '100% Arabica Briksa, note de ciocolată', ru: '100% арабика Briksa, темный шоколад' },
-      price: 25,
-      badge: null,
-    },
-    {
-      name: { ro: 'Cappuccino Cremoso', ru: 'Капучино Классический' },
-      volume: '250 ml',
-      notes: { ro: 'Espresso dublu, micro-spumă catifelată', ru: 'Двойной эспрессо, нежная молочная пенка' },
-      price: 40,
-      badge: { ro: 'TOP', ru: 'ХИТ' },
-    },
-    {
-      name: { ro: 'Flat White Dublu', ru: 'Флэт Уайт' },
-      volume: '200 ml',
-      notes: { ro: 'Gust intens de cafea, dublu ristretto', ru: 'Двойной шот ристретто, глянцевая пенка' },
-      price: 48,
-      badge: { ro: 'BARISTA', ru: 'ВЫБОР' },
-    },
-    {
-      name: { ro: 'Caffè Latte Delicat', ru: 'Латте Классический' },
-      volume: '350 ml',
-      notes: { ro: 'Lapte mătăsos, gust fin și cremos', ru: 'Большой объем нежного молока' },
-      price: 45,
-      badge: null,
-    },
-    {
-      name: { ro: 'Raf Vanilie & Lavandă', ru: 'Раф Ваниль-Лаванда' },
-      volume: '300 ml',
-      notes: { ro: 'Specialitatea casei cu flori de lavandă', ru: 'Фирменный рецепт с натуральной лавандой' },
-      price: 55,
-      badge: { ro: 'SPECIALITATE', ru: 'ФИРМЕННЫЙ' },
-    },
-    {
-      name: { ro: 'Cold Brew Tonic & Portocală', ru: 'Колд Брю Тоник Апельсин' },
-      volume: '350 ml',
-      notes: { ro: 'Infuzat la rece 16 ore, apă tonică premium', ru: '16 ч холодного заваривания, тоник, лед' },
-      price: 55,
-      badge: null,
-    },
-    {
-      name: { ro: 'Matcha Latte Ceremonial Uji', ru: 'Матча Латте Удзи (Япония)' },
-      volume: '300 ml',
-      notes: { ro: 'Pudră verde bio, tel de bambus chasen', ru: 'Оригинальная церемониальная матча' },
-      price: 55,
-      badge: { ro: 'BIO', ru: 'ЯПОНИЯ' },
-    },
-    {
-      name: { ro: 'Ceai Cătină & Ghimbir', ru: 'Облепиховый чай с имбирем' },
-      volume: '400 ml',
-      notes: { ro: 'Cătină moldovenească, miere, scorțișoară', ru: 'Местная облепиха, натуральный мед' },
-      price: 45,
-      badge: null,
-    },
-  ];
-
-  // Bakery & Foodberry items
-  const dessertItems = [
-    {
-      name: { ro: 'Croissant cu Migdale Foodberry', ru: 'Миндальный круассан Foodberry' },
-      desc: { ro: 'Unt francez, cremă frangipane, fulgi crocanți', ru: 'Французское масло, миндальный крем франжипан' },
-      price: 42,
-      discountPrice: 29,
-      badge: { ro: 'FOODBERRY', ru: 'FOODBERRY' },
-    },
-    {
-      name: { ro: 'Tartă Fistic & Zmeură Foodberry', ru: 'Фисташковый тарт с малиной' },
-      desc: { ro: 'Ganache de fistic sicilian, confit de zmeură', ru: 'Сицилийская фисташка, сочная малина' },
-      price: 58,
-      discountPrice: 41,
-      badge: { ro: 'TOP DESSERT', ru: 'ТОП ДЕСЕРТ' },
-    },
-    {
-      name: { ro: 'Cheesecake San Sebastian', ru: 'Чизкейк Сан-Себастьян' },
-      desc: { ro: 'Bască arsă, textură cremoasă mătăsoasă', ru: 'Тающая карамельная текстура внутри' },
-      price: 65,
-      discountPrice: 45,
-      badge: { ro: 'CHEF PICK', ru: 'ШЕДЕВР' },
-    },
-    {
-      name: { ro: 'Éclair Mango & Maracuja', ru: 'Эклер Манго-Маракуйя' },
-      desc: { ro: 'Pâte à choux, piure exotic de maracuja', ru: 'Заварное тесто, тропический крем' },
-      price: 45,
-      discountPrice: 31,
-      badge: null,
-    },
-    {
-      name: { ro: 'Panini Cald Prosciutto-Mozzarella', ru: 'Панини Прошутто & Моцарелла' },
-      desc: { ro: 'Ciabatta la grill, roșii uscate, pesto genovese', ru: 'Хрустящий гриль, моцарелла, вяленые томаты' },
-      price: 58,
-      discountPrice: 45,
-      badge: { ro: 'GRILL', ru: 'ГРИЛЬ' },
-    },
-    {
-      name: { ro: 'Croissant Gourmet Somon & Avocado', ru: 'Круассан с лососем и авокадо' },
-      desc: { ro: 'Somon puțin sărat, cremă de brânză fină', ru: 'Слабосоленый лосось, крем-чиз, руккола' },
-      price: 68,
-      discountPrice: 52,
-      badge: { ro: 'MIC DEJUN', ru: 'ЗАВТРАК' },
-    },
-  ];
+  const safeSlideIdx = currentSlideIndex < slides.length ? currentSlideIndex : 0;
+  const activeSlide = slides[safeSlideIdx] || boardConfig.slides[0];
+  const activeSlideImgSrc =
+    activeSlide.image.startsWith('data:') || activeSlide.image.startsWith('http')
+      ? activeSlide.image
+      : `${baseUrl}${activeSlide.image}`;
 
   const formattedDate = currentTime.toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'ru-RU', {
     weekday: 'long',
@@ -522,7 +312,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-950 text-stone-100 flex flex-col overflow-hidden select-none font-sans">
-      {/* FLASH SALE TOP MARQUEE (Activates in Flash Sale Mode) */}
+      {/* FLASH SALE TOP MARQUEE */}
       {isFlashSaleActive && (
         <div className="bg-gradient-to-r from-rose-700 via-amber-600 to-rose-700 text-white px-6 py-2.5 flex items-center justify-between shadow-2xl animate-pulse">
           <div className="flex items-center gap-3">
@@ -541,30 +331,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         </div>
       )}
 
-      {/* POPUP CALLING BANNER WHEN ORDER IS READY */}
-      {calledOrderPopup && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white px-8 py-4 rounded-3xl shadow-2xl shadow-emerald-950/80 border-2 border-emerald-300 flex items-center gap-5 animate-in zoom-in-95 duration-200">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-            <Bell className="w-7 h-7 text-white animate-bounce" />
-          </div>
-          <div>
-            <div className="text-xs uppercase font-extrabold tracking-widest text-emerald-100 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-emerald-200" />
-              <span>{lang === 'ro' ? 'Comandă gata de ridicare!' : 'Заказ готов к выдаче!'}</span>
-            </div>
-            <div className="text-3xl font-black font-mono tracking-tight text-white flex items-center gap-3">
-              <span>{calledOrderPopup.id}</span>
-              <span className="text-xl font-sans font-bold text-emerald-100">
-                — {calledOrderPopup.name}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* TOP HEADER BAR */}
       <header className="bg-stone-900/90 border-b border-stone-800/80 px-6 py-3 flex items-center justify-between backdrop-blur-md shrink-0">
-        {/* Brand identity */}
         <div className="flex items-center gap-4">
           <div className="relative">
             <img
@@ -596,7 +364,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           </div>
         </div>
 
-        {/* Remote control feedback toast & Cloud Status */}
         <div className="flex items-center gap-3">
           {remoteToast ? (
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/90 text-indigo-200 border border-indigo-400 text-xs font-bold shadow-lg shadow-indigo-950/50 animate-in fade-in zoom-in-95">
@@ -606,12 +373,11 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           ) : (
             <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-xl bg-stone-950/60 border border-stone-800 text-stone-400">
               <span className={`w-2 h-2 rounded-full ${isCloudConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
-              <span>{isCloudConnected ? 'Облако: Пульт подключен' : 'Автономный режим'}</span>
+              <span>{isCloudConnected ? 'Облако: Админ подключен' : 'Автономный режим'}</span>
             </div>
           )}
         </div>
 
-        {/* Live Clock & Status */}
         <div className="hidden lg:flex items-center gap-6">
           <div className="flex items-center gap-2.5 text-right bg-stone-950/60 px-4 py-1.5 rounded-2xl border border-stone-800">
             <Clock className="w-5 h-5 text-amber-400 shrink-0" />
@@ -626,9 +392,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           </div>
         </div>
 
-        {/* TV Controls & Presentation Toggles */}
         <div className="flex items-center gap-2">
-          {/* Flash sale switcher */}
           <button
             onClick={() =>
               setFlashSaleMode((prev) =>
@@ -642,7 +406,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 ? 'bg-amber-900/40 text-amber-300 border-amber-600/40'
                 : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
             }`}
-            title="Переключить режим Flash-распродажи"
           >
             <Flame className="w-3.5 h-3.5" />
             <span>
@@ -654,7 +417,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
             </span>
           </button>
 
-          {/* Language button */}
           <div className="flex bg-stone-800 rounded-xl p-0.5 border border-stone-700 text-xs font-bold">
             <button
               onClick={() => {
@@ -683,31 +445,25 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               className={`px-2 py-1 rounded-lg transition text-[10px] ${
                 autoRotateLang ? 'bg-amber-500/20 text-amber-300 font-extrabold' : 'text-stone-500'
               }`}
-              title="Авто-смена языка каждые 15 сек"
             >
               RO⇄RU
             </button>
           </div>
 
-          {/* Sound mute toggle */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="p-2 rounded-xl bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700 transition"
-            title={soundEnabled ? 'Звук включен' : 'Без звука'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Fullscreen button */}
           <button
             onClick={handleToggleFullscreen}
             className="p-2 rounded-xl bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700 transition"
-            title="Во весь экран (F11)"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4 text-amber-400" />}
           </button>
 
-          {/* Exit TV Mode */}
           <button
             onClick={onExitTvMode}
             className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-600/40 text-stone-300 border border-stone-700 text-xs font-semibold flex items-center gap-1 transition"
@@ -732,18 +488,18 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                       <Coffee className="w-4 h-4" />
                     </span>
                     <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {lang === 'ro' ? 'Cafea & Băuturi' : 'Кофе & Напитки'}
+                      {boardConfig.coffeeHeader[lang]}
                     </h2>
                   </div>
                   <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/20">
-                    100% Arabica
+                    {boardConfig.coffeeBadge}
                   </span>
                 </div>
 
                 <div className="space-y-1.5 xl:space-y-2">
-                  {coffeeItems.map((item, idx) => (
+                  {visibleCoffeeItems.map((item) => (
                     <div
-                      key={idx}
+                      key={item.id}
                       className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
                     >
                       <div className="pr-3 flex-1 min-w-0">
@@ -776,27 +532,32 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 </div>
               </div>
 
-              {/* Sub-note milk options */}
-              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[10px] text-stone-400 font-medium">
-                <span>🥛 Lapte alternativ: Oatly ovăz / migdale / fără lactoză</span>
-                <span className="font-mono text-amber-400/90 font-bold">+10 / 12 L</span>
+              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium">
+                <span>{boardConfig.coffeeFooterNote[lang]}</span>
+                <span className="font-mono text-amber-400/90 font-bold">{boardConfig.coffeeFooterPrice}</span>
               </div>
             </div>
 
             {/* COLUMN 2: FOODBERRY BAKERY & DESSERTS */}
-            <div className={`rounded-3xl border p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm transition-all duration-500 ${
-              isFlashSaleActive
-                ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
-                : 'bg-stone-900/60 border-stone-800/80'
-            }`}>
+            <div
+              className={`rounded-3xl border p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm transition-all duration-500 ${
+                isFlashSaleActive
+                  ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
+                  : 'bg-stone-900/60 border-stone-800/80'
+              }`}
+            >
               <div>
                 <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800">
                   <div className="flex items-center gap-2">
-                    <span className={`p-1.5 rounded-xl ${isFlashSaleActive ? 'bg-rose-500/30 text-rose-300' : 'bg-rose-500/20 text-rose-400'}`}>
+                    <span
+                      className={`p-1.5 rounded-xl ${
+                        isFlashSaleActive ? 'bg-rose-500/30 text-rose-300' : 'bg-rose-500/20 text-rose-400'
+                      }`}
+                    >
                       <Cake className="w-4 h-4" />
                     </span>
                     <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {lang === 'ro' ? 'Vitrina Foodberry' : 'Десерты Foodberry'}
+                      {boardConfig.dessertHeader[lang]}
                     </h2>
                   </div>
 
@@ -806,15 +567,15 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                     </span>
                   ) : (
                     <span className="text-[10px] font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-500/20">
-                      Craft Bakery
+                      {boardConfig.dessertBadge}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1.5 xl:space-y-2">
-                  {dessertItems.map((item, idx) => (
+                  {visibleDessertItems.map((item) => (
                     <div
-                      key={idx}
+                      key={item.id}
                       className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
                     >
                       <div className="pr-3 flex-1 min-w-0">
@@ -856,13 +617,12 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 </div>
               </div>
 
-              {/* Sub-note foodberry fresh delivery */}
-              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[10px] text-stone-400 font-medium">
+              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium">
                 <span className="flex items-center gap-1 text-rose-300">
                   <Sparkles className="w-3 h-3 text-rose-400" />
-                  <span>{lang === 'ro' ? 'Livrări proaspete zilnic la 08:00' : 'Свежая выпечка каждое утро к 08:00'}</span>
+                  <span>{boardConfig.dessertFooterNote[lang]}</span>
                 </span>
-                <span className="text-stone-400 font-semibold">SweetMe Bakery</span>
+                <span className="text-stone-400 font-semibold">{boardConfig.dessertFooterBrand}</span>
               </div>
             </div>
           </div>
@@ -874,43 +634,35 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           onMouseLeave={() => setIsPaused(false)}
           className="col-span-12 lg:col-span-5 flex flex-col rounded-3xl overflow-hidden bg-stone-900/80 border border-stone-800 shadow-2xl relative group"
         >
-          {/* Progress bar at top of slider */}
-          <div className="grid grid-cols-5 gap-1.5 p-3 absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-stone-950/80 to-transparent">
+          {/* Progress bar at top of slider (supports arbitrary number of slides) */}
+          <div className="flex gap-1.5 p-3 absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-stone-950/80 to-transparent">
             {slides.map((_, i) => (
               <div
                 key={i}
-                className="h-1 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm cursor-pointer"
+                className="flex-1 h-1 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm cursor-pointer"
                 onClick={() => setCurrentSlideIndex(i)}
               >
                 <div
                   className={`h-full bg-amber-400 transition-all duration-300 ${
-                    i === currentSlideIndex
-                      ? 'w-full'
-                      : i < currentSlideIndex
-                      ? 'w-full bg-amber-400/60'
-                      : 'w-0'
+                    i <= safeSlideIdx ? 'w-full' : 'w-0'
                   }`}
                 />
               </div>
             ))}
           </div>
 
-          {/* Active slide hero photo & background */}
           <div className="relative flex-1 overflow-hidden bg-stone-950">
             <img
-              src={activeSlide.image}
+              src={activeSlideImgSrc}
               alt={activeSlide.title[lang]}
               className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-1000 ease-out"
             />
 
-            {/* Gradient overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
-            <div className={`absolute inset-0 bg-gradient-to-br ${activeSlide.accentColor} mix-blend-overlay`}></div>
 
-            {/* Inset Badge Pill */}
             <div className="absolute top-10 left-4 z-10 flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-xs font-black bg-stone-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>{activeSlide.badge[lang]}</span>
               </span>
 
@@ -921,20 +673,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               )}
             </div>
 
-            {/* Inset Photo Overlay: when on Bar Ambiance slide, show small circular child inset */}
-            {activeSlide.id === 'bar-ambiance' && (
-              <div className="absolute top-10 right-4 z-10">
-                <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-400/80 shadow-2xl ring-2 ring-stone-950">
-                  <img
-                    src={`${baseUrl}insta_hd/hd_9_3024x4032.jpg`}
-                    alt="Cricova Sunset"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Floating Navigation Arrows */}
             <button
               onClick={() =>
                 setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length)
@@ -951,7 +689,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Slide Information Card */}
             <div className="absolute bottom-0 inset-x-0 p-6 z-10 space-y-2">
               <h3 className="text-2xl font-black text-white font-serif leading-tight drop-shadow-md">
                 {activeSlide.title[lang]}
@@ -967,11 +704,10 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         </section>
       </main>
 
-      {/* ================= BOTTOM BAR: GIANT QR CODE + LIVE ORDER TICKER ================= */}
+      {/* ================= BOTTOM BAR: GIANT QR CODE + HOSPITALITY HIGHLIGHTS ================= */}
       <footer className="bg-stone-900/95 border-t border-stone-800 px-6 py-3 flex items-center justify-between gap-6 shrink-0 backdrop-blur-md">
-        {/* Left: Giant Loyalty QR Code */}
         <div className="flex items-center gap-4 shrink-0 bg-stone-950/80 p-2.5 rounded-2xl border border-amber-500/30 shadow-lg">
-          <div className="w-16 h-16 bg-white p-1 rounded-xl shrink-0 shadow-md flex items-center justify-center">
+          <div className="w-14 h-14 bg-white p-1 rounded-xl shrink-0 shadow-md flex items-center justify-center">
             <img
               src={`${baseUrl}amika_qr.svg`}
               alt="Scan QR"
@@ -982,80 +718,52 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-amber-400 font-extrabold text-xs uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{lang === 'ro' ? 'Card de Fidelitate Digital' : 'Электронная Карта Гостя'}</span>
+              <span>{lang === 'ro' ? 'Card de Fidelitate Digital & Precomandă' : 'Электронная Карта Гостя и Предзаказ'}</span>
             </div>
             <div className="text-sm font-black text-white">
               {lang === 'ro' ? 'A 6-a cafea este CADOU! ☕' : '6-я чашка кофе в ПОДАРОК! ☕'}
             </div>
             <p className="text-[11px] text-stone-400">
               {lang === 'ro'
-                ? 'Scanează camera telefonului • Precomandă rapidă fără coadă'
+                ? 'Scanează camera telefonului • Comandă rapidă fără coadă'
                 : 'Наведи камеру телефона • Заказ с собой без очередей'}
             </p>
           </div>
         </div>
 
-        {/* Center: Live Order Status Board (Synergy with Barista Screen) */}
-        <div className="flex-1 bg-stone-950/60 rounded-2xl border border-stone-800/80 p-2.5 px-4 flex items-center justify-between gap-4 overflow-hidden">
-          {/* READY ORDERS */}
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
-                {lang === 'ro' ? 'Gata de ridicare:' : 'Готовы к выдаче:'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {readyOrders.length > 0 ? (
-                readyOrders.map((o) => (
-                  <span
-                    key={o.id}
-                    className="px-3.5 py-1.5 rounded-2xl bg-emerald-500/25 border-2 border-emerald-400 text-emerald-200 font-mono font-black text-base xl:text-lg flex items-center gap-2 shadow-lg shadow-emerald-950/50 animate-pulse shrink-0"
-                  >
-                    <span>{o.id}</span>
-                    <span className="text-sm xl:text-base font-sans font-extrabold text-white">
-                      ({o.customerName})
-                    </span>
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs xl:text-sm text-stone-400 italic">
-                  {lang === 'ro' ? 'Toate comenzile au fost preluate' : 'Все заказы выданы'}
-                </span>
-              )}
-            </div>
+        {/* Center: Cafe Hospitality & Freshness Guarantees */}
+        <div className="flex-1 bg-stone-950/60 rounded-2xl border border-stone-800/80 p-3 px-6 hidden lg:flex items-center justify-around gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 font-black text-xs">
+              100% ARABICA
+            </span>
+            <span className="text-xs font-bold text-stone-200">
+              {lang === 'ro' ? 'Prăjire proaspătă artizanală Briksa' : 'Свежая крафтовая обжарка Briksa'}
+            </span>
           </div>
 
-          {/* PREPARING ORDERS */}
-          <div className="hidden xl:flex items-center gap-3 border-l border-stone-800 pl-4 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-              <span className="text-xs xl:text-sm font-extrabold text-amber-400 uppercase tracking-wider">
-                {lang === 'ro' ? 'În lucru:' : 'Готовятся:'}
-              </span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-400 font-black text-xs">
+              FOODBERRY
+            </span>
+            <span className="text-xs font-bold text-stone-200">
+              {lang === 'ro' ? 'Deserturi naturale fără conservanți' : 'Натуральные десерты без консервантов'}
+            </span>
+          </div>
 
-            <div className="flex items-center gap-2">
-              {preparingOrders.slice(0, 3).map((o) => (
-                <span
-                  key={o.id}
-                  className="px-3 py-1 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 font-mono font-bold text-xs xl:text-sm"
-                >
-                  {o.id}
-                </span>
-              ))}
-              {preparingOrders.length === 0 && (
-                <span className="text-xs xl:text-sm text-stone-500 italic">—</span>
-              )}
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-black text-xs">
+              08:00 – 21:00
+            </span>
+            <span className="text-xs font-bold text-stone-200">
+              {lang === 'ro' ? 'Vă așteptăm zilnic cu drag!' : 'Ждем вас каждый день с любовью!'}
+            </span>
           </div>
         </div>
 
-        {/* Right: Sound & Presentation Info */}
         <div className="hidden md:flex flex-col items-end text-right shrink-0">
           <div className="text-[10px] text-stone-400 uppercase tracking-wider font-bold flex items-center gap-1">
-            <span>Amika Live Board</span>
+            <span>Amika Digital Menu</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           </div>
           <div className="text-xs font-bold text-stone-300 font-serif">

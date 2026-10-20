@@ -100,21 +100,22 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Barista Mode Switch */}
+          {/* Admin / Barista Mode Switch */}
           <button
             onClick={onToggleBaristaMode}
-            className={`p-2 rounded-xl border transition active:scale-95 ${
+            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
               isBaristaMode
                 ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30'
-                : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                : 'bg-stone-800 text-stone-300 border-stone-700 hover:text-white'
             }`}
             title={isBaristaMode ? t.roleBarista : t.roleClient}
           >
             {isBaristaMode ? (
-              <ShieldCheck className="w-4 h-4 text-emerald-200" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
             ) : (
-              <User className="w-4 h-4" />
+              <User className="w-3.5 h-3.5 text-amber-400" />
             )}
+            <span>{language === 'ro' ? 'Admin' : 'Админ'}</span>
           </button>
         </div>
       </div>
