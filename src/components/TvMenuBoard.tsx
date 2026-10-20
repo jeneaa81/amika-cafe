@@ -77,9 +77,29 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     playMelodicChime();
   };
 
+  // Command deduplication across multi-cluster relays
+  const processedCmdIdsRef = useRef<Set<string>>(new Set());
+
   // Central command dispatcher for remote control
   const handleRemoteCommand = (msg: Record<string, unknown>, source = 'Пульт') => {
     if (!msg || typeof msg !== 'object') return;
+
+    // Deduplicate commands across multiple cloud clusters or local channels
+    const cmdId =
+      typeof msg._cmdId === 'string'
+        ? msg._cmdId
+        : typeof msg.id === 'string'
+        ? msg.id
+        : null;
+
+    if (cmdId) {
+      if (processedCmdIdsRef.current.has(cmdId)) return;
+      processedCmdIdsRef.current.add(cmdId);
+      if (processedCmdIdsRef.current.size > 200) {
+        const first = processedCmdIdsRef.current.values().next().value;
+        if (first) processedCmdIdsRef.current.delete(first);
+      }
+    }
 
     if (msg.type === 'SET_FLASH_SALE' && typeof msg.mode === 'string') {
       setFlashSaleMode(msg.mode as 'auto' | 'active' | 'inactive');
@@ -157,7 +177,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Listen to remote commands via 1) BroadcastChannel 2) Storage 3) Cloud SSE / Polling (ntfy.sh)
+  // Listen to remote commands via 1) BroadcastChannel 2) Storage 3) Multi-Cluster Cloud SSE
   useEffect(() => {
     // 1. BroadcastChannel (Same-device tabs/HDMI window)
     let channel: BroadcastChannel | null = null;
@@ -179,60 +199,51 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     };
     window.addEventListener('storage', handleStorage);
 
-    // 3. Cross-Device Cloud Realtime via ntfy.sh Server-Sent Events (Phone ➜ Smart TV across internet)
-    const topic = 'amika_cricova_tv_control';
-    let sse: EventSource | null = null;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
-    const processedIds = new Set<string>();
+    // 3. Multi-Cluster Cross-Device Cloud Realtime via redundant European SSE streams
+    const sseEndpoints = [
+      'https://ntfy.tedomum.fr/amika_cricova_tv_control/sse',
+      'https://ntfy.adminforge.de/amika_cricova_tv_control/sse',
+    ];
 
-    try {
-      sse = new EventSource(`https://ntfy.sh/${topic}/sse`);
-      sse.onopen = () => setIsCloudConnected(true);
-      sse.onerror = () => setIsCloudConnected(false);
-      sse.addEventListener('message', (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.id && processedIds.has(payload.id)) return;
-          if (payload.id) processedIds.add(payload.id);
+    const sseInstances: EventSource[] = [];
+    const activeStreams = new Set<string>();
 
-          if (payload.event === 'message' && payload.message) {
-            const cmd = JSON.parse(payload.message);
-            handleRemoteCommand(cmd, 'Смартфон');
-          }
-        } catch {}
-      });
-    } catch {
-      setIsCloudConnected(false);
-    }
-
-    // Backup polling every 2.5 seconds (ensures rock-solid delivery even on strict Smart TV firewalls)
-    pollInterval = setInterval(async () => {
+    sseEndpoints.forEach((url) => {
       try {
-        const resp = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=5s`, { cache: 'no-store' });
-        if (resp.ok) {
+        const sse = new EventSource(url);
+        sseInstances.push(sse);
+
+        sse.onopen = () => {
+          activeStreams.add(url);
           setIsCloudConnected(true);
-          const text = await resp.text();
-          for (const line of text.split('\n')) {
-            if (!line.trim()) continue;
-            try {
-              const item = JSON.parse(line);
-              if (item.id && processedIds.has(item.id)) continue;
-              if (item.id) processedIds.add(item.id);
-              if (item.event === 'message' && item.message) {
-                const cmd = JSON.parse(item.message);
-                handleRemoteCommand(cmd, 'Смартфон');
-              }
-            } catch {}
+        };
+
+        sse.onerror = () => {
+          activeStreams.delete(url);
+          if (activeStreams.size === 0) {
+            setIsCloudConnected(false);
           }
-        }
-      } catch {}
-    }, 2500);
+        };
+
+        sse.addEventListener('message', (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.event === 'message' && payload.message) {
+              const cmd = JSON.parse(payload.message);
+              if (!cmd._cmdId && payload.id) cmd._cmdId = payload.id;
+              handleRemoteCommand(cmd, 'Смартфон');
+            }
+          } catch {}
+        });
+      } catch (err) {
+        console.warn('SSE stream error:', url, err);
+      }
+    });
 
     return () => {
       channel?.close();
       window.removeEventListener('storage', handleStorage);
-      sse?.close();
-      if (pollInterval) clearInterval(pollInterval);
+      sseInstances.forEach((s) => s.close());
     };
   }, []);
 

@@ -453,7 +453,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-500/30 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>{language === 'ro' ? 'Canal sincronizare TV: ' : 'Облачный канал связи с ТВ: '}<b>amika_cricova_tv_control</b></span>
+              <span>{language === 'ro' ? 'Canal sincronizare TV: ' : 'Канал связи: '}<b>amika_cricova_tv_control (Мульти-кластер)</b></span>
             </div>
 
             <p className="text-xs text-stone-300 bg-stone-950/60 p-2.5 rounded-xl border border-stone-800">
