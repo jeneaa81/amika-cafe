@@ -125,7 +125,7 @@ const ADMIN_I18N = {
     nameRo: 'Denumire (RO)',
     nameRu: 'Denumire (RU)',
     priceMdl: 'Preț (MDL)',
-    discountPriceMdl: 'Seara -30% (L)',
+    discountPriceMdl: 'Reducere (L)',
     volumeMl: 'Volum (ml)',
     badgeLabel: 'Ecuson (TOP / NOU)',
     badgePlaceholder: 'Gol sau TOP',
@@ -243,7 +243,7 @@ const ADMIN_I18N = {
     nameRo: 'Наименование (RO)',
     nameRu: 'Наименование (RU)',
     priceMdl: 'Цена (MDL)',
-    discountPriceMdl: 'Вечер -30% (L)',
+    discountPriceMdl: 'Скидка (L)',
     volumeMl: 'Объем (мл)',
     badgeLabel: 'Бейдж (ХИТ / TOP)',
     badgePlaceholder: 'Пусто или ХИТ',
@@ -859,9 +859,11 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             </div>
 
             {/* Price, Volume, Badge */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 items-end">
               <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1">{L.priceMdl}</label>
+                <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
+                  {L.priceMdl}
+                </label>
                 <input
                   type="number"
                   value={item.price}
@@ -872,7 +874,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.volumeMl}</label>
+                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.volumeMl}>
+                  {L.volumeMl}
+                </label>
                 <input
                   type="text"
                   value={item.volume}
@@ -881,7 +885,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.badgeLabel}</label>
+                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.badgeLabel}>
+                  {L.badgeLabel}
+                </label>
                 <input
                   type="text"
                   placeholder={L.badgePlaceholder}
@@ -1078,9 +1084,11 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             </div>
 
             {/* Price, Volume, Badge, Discount */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
               <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1">{L.priceMdl}</label>
+                <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
+                  {L.priceMdl}
+                </label>
                 <input
                   type="number"
                   value={item.price}
@@ -1095,7 +1103,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.volumeMl}</label>
+                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.volumeMl}>
+                  {L.volumeMl}
+                </label>
                 <input
                   type="text"
                   placeholder="400 ml"
@@ -1105,7 +1115,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.badgeLabel}</label>
+                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.badgeLabel}>
+                  {L.badgeLabel}
+                </label>
                 <input
                   type="text"
                   placeholder="BIO / TOP"
@@ -1120,7 +1132,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.discountPriceMdl} (Telegram)</label>
+                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={`${L.discountPriceMdl} (Telegram)`}>
+                  {L.discountPriceMdl}
+                </label>
                 <input
                   type="number"
                   value={item.discountPrice}
