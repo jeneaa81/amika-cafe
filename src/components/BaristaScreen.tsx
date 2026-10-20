@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Order, OrderStatus, Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
-import { Clock, CheckCircle, Send, Cake, Coffee } from 'lucide-react';
+import { Clock, CheckCircle, Send, Cake, Coffee, Tv } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 
 interface BaristaScreenProps {
@@ -9,6 +9,7 @@ interface BaristaScreenProps {
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, nextStatus: OrderStatus) => void;
   onExitBaristaMode: () => void;
+  onOpenTvMode?: () => void;
 }
 
 export const BaristaScreen: React.FC<BaristaScreenProps> = ({
@@ -16,6 +17,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
   orders,
   onUpdateOrderStatus,
   onExitBaristaMode,
+  onOpenTvMode,
 }) => {
   const t = TRANSLATIONS[language];
   const [activeTab, setActiveTab] = useState<'orders' | 'flash_sale'>('orders');
@@ -52,12 +54,25 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onExitBaristaMode}
-          className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95"
-        >
-          {language === 'ro' ? 'Ieșire' : 'Назад к меню'}
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenTvMode && (
+            <button
+              onClick={onOpenTvMode}
+              className="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+              title="Afișează pe televizor / TV Menu Board"
+            >
+              <Tv className="w-3.5 h-3.5 text-amber-400" />
+              <span>TV Board</span>
+            </button>
+          )}
+
+          <button
+            onClick={onExitBaristaMode}
+            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs font-semibold transition active:scale-95"
+          >
+            {language === 'ro' ? 'Ieșire' : 'Назад к меню'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

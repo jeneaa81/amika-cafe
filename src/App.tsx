@@ -6,6 +6,7 @@ import { ProductCustomizerModal } from './components/ProductCustomizerModal';
 import { LoyaltyModal } from './components/LoyaltyModal';
 import { CartModal } from './components/CartModal';
 import { BaristaScreen } from './components/BaristaScreen';
+import { TvMenuBoard } from './components/TvMenuBoard';
 import { BottomNav } from './components/BottomNav';
 import { PRODUCTS } from './data/products';
 import { TRANSLATIONS } from './data/translations';
@@ -46,6 +47,24 @@ export function App() {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isBaristaMode, setIsBaristaMode] = useState<boolean>(false);
+  const [isTvMode, setIsTvMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'tv' || window.location.hash === '#tv';
+  });
+
+  const handleOpenTvMode = () => {
+    setIsTvMode(true);
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'tv');
+    window.history.pushState(null, '', url.toString());
+  };
+
+  const handleExitTvMode = () => {
+    setIsTvMode(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('mode');
+    window.history.pushState(null, '', url.pathname + (url.search ? url.search : ''));
+  };
 
   // Modals
   const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
@@ -233,6 +252,17 @@ export function App() {
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
+  if (isTvMode) {
+    return (
+      <TvMenuBoard
+        language={language}
+        onLanguageChange={setLanguage}
+        orders={orders}
+        onExitTvMode={handleExitTvMode}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans pb-24 selection:bg-amber-600 selection:text-white">
       {/* Sticky Header */}
@@ -242,6 +272,7 @@ export function App() {
         isBaristaMode={isBaristaMode}
         onToggleBaristaMode={() => setIsBaristaMode(!isBaristaMode)}
         onOpenLoyalty={() => setIsLoyaltyModalOpen(true)}
+        onOpenTvMode={handleOpenTvMode}
         stampsCount={loyaltyCard.currentStamps}
       />
 
@@ -253,6 +284,7 @@ export function App() {
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onExitBaristaMode={() => setIsBaristaMode(false)}
+            onOpenTvMode={handleOpenTvMode}
           />
         </main>
       ) : (

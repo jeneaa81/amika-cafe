@@ -1,4 +1,4 @@
-import { Coffee, MapPin, Sparkles, User, ShieldCheck } from 'lucide-react';
+import { MapPin, Sparkles, User, ShieldCheck, Tv } from 'lucide-react';
 import type { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
   isBaristaMode: boolean;
   onToggleBaristaMode: () => void;
   onOpenLoyalty: () => void;
+  onOpenTvMode: () => void;
   stampsCount: number;
 }
 
@@ -17,17 +18,23 @@ export const Header: React.FC<HeaderProps> = ({
   isBaristaMode,
   onToggleBaristaMode,
   onOpenLoyalty,
+  onOpenTvMode,
   stampsCount,
 }) => {
   const t = TRANSLATIONS[language];
+  const baseUrl = import.meta.env.BASE_URL;
 
   return (
     <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md border-b border-stone-800 text-stone-100 px-4 py-3 shadow-lg">
       <div className="max-w-md mx-auto flex items-center justify-between gap-2">
-        {/* Brand */}
+        {/* Brand with authentic Amika Café logo */}
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 flex items-center justify-center text-white shadow-md shadow-amber-900/30 ring-1 ring-amber-500/30">
-            <Coffee className="w-5 h-5 text-amber-100" />
+          <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-amber-500/40 shadow-md shadow-amber-950/40 shrink-0">
+            <img
+              src={`${baseUrl}amika_logo_round.png`}
+              alt="Amika Café"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -47,6 +54,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Controls */}
         <div className="flex items-center gap-1.5">
+          {/* TV Screen Button */}
+          <button
+            onClick={onOpenTvMode}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-stone-800 hover:bg-amber-600/20 text-stone-300 hover:text-amber-400 border border-stone-700/80 text-xs font-semibold transition active:scale-95"
+            title={language === 'ro' ? 'Mod Televizor / TV Menu Board' : 'Режим ТВ Меню-Борд'}
+          >
+            <Tv className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xs:inline">TV</span>
+          </button>
+
           {/* Loyalty quick pill */}
           {!isBaristaMode && (
             <button
@@ -115,10 +132,11 @@ export const Header: React.FC<HeaderProps> = ({
               {t.roleBarista}
             </span>
           ) : (
-            <span>Партнер Foodberry Bakery</span>
+            <span>Partener Foodberry Bakery</span>
           )}
         </div>
       </div>
     </header>
   );
 };
+export default Header;
