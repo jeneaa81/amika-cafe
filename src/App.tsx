@@ -159,7 +159,7 @@ export function App() {
   // Cart operations
   const handleAddToCart = (product: Product, options: CartItemOption, unitPrice: number) => {
     playChime(659.25);
-    const cartItemId = `${product.id}-${options.milk || 'def'}-${options.syrup || 'def'}-${options.temperature || 'def'}`;
+    const cartItemId = `${product.id}-${options.dose || 'single'}-${options.milk || 'def'}-${options.syrup || 'def'}-${options.temperature || 'def'}`;
 
     setCartItems((prev) => {
       const existing = prev.find((item) => item.cartItemId === cartItemId);

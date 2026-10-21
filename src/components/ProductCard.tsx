@@ -16,7 +16,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   quantityInCart,
 }) => {
   const t = TRANSLATIONS[language];
-  const hasOptions = !!(product.options?.milk || product.options?.syrup || product.options?.temperature);
+  const hasOptions = !!(
+    product.options?.milk ||
+    product.options?.syrup ||
+    product.options?.temperature ||
+    product.options?.dose ||
+    product.secondPrice
+  );
 
   return (
     <div
@@ -51,7 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Volume tag if any */}
         {product.volume && (
           <span className="absolute bottom-2 left-2.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-stone-900/80 text-stone-300 border border-stone-700/50 backdrop-blur-sm">
-            {product.volume}
+            {product.secondVolume ? `${product.volume} / ${product.secondVolume}` : product.volume}
           </span>
         )}
 
@@ -78,7 +84,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex items-center justify-between pt-2 border-t border-stone-800/80 mt-auto">
           <div className="flex items-baseline gap-1">
             <span className="text-base font-extrabold text-amber-400">
-              {product.price}
+              {product.secondPrice ? `${product.price} / ${product.secondPrice}` : product.price}
             </span>
             <span className="text-[11px] font-semibold text-stone-400">
               {t.mdl}

@@ -18,6 +18,7 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
   onAddToCart,
 }) => {
   const t = TRANSLATIONS[language];
+  const [selectedDose, setSelectedDose] = useState<'single' | 'double'>('single');
   const [selectedMilk, setSelectedMilk] = useState<string>('regular');
   const [selectedSyrup, setSelectedSyrup] = useState<string>('none');
   const [temperature, setTemperature] = useState<'hot' | 'iced'>('hot');
@@ -25,12 +26,14 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
   // Calculate dynamic price
   const milkExtra = MILK_OPTIONS.find((m) => m.id === selectedMilk)?.extraPrice || 0;
   const syrupExtra = SYRUP_OPTIONS.find((s) => s.id === selectedSyrup)?.extraPrice || 0;
-  const unitPrice = product.price + milkExtra + syrupExtra;
+  const basePrice = selectedDose === 'double' && product.secondPrice ? product.secondPrice : product.price;
+  const unitPrice = basePrice + milkExtra + syrupExtra;
 
   const handleAdd = () => {
     onAddToCart(
       product,
       {
+        dose: product.secondPrice ? selectedDose : undefined,
         milk: product.options?.milk ? selectedMilk : undefined,
         syrup: product.options?.syrup ? selectedSyrup : undefined,
         temperature: product.options?.temperature ? temperature : undefined,
@@ -81,6 +84,64 @@ export const ProductCustomizerModal: React.FC<ProductCustomizerModalProps> = ({
           <p className="text-xs text-stone-300 leading-relaxed">
             {product.description[language]}
           </p>
+
+          {/* Dose / Size Choice (Solo / Doppio) */}
+          {product.secondPrice && (
+            <div className="space-y-1.5 pt-2 border-t border-stone-800">
+              <label className="text-xs font-bold text-stone-300 uppercase tracking-wider">
+                {t.doseChoice}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDose('single')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between transition ${
+                    selectedDose === 'single'
+                      ? 'bg-amber-600/25 text-amber-300 border-amber-500 shadow-sm ring-1 ring-amber-500/40'
+                      : 'bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-750'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                        selectedDose === 'single'
+                          ? 'border-amber-400 bg-amber-500 text-stone-900'
+                          : 'border-stone-600'
+                      }`}
+                    >
+                      {selectedDose === 'single' && <Check className="w-2 h-2 stroke-[3]" />}
+                    </div>
+                    <span>{product.volume ? product.volume : t.doseSingle}</span>
+                  </div>
+                  <span className="font-bold text-amber-400">{product.price} {t.mdl}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedDose('double')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between transition ${
+                    selectedDose === 'double'
+                      ? 'bg-amber-600/25 text-amber-300 border-amber-500 shadow-sm ring-1 ring-amber-500/40'
+                      : 'bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-750'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                        selectedDose === 'double'
+                          ? 'border-amber-400 bg-amber-500 text-stone-900'
+                          : 'border-stone-600'
+                      }`}
+                    >
+                      {selectedDose === 'double' && <Check className="w-2 h-2 stroke-[3]" />}
+                    </div>
+                    <span>{product.secondVolume ? product.secondVolume : (language === 'ro' ? 'Dublu' : 'Двойной')}</span>
+                  </div>
+                  <span className="font-bold text-amber-400">{product.secondPrice} {t.mdl}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Temperature Choice */}
           {product.options?.temperature && (

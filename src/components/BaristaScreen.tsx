@@ -336,6 +336,13 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-amber-400">{item.quantity}x</span>
                           <span className="font-medium">{item.product.name[language]}</span>
+                          {item.options.dose && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                              {item.options.dose === 'double'
+                                ? (item.product.secondVolume || (language === 'ro' ? 'Dublu' : 'Двойной'))
+                                : (item.product.volume || (language === 'ro' ? 'Solo' : 'Одинарный'))}
+                            </span>
+                          )}
                           {item.options.milk && item.options.milk !== 'regular' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300">
                               {item.options.milk}

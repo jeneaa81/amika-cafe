@@ -26,6 +26,9 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Product customizer modal
     customizerTitle: 'Personalizează băutura',
+    doseChoice: 'Alege mărimea / porția:',
+    doseSingle: 'Standard / Solo',
+    doseDouble: 'Dublu / Mare',
     milkChoice: 'Alege laptele:',
     syrupChoice: 'Adaugă sirop:',
     temperatureChoice: 'Temperatura:',
@@ -121,6 +124,9 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Product customizer modal
     customizerTitle: 'Настройка напитка',
+    doseChoice: 'Выберите порцию / объем:',
+    doseSingle: 'Стандарт / Одинарный',
+    doseDouble: 'Двойной / Большой',
     milkChoice: 'Выберите молоко:',
     syrupChoice: 'Добавить сироп:',
     temperatureChoice: 'Температура подачи:',

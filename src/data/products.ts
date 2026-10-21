@@ -79,9 +79,12 @@ export const PRODUCTS: Product[] = [
       ru: 'Чистый шот спешелти эспрессо с нотами темного шоколада, орехов и ярким послевкусием.',
     },
     price: 25,
+    secondPrice: 35,
+    volume: '40 ml',
+    secondVolume: '80 ml',
     category: 'coffee',
     image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
-    volume: '40 ml',
+    options: { dose: true },
   },
   {
     id: 'cb-06',

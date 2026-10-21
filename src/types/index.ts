@@ -13,15 +13,18 @@ export interface Product {
   name: Record<Language, string>;
   description: Record<Language, string>;
   price: number;
+  secondPrice?: number;
   category: Category;
   image: string;
   badge?: Record<Language, string>;
   volume?: string;
+  secondVolume?: string;
   isFoodberry?: boolean;
   options?: {
     milk?: boolean;
     syrup?: boolean;
     temperature?: boolean;
+    dose?: boolean;
   };
 }
 
@@ -29,6 +32,7 @@ export interface CartItemOption {
   milk?: string;
   syrup?: string;
   temperature?: 'hot' | 'iced';
+  dose?: 'single' | 'double';
 }
 
 export interface CartItem {

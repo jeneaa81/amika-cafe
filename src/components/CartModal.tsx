@@ -173,6 +173,13 @@ export const CartModal: React.FC<CartModalProps> = ({
                       </h4>
                       {/* Modifiers info */}
                       <div className="text-[10px] text-stone-400 space-x-1.5 truncate">
+                        {item.options.dose && (
+                          <span className="text-amber-400 font-bold bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">
+                            {item.options.dose === 'double'
+                              ? (item.product.secondVolume || (language === 'ro' ? 'Dublu' : 'Двойной'))
+                              : (item.product.volume || (language === 'ro' ? 'Solo' : 'Одинарный'))}
+                          </span>
+                        )}
                         {item.options.temperature && (
                           <span className="text-amber-300">
                             {item.options.temperature === 'hot' ? 'Fierbinte' : 'Rece'}
