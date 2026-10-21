@@ -477,11 +477,12 @@
       flex-shrink: 0;
     }
     .item-price {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       font-family: monospace;
       color: #fbbf24;
       line-height: 1;
+      white-space: nowrap;
     }
     .item-price-mdl {
       font-size: 12px;
@@ -924,7 +925,7 @@
       },
       coffeeFooterPrice: '+10 / 12 L',
       coffeeItems: [
-        { name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' }, volume: '40 ml', notes: { ro: '100% Arabica Briksa, ciocolată', ru: '100% арабика Briksa, темный шоколад' }, price: 25, badge: null, visible: true },
+        { name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' }, volume: '40 / 80 ml', notes: { ro: '100% Arabica Briksa, ciocolată', ru: '100% арабика Briksa, темный шоколад' }, price: 25, secondPrice: 35, badge: null, visible: true },
         { name: { ro: 'Cappuccino Cremoso', ru: 'Капучино Классический' }, volume: '250 ml', notes: { ro: 'Espresso dublu, micro-spumă catifelată', ru: 'Двойной эспрессо, нежная молочная пенка' }, price: 40, badge: { ro: 'TOP', ru: 'ХИТ' }, visible: true },
         { name: { ro: 'Flat White Dublu', ru: 'Флэт Уайт' }, volume: '200 ml', notes: { ro: 'Gust intens de cafea, dublu ristretto', ru: 'Двойной шот ристретто, шелковая пенка' }, price: 48, badge: { ro: 'BARISTA', ru: 'ВЫБОР' }, visible: true },
         { name: { ro: 'Caffè Latte Delicat', ru: 'Латте Классический' }, volume: '350 ml', notes: { ro: 'Lapte mătăsos, gust fin și cremos', ru: 'Большой объем нежного взбитого молока' }, price: 45, badge: null, visible: true },
@@ -1122,42 +1123,44 @@
         var desc = isRo ? ci.notes.ro : ci.notes.ru;
         var badge = ci.badge ? (isRo ? ci.badge.ro : ci.badge.ru) : '';
 
-        coffeeHtml += '<div class="item-row">' +
-          '<div class="item-left">' +
-            '<div class="item-name-line">' +
-              '<span class="item-name">' + name + '</span>' +
-              (badge ? '<span class="item-badge">' + badge + '</span>' : '') +
-              '<span class="item-volume">' + (ci.volume || '') + '</span>' +
+          var coffeePriceText = ci.secondPrice ? (ci.price + ' / ' + ci.secondPrice) : ci.price;
+          coffeeHtml += '<div class="item-row">' +
+            '<div class="item-left">' +
+              '<div class="item-name-line">' +
+                '<span class="item-name">' + name + '</span>' +
+                (badge ? '<span class="item-badge">' + badge + '</span>' : '') +
+                '<span class="item-volume">' + (ci.volume || '') + '</span>' +
+              '</div>' +
+              '<div class="item-desc">' + desc + '</div>' +
             '</div>' +
-            '<div class="item-desc">' + desc + '</div>' +
-          '</div>' +
-          '<div class="item-price-block">' +
-            '<span class="item-price">' + ci.price + '</span>' +
-            '<span class="item-price-mdl">MDL</span>' +
-          '</div>' +
-        '</div>';
-      }
-      document.getElementById('coffeeList').innerHTML = coffeeHtml;
-
-      // Dessert list
-      var dessertHtml = '';
-      var dItems = boardConfig.dessertItems || [];
-      for (var d = 0; d < dItems.length; d++) {
-        var di = dItems[d];
-        if (di.visible === false) continue;
-        var dName = isRo ? di.name.ro : di.name.ru;
-        var dDesc = isRo ? di.desc.ro : di.desc.ru;
-        var dBadge = di.badge ? (isRo ? di.badge.ro : di.badge.ru) : '';
-
-        var priceMarkup = '';
-        if (isFlashSaleActive) {
-          priceMarkup = '<span class="item-price-old">' + di.price + '</span>' +
-            '<span class="item-price discounted">' + di.discountPrice + '</span>' +
-            '<span class="item-price-mdl" style="color: #fda4af;">L</span>';
-        } else {
-          priceMarkup = '<span class="item-price">' + di.price + '</span>' +
-            '<span class="item-price-mdl">MDL</span>';
+            '<div class="item-price-block">' +
+              '<span class="item-price">' + coffeePriceText + '</span>' +
+              '<span class="item-price-mdl">MDL</span>' +
+            '</div>' +
+          '</div>';
         }
+        document.getElementById('coffeeList').innerHTML = coffeeHtml;
+
+        // Dessert list
+        var dessertHtml = '';
+        var dItems = boardConfig.dessertItems || [];
+        for (var d = 0; d < dItems.length; d++) {
+          var di = dItems[d];
+          if (di.visible === false) continue;
+          var dName = isRo ? di.name.ro : di.name.ru;
+          var dDesc = isRo ? di.desc.ro : di.desc.ru;
+          var dBadge = di.badge ? (isRo ? di.badge.ro : di.badge.ru) : '';
+
+          var priceMarkup = '';
+          if (isFlashSaleActive) {
+            priceMarkup = '<span class="item-price-old">' + di.price + '</span>' +
+              '<span class="item-price discounted">' + di.discountPrice + '</span>' +
+              '<span class="item-price-mdl" style="color: #fda4af;">L</span>';
+          } else {
+            var dessertPriceText = di.secondPrice ? (di.price + ' / ' + di.secondPrice) : di.price;
+            priceMarkup = '<span class="item-price">' + dessertPriceText + '</span>' +
+              '<span class="item-price-mdl">MDL</span>';
+          }
 
         var dVol = di.volume ? '<span class="item-volume">' + di.volume + '</span>' : '';
 

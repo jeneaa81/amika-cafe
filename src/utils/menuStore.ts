@@ -6,6 +6,7 @@ export interface TvCoffeeItem {
   volume: string;
   notes: { ro: string; ru: string };
   price: number;
+  secondPrice?: number;
   badge: { ro: string; ru: string } | null;
   visible: boolean;
 }
@@ -16,6 +17,7 @@ export interface TvDessertItem {
   volume?: string;
   desc: { ro: string; ru: string };
   price: number;
+  secondPrice?: number;
   discountPrice: number;
   badge: { ro: string; ru: string } | null;
   visible: boolean;
@@ -62,9 +64,10 @@ export const DEFAULT_TV_CONFIG: TvBoardConfig = {
     {
       id: 'c-1',
       name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' },
-      volume: '40 ml',
+      volume: '40 / 80 ml',
       notes: { ro: '100% Arabica Briksa, note de ciocolată', ru: '100% арабика Briksa, темный шоколад' },
       price: 25,
+      secondPrice: 35,
       badge: null,
       visible: true,
     },

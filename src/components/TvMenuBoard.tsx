@@ -532,8 +532,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight">
-                          {item.price}{' '}
+                        <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
+                          {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
                           <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                         </span>
                       </div>
@@ -621,8 +621,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight">
-                            {item.price}{' '}
+                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
+                            {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
                             <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                           </span>
                         )}

@@ -134,6 +134,8 @@ const ADMIN_I18N = {
     nameRo: 'Denumire (RO)',
     nameRu: 'Denumire (RU)',
     priceMdl: 'Preț (MDL)',
+    secondPriceLabel: 'Al 2-lea preț (L)',
+    secondPricePlaceholder: 'ex. 35',
     discountPriceMdl: 'Reducere (L)',
     volumeMl: 'Volum (ml)',
     badgeLabel: 'Ecuson (TOP / NOU)',
@@ -258,6 +260,8 @@ const ADMIN_I18N = {
     nameRo: 'Наименование (RO)',
     nameRu: 'Наименование (RU)',
     priceMdl: 'Цена (MDL)',
+    secondPriceLabel: 'Вторая цена (L)',
+    secondPricePlaceholder: 'напр. 35',
     discountPriceMdl: 'Скидка (L)',
     volumeMl: 'Объем (мл)',
     badgeLabel: 'Бейдж (ХИТ / TOP)',
@@ -846,9 +850,20 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           >
             {/* Item Top Controls */}
             <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
-              <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
-                #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
+                  #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
+                </span>
+                {item.secondPrice ? (
+                  <span className="text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 font-mono">
+                    {item.price} / {item.secondPrice} MDL
+                  </span>
+                ) : item.price > 0 ? (
+                  <span className="text-[11px] font-semibold text-stone-400 font-mono">
+                    {item.price} MDL
+                  </span>
+                ) : null}
+              </div>
 
               <div className="flex items-center gap-1.5">
                 <button
@@ -914,8 +929,8 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               </div>
             </div>
 
-            {/* Price, Volume, Badge */}
-            <div className="grid grid-cols-3 gap-3 items-end">
+            {/* Price 1, Price 2 (Second dose/cup), Volume, Badge */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
               <div>
                 <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
                   {L.priceMdl}
@@ -930,11 +945,29 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 />
               </div>
               <div>
+                <label className="text-[11px] text-amber-300 font-bold block mb-1 truncate" title={L.secondPriceLabel}>
+                  {L.secondPriceLabel}
+                </label>
+                <input
+                  type="number"
+                  placeholder={L.secondPricePlaceholder}
+                  value={item.secondPrice ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    updateCoffeeItem(idx, {
+                      secondPrice: raw === '' ? undefined : Number(raw),
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/40 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-200 font-mono font-bold"
+                />
+              </div>
+              <div>
                 <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.volumeMl}>
                   {L.volumeMl}
                 </label>
                 <input
                   type="text"
+                  placeholder="40 / 80 ml"
                   value={item.volume}
                   onChange={(e) => updateCoffeeItem(idx, { volume: e.target.value })}
                   className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-stone-200 font-mono"
@@ -1071,9 +1104,20 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             }`}
           >
             <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
-              <span className="text-xs sm:text-sm font-extrabold text-rose-400 font-mono">
-                #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm font-extrabold text-rose-400 font-mono">
+                  #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
+                </span>
+                {item.secondPrice ? (
+                  <span className="text-[11px] font-bold text-teal-300 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/30 font-mono">
+                    {item.price} / {item.secondPrice} MDL
+                  </span>
+                ) : item.price > 0 ? (
+                  <span className="text-[11px] font-semibold text-stone-400 font-mono">
+                    {item.price} MDL
+                  </span>
+                ) : null}
+              </div>
 
               <div className="flex items-center gap-1.5">
                 <button
@@ -1139,8 +1183,8 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               </div>
             </div>
 
-            {/* Price, Volume, Badge, Discount */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+            {/* Price 1, Price 2 (Second dose/cup), Volume, Badge, Discount */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 items-end">
               <div>
                 <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
                   {L.priceMdl}
@@ -1156,6 +1200,23 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     });
                   }}
                   className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/50 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-300 font-mono font-black"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-amber-300 font-bold block mb-1 truncate" title={L.secondPriceLabel}>
+                  {L.secondPriceLabel}
+                </label>
+                <input
+                  type="number"
+                  placeholder={L.secondPricePlaceholder}
+                  value={item.secondPrice ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    updateDessertItem(idx, {
+                      secondPrice: raw === '' ? undefined : Number(raw),
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/40 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-200 font-mono font-bold"
                 />
               </div>
               <div>
