@@ -1008,6 +1008,36 @@
       } catch (e) {}
     }
 
+    // SUPABASE CLOUD DATABASE CONFIG (ES5 XMLHttpRequest for LG webOS 3.0 Chromium 38)
+    var SUPABASE_URL = 'https://ildagazsbdtgjlzlkfaq.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZGFnYXpzYmR0Z2psemxrZmFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NzA3NDgsImV4cCI6MjEwODE0Njc0OH0.BSGfGWuXT7HNfsCjmUbeisbcGzXs0FJvUHMz5lC-FeQ';
+
+    function fetchSupabaseConfig(showNotification) {
+      try {
+        var xhr = new XMLHttpRequest();
+        var targetUrl = SUPABASE_URL + '/rest/v1/menu_config?id=eq.current&select=*&_t=' + new Date().getTime();
+        xhr.open('GET', targetUrl, true);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+              var rows = JSON.parse(xhr.responseText);
+              if (rows && rows.length > 0 && rows[0].config) {
+                var cfg = rows[0].config;
+                if (cfg && cfg.coffeeItems && cfg.dessertItems && cfg.slides) {
+                  if (!boardConfig.updatedAt || !cfg.updatedAt || cfg.updatedAt >= boardConfig.updatedAt) {
+                    applyNewConfig(cfg, showNotification);
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+        };
+        xhr.send();
+      } catch (e) {}
+    }
+
     // Get visible slides array
     function getVisibleSlides() {
       var arr = [];
@@ -1240,6 +1270,8 @@
 
       if (cmd.type === 'CHIME') {
         playMelodicChime();
+      } else if (cmd.type === 'CONFIG_SUPABASE_SYNC') {
+        fetchSupabaseConfig(true);
       } else if (cmd.type === 'CONFIG_SYNC' && cmd.config) {
         applyNewConfig(cmd.config, true);
       } else if (cmd.type === 'CONFIG_URL_SYNC' && cmd.url) {
@@ -1385,6 +1417,7 @@
     window.onload = function() {
       loadSavedConfig();
       renderMenu();
+      fetchSupabaseConfig(false);
       initCloudRelay();
       checkRecentCloudConfig();
       updateClock();
@@ -1406,6 +1439,11 @@
           renderMenu();
         }
       }, 15000);
+
+      // Failsafe: gentle background sync with Supabase cloud DB every 5 minutes
+      setInterval(function() {
+        fetchSupabaseConfig(false);
+      }, 300000);
     };
 
     // KEYBOARD SHORTCUTS

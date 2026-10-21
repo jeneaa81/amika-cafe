@@ -6,6 +6,7 @@ import {
   loadTvConfig,
   saveTvConfigLocal,
 } from '../utils/menuStore';
+import { fetchMenuConfigFromSupabase } from '../utils/supabaseClient';
 import {
   Clock,
   Sparkles,
@@ -116,7 +117,12 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       }
     }
 
-    if (msg.type === 'CONFIG_SYNC' && msg.config) {
+    if (msg.type === 'CONFIG_SUPABASE_SYNC') {
+      fetchMenuConfigFromSupabase().then((cfg) => {
+        if (cfg) applyRemoteConfig(cfg, source);
+      });
+      return;
+    } else if (msg.type === 'CONFIG_SYNC' && msg.config) {
       applyRemoteConfig(msg.config as TvBoardConfig, source);
       return;
     } else if (msg.type === 'CONFIG_URL_SYNC' && typeof msg.url === 'string') {
@@ -224,6 +230,17 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         });
       } catch {}
     });
+
+    // Fetch latest config from Supabase cloud database on mount
+    fetchMenuConfigFromSupabase().then((cloudCfg) => {
+      if (cloudCfg) {
+        const local = loadTvConfig();
+        if (!local.updatedAt || cloudCfg.updatedAt >= local.updatedAt) {
+          setBoardConfig(cloudCfg);
+          saveTvConfigLocal(cloudCfg);
+        }
+      }
+    }).catch(() => {});
 
     return () => {
       channel?.close();

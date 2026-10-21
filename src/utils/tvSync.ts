@@ -1,6 +1,7 @@
-// Ultra-reliable Multi-Cluster Cloud Relay for TV Menu Board
+// Ultra-reliable Multi-Cluster Cloud Relay & Supabase Cloud Storage for TV Menu Board
 import type { TvBoardConfig } from './menuStore';
 import { saveTvConfigLocal } from './menuStore';
+import { saveMenuConfigToSupabase } from './supabaseClient';
 
 export const TV_SYNC_TOPIC = 'amika_cricova_tv_control';
 
@@ -83,23 +84,41 @@ export async function publishTvConfigToCloud(
     channel.close();
   } catch {}
 
+  // 2. Primary long-term persistence: save to Supabase Cloud Database
+  let supabaseSuccess = false;
+  try {
+    supabaseSuccess = await saveMenuConfigToSupabase(saved);
+  } catch (err) {
+    console.warn('Supabase sync error:', err);
+  }
+
+  // 3. Signal TV immediately via real-time commands
   const serializedPayload = JSON.stringify({
     type: 'CONFIG_SYNC',
     config: saved,
     _cmdId: cmdId,
   });
 
-  let cloudSuccess = false;
+  let relaySuccess = false;
 
-  // 2. If small enough (< 3600 bytes), also send directly inline via POST
+  // If small enough (< 3600 bytes), also send full config inline via POST
   if (serializedPayload.length < 3600) {
     try {
       await sendTvCommand({ type: 'CONFIG_SYNC', config: saved });
-      cloudSuccess = true;
+      relaySuccess = true;
+    } catch {}
+  } else {
+    // If large (custom photos), notify TV to re-read latest from Supabase
+    try {
+      await sendTvCommand({
+        type: 'CONFIG_SUPABASE_SYNC',
+        updatedAt: saved.updatedAt,
+      });
+      relaySuccess = true;
     } catch {}
   }
 
-  // 3. Always upload full config package (including compressed Base64 photos) as file attachment to adminforge
+  // 4. Also upload to ntfy attachment fallback as redundant delivery channel
   try {
     const putResp = await fetch(`https://ntfy.adminforge.de/${TV_SYNC_TOPIC}`, {
       method: 'PUT',
@@ -110,10 +129,9 @@ export async function publishTvConfigToCloud(
     });
 
     if (putResp.ok) {
-      cloudSuccess = true;
+      relaySuccess = true;
       const putData = await putResp.json();
       if (putData?.attachment?.url) {
-        // Broadcast the attachment URL across all other clusters so any TV stream picks it up
         await sendTvCommand({
           type: 'CONFIG_URL_SYNC',
           url: putData.attachment.url,
@@ -126,12 +144,14 @@ export async function publishTvConfigToCloud(
   }
 
   if (onToast) {
-    onToast(
-      cloudSuccess
-        ? '✅ Меню и фото сохранены и отправлены на телевизор!'
-        : '💾 Сохранено в памяти устройства'
-    );
+    if (supabaseSuccess) {
+      onToast('☁️ Меню сохранено в облаке Supabase и передано на телевизор!');
+    } else if (relaySuccess) {
+      onToast('✅ Меню передано на телевизор!');
+    } else {
+      onToast('💾 Сохранено локально в браузере');
+    }
   }
 
-  return cloudSuccess;
+  return supabaseSuccess || relaySuccess;
 }

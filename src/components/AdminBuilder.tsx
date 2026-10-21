@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Language } from '../types';
 import {
   type TvBoardConfig,
@@ -12,6 +12,7 @@ import {
   compressImageFile,
 } from '../utils/menuStore';
 import { publishTvConfigToCloud } from '../utils/tvSync';
+import { fetchMenuConfigFromSupabase } from '../utils/supabaseClient';
 import {
   Coffee,
   Cake,
@@ -38,6 +39,7 @@ import {
   KeyRound,
   LogOut,
   AlertTriangle,
+  Cloud,
 } from 'lucide-react';
 
 const ADMIN_PASS_STORAGE_KEY = 'amika_admin_password_v1';
@@ -348,6 +350,28 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showInstaPicker, setShowInstaPicker] = useState<boolean>(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+
+  // Auto-fetch latest menu from Supabase cloud database on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetchMenuConfigFromSupabase()
+      .then((cloudCfg) => {
+        if (!isMounted || !cloudCfg) return;
+        setIsCloudConnected(true);
+        const local = loadTvConfig();
+        if (!local.updatedAt || cloudCfg.updatedAt >= local.updatedAt) {
+          saveTvConfigLocal(cloudCfg);
+          setDraftConfig(cloudCfg);
+        }
+      })
+      .catch((err) => {
+        console.warn('Initial Supabase fetch failed:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const fileInputNewSlidesRef = useRef<HTMLInputElement | null>(null);
   const jsonImportRef = useRef<HTMLInputElement | null>(null);
@@ -1238,6 +1262,17 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   <span>{L.syncedBadge}</span>
                 </span>
               )}
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 ${
+                  isCloudConnected
+                    ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                    : 'bg-stone-800 text-stone-400 border-stone-700'
+                }`}
+                title="Облачная база данных Supabase"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>Supabase DB</span>
+              </span>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black text-white font-serif mt-1.5">
