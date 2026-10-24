@@ -16,6 +16,7 @@
 | **TRK-006** | **Cloud Database & Multi-Cluster SSE** | Октябрь 2026 | Миграция с локального localStorage на облачную БД Supabase PostgreSQL (`menu_config`). Развернут отказоустойчивый Realtime SSE транспорт через 3 независимых кластера ntfy. |
 | **TRK-007** | **Dual Pricing System (Solo / Doppio)** | Октябрь 2026 | Поддержка двойных цен (`25 / 35 MDL`) и объемов (`40 / 80 ml`) в моделях данных, модалке выбора порции гостя, панели админа и на экране ТВ с защитой от кэширования. |
 | **TRK-008** | **Project Passport Initialization** | 24 Октября 2026 | Создан паспорт проекта по стандарту `context-driven-development` (`conductor/index.md`, `product.md`, `tech-stack.md`, `workflow.md`, `product-guidelines.md`, `tracks.md`). |
+| **TRK-012** | **Full System Audit, PRD & ADR Architecture Alignment** | 24 Октября 2026 | Повторный аудит кодовой базы, утверждено ТЗ `conductor/prd.md` и зафиксированы 4 архитектурных решения `conductor/adr/` (серверный пуш, RLS-защита, единое меню, ТВ-декаплинг). |
 
 ---
 
@@ -23,7 +24,6 @@
 
 | ID | Трек | Приоритет | Статус | Цель и планируемые действия |
 | :--- | :--- | :--- | :--- | :--- |
-| **TRK-012** | **Full System Audit & PRD Architecture Alignment** | Наивысший | 🔄 В работе | Повторный аудит кодовой базы, устранение рассинхрона в паспорте проекта, подготовка единого ТЗ (`prd-development`) и фиксация архитектурных решений (`architecture-decision-records`). |
-| **TRK-009** | **Background Jazz Audio Stream for TV** | Высокий | ⏳ Запланирован | Интеграция легковесного HTML5 аудио-плеера в `tv.html` для воспроизведения стабильного лицензионного джаз-радио потока без рекламы прямо из ТВ. |
-| **TRK-010** | **Direct Telegram Bot Push Alerts** | Средний | ⏳ Запланирован | Отправка вебхука через Telegram Bot API клиенту в ЛС при смене статуса заказа («Ваш латте готов, заберите у бариста!»). |
+| **TRK-013** | **Production Core Implementation (Subagent-Driven)** | Наивысший | 🔄 Готов к старту | Пошаговая реализация согласованного ТЗ и ADR: единое меню в TWA, создание таблиц `orders` и `loyalty_cards` в Supabase, Realtime-экран предзаказов бариста, триггер Telegram Push, ручные штампы в админке, очистка `tv.html`. |
+| **TRK-009** | **Background Jazz Audio Stream for TV** | Низкий | ⏳ Запланирован | Интеграция фонового аудиопотока или локального аудиофайла в `tv.html` (отложено по решению стейкхолдера). |
 | **TRK-011** | **Shift Closing & Sales Analytics** | Низкий | ⏳ Запланирован | Простая форма закрытия кассовой смены для бариста с отправкой сводки выручки в личный чат владельца. |
