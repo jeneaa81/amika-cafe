@@ -12,6 +12,16 @@ import { BottomNav } from './components/BottomNav';
 import { PRODUCTS } from './data/products';
 import { TRANSLATIONS } from './data/translations';
 import { sendTvCommand } from './utils/tvSync';
+import { loadTvConfig } from './utils/menuStore';
+import {
+  fetchMenuConfigFromSupabase,
+  createOrderInSupabase,
+  fetchActiveOrdersFromSupabase,
+  updateOrderStatusInSupabase,
+  fetchLoyaltyCardByTelegramId,
+  saveLoyaltyCardToSupabase,
+} from './utils/supabaseClient';
+import { adaptCloudMenuToProducts } from './utils/menuAdapter';
 import type {
   Language,
   Category,
@@ -102,14 +112,14 @@ export function App() {
     lastUpdated: new Date().toISOString(),
   });
 
-  // Orders queue (pre-seeded with 1 demo order for Cricova)
+  // Orders queue (synced with Supabase public.orders in real time)
   const [orders, setOrders] = useState<Order[]>([
     {
       id: '#102',
       items: [
         {
           cartItemId: 'item-demo-1',
-          product: PRODUCTS[0], // Cappuccino
+          product: PRODUCTS[0],
           quantity: 1,
           options: { milk: 'regular', temperature: 'hot' },
           unitPrice: 40,
@@ -117,7 +127,7 @@ export function App() {
         },
         {
           cartItemId: 'item-demo-2',
-          product: PRODUCTS[6], // Croissant Migdale Foodberry
+          product: PRODUCTS[6],
           quantity: 1,
           options: {},
           unitPrice: 42,
@@ -134,7 +144,107 @@ export function App() {
     },
   ]);
 
+  // Live polling & SSE for active pre-orders from Supabase
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncOrders = async () => {
+      try {
+        const cloudOrders = await fetchActiveOrdersFromSupabase();
+        if (isMounted && Array.isArray(cloudOrders) && cloudOrders.length > 0) {
+          setOrders((prev) => {
+            // Play sound if a brand new unhandled order arrived
+            const prevIds = new Set(prev.map((o) => o.id));
+            const hasNewIncoming = cloudOrders.some(
+              (o) => !prevIds.has(o.id) && o.status === 'new'
+            );
+            if (hasNewIncoming) {
+              playChime(659.25);
+            }
+            return cloudOrders;
+          });
+        }
+      } catch (err) {
+        console.warn('Orders sync error:', err);
+      }
+    };
+
+    // Initial sync
+    syncOrders();
+    // 5-second interval poll to keep barista tablet up to date
+    const interval = setInterval(syncOrders, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Sync Loyalty Card with Supabase by Telegram User ID
+  useEffect(() => {
+    const tgUser = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number; first_name?: string } } } } }).Telegram?.WebApp?.initDataUnsafe?.user;
+    const tgId = tgUser?.id || 1001; // fallback test ID
+
+    fetchLoyaltyCardByTelegramId(tgId)
+      .then((card) => {
+        if (card) {
+          setLoyaltyCard(card);
+        } else {
+          // Initialize fresh card in Supabase
+          const freshCard: LoyaltyCard = {
+            cardNumber: `AMIKA-${String(tgId).slice(-4) || '8492'}`,
+            telegramUserId: tgId,
+            customerName: tgUser?.first_name || 'Ion',
+            currentStamps: 4,
+            totalFreeCoffeesEarned: 0,
+            lastUpdated: new Date().toISOString(),
+          };
+          saveLoyaltyCardToSupabase(freshCard).catch(() => {});
+          setLoyaltyCard(freshCard);
+        }
+      })
+      .catch((err) => {
+        console.warn('Loyalty fetch fallback:', err);
+      });
+  }, []);
+
   const t = TRANSLATIONS[language];
+
+  // Cloud Unified Menu State (Supabase + Local Cache Fallback)
+  const [productsList, setProductsList] = useState<Product[]>(() => {
+    const localCfg = loadTvConfig();
+    return adaptCloudMenuToProducts(localCfg, PRODUCTS);
+  });
+
+  // Auto-fetch latest menu from Supabase Cloud on mount & listen to live updates
+  useEffect(() => {
+    let isMounted = true;
+    fetchMenuConfigFromSupabase()
+      .then((cloudCfg) => {
+        if (cloudCfg && isMounted) {
+          setProductsList(adaptCloudMenuToProducts(cloudCfg, PRODUCTS));
+        }
+      })
+      .catch((err) => {
+        console.warn('TWA Cloud menu fetch fallback:', err);
+      });
+
+    // Instant local synchronization between AdminBuilder and TWA tabs
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('amika_tv_bus');
+      channel.onmessage = (ev) => {
+        if (ev.data?.type === 'CONFIG_SYNC' && ev.data?.config && isMounted) {
+          setProductsList(adaptCloudMenuToProducts(ev.data.config, PRODUCTS));
+        }
+      };
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      if (channel) channel.close();
+    };
+  }, []);
 
   // Initialize Telegram WebApp SDK if running inside Telegram
   useEffect(() => {
@@ -145,8 +255,8 @@ export function App() {
     }
   }, []);
 
-  // Filter products
-  const filteredProducts = PRODUCTS.filter((product) => {
+  // Filter products using cloud unified menu
+  const filteredProducts = productsList.filter((product) => {
     const matchesCategory =
       activeCategory === 'all' || product.category === activeCategory;
     const matchesSearch =
@@ -244,8 +354,12 @@ export function App() {
       return isNaN(num) ? max : Math.max(max, num);
     }, 102);
     const newOrderId = `#${maxId + 1}`;
+
+    const tgUser = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } } }).Telegram?.WebApp?.initDataUnsafe?.user;
+
     const newOrder: Order = {
       id: newOrderId,
+      telegramUserId: tgUser?.id || undefined,
       items: [...cartItems],
       totalAmount: cartItems.reduce((sum, item) => sum + item.totalPrice, 0),
       pickupTime: orderData.pickupTime,
@@ -259,9 +373,15 @@ export function App() {
 
     setOrders((prev) => {
       const next = [newOrder, ...prev];
-      sendTvCommand({ type: 'ORDERS_SYNC', orders: next });
+      sendTvCommand({ type: 'NEW_ORDER', order: newOrder });
       return next;
     });
+
+    // Save to persistent Supabase cloud database
+    createOrderInSupabase(newOrder).catch((err) =>
+      console.warn('Supabase order creation error:', err)
+    );
+
     return newOrder;
   };
 
@@ -270,9 +390,14 @@ export function App() {
     playChime(523.25);
     setOrders((prev) => {
       const next = prev.map((order) => (order.id === orderId ? { ...order, status: nextStatus } : order));
-      sendTvCommand({ type: 'ORDERS_SYNC', orders: next });
+      sendTvCommand({ type: 'ORDER_STATUS_UPDATE', orderId, status: nextStatus });
       return next;
     });
+
+    // Update in Supabase (triggers server push notification via pg_net if nextStatus is 'ready')
+    updateOrderStatusInSupabase(orderId, nextStatus).catch((err) =>
+      console.warn('Supabase order status update error:', err)
+    );
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);

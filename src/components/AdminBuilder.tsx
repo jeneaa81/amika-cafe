@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Language } from '../types';
+import type { Language, LoyaltyCard } from '../types';
 import {
   type TvBoardConfig,
   type TvCoffeeItem,
@@ -12,7 +12,11 @@ import {
   compressImageFile,
 } from '../utils/menuStore';
 import { publishTvConfigToCloud } from '../utils/tvSync';
-import { fetchMenuConfigFromSupabase } from '../utils/supabaseClient';
+import {
+  fetchMenuConfigFromSupabase,
+  fetchAllLoyaltyCardsFromSupabase,
+  saveLoyaltyCardToSupabase,
+} from '../utils/supabaseClient';
 import {
   Coffee,
   Cake,
@@ -33,6 +37,7 @@ import {
   FolderOpen,
   Columns,
   Tv,
+  Award,
   AlertCircle,
   Undo2,
   Lock,
@@ -349,12 +354,94 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
   // Default to side-by-side 2-column view for Tablet / PC convenience
-  const [subTab, setSubTab] = useState<'both_columns' | 'coffee' | 'desserts' | 'slides'>('both_columns');
+  const [subTab, setSubTab] = useState<'both_columns' | 'coffee' | 'desserts' | 'slides' | 'loyalty'>('both_columns');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showInstaPicker, setShowInstaPicker] = useState<boolean>(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+
+  // Loyalty Management State (Admin Testing & Adjustments)
+  const [loyaltyCardsList, setLoyaltyCardsList] = useState<LoyaltyCard[]>([]);
+  const [isLoadingLoyalty, setIsLoadingLoyalty] = useState<boolean>(false);
+  const [editingCardNumber, setEditingCardNumber] = useState<string>('AMIKA-8492');
+  const [editingTgUserId, setEditingTgUserId] = useState<string>('1001');
+  const [editingCustomerName, setEditingCustomerName] = useState<string>('Ion');
+  const [editingStamps, setEditingStamps] = useState<number>(4);
+  const [loyaltySearch, setLoyaltySearch] = useState<string>('');
+
+  const loadLoyaltyCards = async () => {
+    setIsLoadingLoyalty(true);
+    try {
+      const cards = await fetchAllLoyaltyCardsFromSupabase();
+      if (Array.isArray(cards) && cards.length > 0) {
+        setLoyaltyCardsList(cards);
+      } else {
+        // Pre-seed demo cards if empty in Supabase
+        setLoyaltyCardsList([
+          {
+            cardNumber: 'AMIKA-8492',
+            telegramUserId: 1001,
+            customerName: 'Ion',
+            currentStamps: 4,
+            totalFreeCoffeesEarned: 1,
+            lastUpdated: new Date().toISOString(),
+          },
+          {
+            cardNumber: 'AMIKA-3105',
+            telegramUserId: 1002,
+            customerName: 'Elena',
+            currentStamps: 2,
+            totalFreeCoffeesEarned: 0,
+            lastUpdated: new Date().toISOString(),
+          },
+        ]);
+      }
+    } catch (err) {
+      console.warn('Failed to load loyalty cards:', err);
+    } finally {
+      setIsLoadingLoyalty(false);
+    }
+  };
+
+  const handleSaveLoyaltyCard = async (
+    cardNumber: string,
+    tgId: number,
+    name: string,
+    stamps: number
+  ) => {
+    const card: LoyaltyCard = {
+      cardNumber: cardNumber.trim() || 'AMIKA-DEMO',
+      telegramUserId: tgId,
+      customerName: name.trim() || undefined,
+      currentStamps: Math.min(6, Math.max(0, stamps)),
+      totalFreeCoffeesEarned: stamps >= 6 ? 1 : 0,
+      lastUpdated: new Date().toISOString(),
+    };
+    const ok = await saveLoyaltyCardToSupabase(card);
+    if (ok) {
+      showToast(
+        language === 'ro'
+          ? `Cardul ${cardNumber} salvat (${stamps}/6 ștampile)!`
+          : `Карта ${cardNumber} сохранена (${stamps}/6 чашек)!`
+      );
+      setLoyaltyCardsList((prev) => {
+        const idx = prev.findIndex((c) => c.cardNumber === card.cardNumber);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = card;
+          return next;
+        }
+        return [card, ...prev];
+      });
+    } else {
+      showToast(
+        language === 'ro'
+          ? `Eroare la salvarea cardului în Supabase`
+          : `Ошибка сохранения карты в Supabase`
+      );
+    }
+  };
 
   // Auto-fetch latest menu from Supabase cloud database on mount
   useEffect(() => {
@@ -1551,7 +1638,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       )}
 
       {/* Navigation Tabs (Designed for Tablet & Desktop) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-stone-900/90 p-2 rounded-2xl border border-stone-800">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-stone-900/90 p-2 rounded-2xl border border-stone-800">
         <button
           onClick={() => setSubTab('both_columns')}
           className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
@@ -1603,6 +1690,23 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           <ImageIcon className="w-4 h-4" />
           <span>
             {L.tabSlides} ({draftConfig.slides.length})
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            setSubTab('loyalty');
+            loadLoyaltyCards();
+          }}
+          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+            subTab === 'loyalty'
+              ? 'bg-emerald-600 text-white font-extrabold shadow-md'
+              : 'text-stone-400 hover:text-stone-200'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>
+            {language === 'ro' ? '4. Loialitate (Test)' : '4. Лояльность (Тест)'}
           </span>
         </button>
       </div>
@@ -1884,6 +1988,246 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ================= VIEW 4: LOYALTY CARDS MANAGER (ADMIN / TEST) ================= */}
+      {subTab === 'loyalty' && (
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* Card Stamp Adjustment Card */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-emerald-500/40 shadow-2xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-serif">
+                    {language === 'ro'
+                      ? 'Gestiune Carduri de Loialitate (Test & Admin)'
+                      : 'Управление Картами Лояльности (Тест & Админ)'}
+                  </h3>
+                  <p className="text-xs text-stone-400">
+                    {language === 'ro'
+                      ? 'Editați manual numărul de cești (0..6) pentru orice client în Supabase'
+                      : 'Ручная корректировка чашек гостя (0..6) в Supabase'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={loadLoyaltyCards}
+                disabled={isLoadingLoyalty}
+                className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isLoadingLoyalty ? 'animate-spin' : ''}`} />
+                <span>{language === 'ro' ? 'Reîncarcă' : 'Обновить'}</span>
+              </button>
+            </div>
+
+            {/* Quick Adjustment Form */}
+            <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">
+                    {language === 'ro' ? 'Număr Card (ex. AMIKA-8492)' : 'Номер карты'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCardNumber}
+                    onChange={(e) => setEditingCardNumber(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-750 text-xs text-white font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">
+                    Telegram User ID
+                  </label>
+                  <input
+                    type="number"
+                    value={editingTgUserId}
+                    onChange={(e) => setEditingTgUserId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-750 text-xs text-white font-mono"
+                    placeholder="1001"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">
+                    {language === 'ro' ? 'Nume Oaspete' : 'Имя гостя'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCustomerName}
+                    onChange={(e) => setEditingCustomerName(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-750 text-xs text-white"
+                    placeholder="Ion"
+                  />
+                </div>
+              </div>
+
+              {/* Stamp selector buttons 0..6 */}
+              <div>
+                <label className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-2">
+                  {language === 'ro' ? 'Alege numărul de ștampile (0..6):' : 'Установить количество чашек (0..6):'}
+                </label>
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                  {[0, 1, 2, 3, 4, 5, 6].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setEditingStamps(num)}
+                      className={`py-3 rounded-xl text-xs sm:text-sm font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        editingStamps === num
+                          ? num === 6
+                            ? 'bg-amber-400 text-stone-950 ring-2 ring-amber-300 shadow-lg'
+                            : 'bg-emerald-500 text-white ring-2 ring-emerald-300 shadow-lg'
+                          : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-800'
+                      }`}
+                    >
+                      <Coffee className="w-4 h-4" />
+                      <span>{num === 6 ? '🎁 6' : num}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleSaveLoyaltyCard(
+                    editingCardNumber,
+                    Number(editingTgUserId) || 0,
+                    editingCustomerName,
+                    editingStamps
+                  )
+                }
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg transition active:scale-98 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>
+                  {language === 'ro'
+                    ? `Salvează cardul ${editingCardNumber} (${editingStamps}/6)`
+                    : `Сохранить карту ${editingCardNumber} (${editingStamps}/6 чашек)`}
+                </span>
+              </button>
+            </div>
+
+            {/* List of existing cards */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-stone-400">
+                <span>
+                  {language === 'ro' ? 'Carduri înregistrate' : 'Зарегистрированные карты'} (
+                  {loyaltyCardsList.length})
+                </span>
+                <input
+                  type="text"
+                  placeholder={language === 'ro' ? 'Căutare card...' : 'Поиск карты...'}
+                  value={loyaltySearch}
+                  onChange={(e) => setLoyaltySearch(e.target.value)}
+                  className="px-2.5 py-1 rounded-lg bg-stone-950 border border-stone-800 text-xs text-white"
+                />
+              </div>
+
+              <div className="divide-y divide-stone-800/60 rounded-2xl border border-stone-800 bg-stone-950/60 overflow-hidden">
+                {loyaltyCardsList
+                  .filter(
+                    (c) =>
+                      !loyaltySearch ||
+                      c.cardNumber.toLowerCase().includes(loyaltySearch.toLowerCase()) ||
+                      (c.customerName &&
+                        c.customerName.toLowerCase().includes(loyaltySearch.toLowerCase()))
+                  )
+                  .map((card) => (
+                    <div
+                      key={card.cardNumber}
+                      className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-900/60 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+                          {card.currentStamps}/6
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-white text-xs">
+                              {card.cardNumber}
+                            </span>
+                            {card.customerName && (
+                              <span className="text-xs text-stone-300 font-semibold">
+                                • {card.customerName}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-stone-500">
+                            TG ID: {card.telegramUserId || 'N/A'} • Gratuit: {card.totalFreeCoffeesEarned}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Quick adjust buttons */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCardNumber(card.cardNumber);
+                            setEditingTgUserId(String(card.telegramUserId || ''));
+                            setEditingCustomerName(card.customerName || '');
+                            setEditingStamps(card.currentStamps);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-750 text-stone-300 text-[11px] font-bold cursor-pointer"
+                        >
+                          {language === 'ro' ? 'Selectează' : 'Выбрать'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSaveLoyaltyCard(
+                              card.cardNumber,
+                              card.telegramUserId || 0,
+                              card.customerName || '',
+                              Math.max(0, card.currentStamps - 1)
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-stone-850 hover:bg-stone-800 text-stone-300 text-xs font-bold cursor-pointer"
+                        >
+                          -1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSaveLoyaltyCard(
+                              card.cardNumber,
+                              card.telegramUserId || 0,
+                              card.customerName || '',
+                              Math.min(6, card.currentStamps + 1)
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-xs font-bold border border-emerald-500/30 cursor-pointer"
+                        >
+                          +1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSaveLoyaltyCard(
+                              card.cardNumber,
+                              card.telegramUserId || 0,
+                              card.customerName || '',
+                              6
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/30 hover:bg-amber-500/50 text-amber-300 text-xs font-bold border border-amber-500/30 cursor-pointer"
+                        >
+                          🎁 6
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

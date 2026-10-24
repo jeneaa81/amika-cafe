@@ -49,6 +49,7 @@ export type PaymentMethod = 'pickup' | 'mia';
 
 export interface Order {
   id: string;
+  telegramUserId?: number;
   items: CartItem[];
   totalAmount: number;
   pickupTime: string;
@@ -62,6 +63,8 @@ export interface Order {
 
 export interface LoyaltyCard {
   cardNumber: string;
+  telegramUserId?: number;
+  customerName?: string;
   currentStamps: number; // 0 to 6
   totalFreeCoffeesEarned: number;
   lastUpdated: string;

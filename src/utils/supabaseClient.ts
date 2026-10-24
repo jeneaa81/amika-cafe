@@ -1,5 +1,6 @@
-// Supabase Client for Amika Café (Cloud Database for Menu & TV Screen)
+// Supabase Client for Amika Café (Cloud Database for Menu & TV Screen & Orders & Loyalty)
 import type { TvBoardConfig } from './menuStore';
+import type { Order, OrderStatus, LoyaltyCard } from '../types';
 
 export const SUPABASE_URL = 'https://ildagazsbdtgjlzlkfaq.supabase.co';
 export const SUPABASE_ANON_KEY =
@@ -92,3 +93,261 @@ export async function saveMenuConfigToSupabase(
     return false;
   }
 }
+
+// ==========================================
+// ORDERS API (Click & Collect Pre-orders)
+// ==========================================
+
+interface DbOrderRow {
+  id: string;
+  telegram_user_id: number;
+  customer_name: string;
+  customer_phone: string;
+  items: unknown;
+  total_amount: number;
+  pickup_time: string;
+  payment_method: string;
+  status: string;
+  notes?: string;
+  created_at: string;
+}
+
+function mapDbRowToOrder(row: DbOrderRow): Order {
+  return {
+    id: row.id,
+    telegramUserId: row.telegram_user_id,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
+    items: Array.isArray(row.items) ? (row.items as Order['items']) : [],
+    totalAmount: Number(row.total_amount) || 0,
+    pickupTime: row.pickup_time,
+    paymentMethod: row.payment_method as Order['paymentMethod'],
+    status: row.status as OrderStatus,
+    notes: row.notes || undefined,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * Insert a new pre-order into Supabase
+ */
+export async function createOrderInSupabase(order: Order): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    const payload = {
+      id: order.id,
+      telegram_user_id: order.telegramUserId || 0,
+      customer_name: order.customerName,
+      customer_phone: order.customerPhone,
+      items: order.items,
+      total_amount: order.totalAmount,
+      pickup_time: order.pickupTime,
+      payment_method: order.paymentMethod,
+      status: order.status || 'new',
+      notes: order.notes || '',
+      created_at: new Date().toISOString(),
+    };
+
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+      method: 'POST',
+      headers: {
+        ...SUPABASE_HEADERS,
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    return resp.ok;
+  } catch (err) {
+    console.warn('Supabase createOrder error:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch active orders for Barista Screen (status in 'new', 'preparing', 'ready')
+ */
+export async function fetchActiveOrdersFromSupabase(): Promise<Order[]> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/orders?status=in.(new,preparing,ready)&order=created_at.desc&limit=50`,
+      {
+        method: 'GET',
+        headers: SUPABASE_HEADERS,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!resp.ok) return [];
+    const rows = (await resp.json()) as DbOrderRow[];
+    return Array.isArray(rows) ? rows.map(mapDbRowToOrder) : [];
+  } catch (err) {
+    console.warn('Supabase fetchActiveOrders error:', err);
+    return [];
+  }
+}
+
+/**
+ * Update an order's status in Supabase (e.g. 'preparing' -> 'ready' -> 'completed')
+ */
+export async function updateOrderStatusInSupabase(
+  orderId: string,
+  newStatus: OrderStatus
+): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          ...SUPABASE_HEADERS,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ status: newStatus }),
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    return resp.ok;
+  } catch (err) {
+    console.warn('Supabase updateOrderStatus error:', err);
+    return false;
+  }
+}
+
+// ==========================================
+// LOYALTY CARDS API (5+1 Digital Card)
+// ==========================================
+
+interface DbLoyaltyRow {
+  card_number: string;
+  telegram_user_id: number;
+  customer_name?: string;
+  current_stamps: number;
+  total_free_earned: number;
+  updated_at: string;
+}
+
+function mapDbRowToLoyalty(row: DbLoyaltyRow): LoyaltyCard {
+  return {
+    cardNumber: row.card_number,
+    telegramUserId: row.telegram_user_id,
+    customerName: row.customer_name || undefined,
+    currentStamps: row.current_stamps,
+    totalFreeCoffeesEarned: row.total_free_earned,
+    lastUpdated: row.updated_at,
+  };
+}
+
+/**
+ * Get guest's loyalty card by Telegram User ID
+ */
+export async function fetchLoyaltyCardByTelegramId(
+  tgUserId: number
+): Promise<LoyaltyCard | null> {
+  if (!tgUserId) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/loyalty_cards?telegram_user_id=eq.${tgUserId}&select=*`,
+      {
+        method: 'GET',
+        headers: SUPABASE_HEADERS,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!resp.ok) return null;
+    const rows = (await resp.json()) as DbLoyaltyRow[];
+    if (Array.isArray(rows) && rows.length > 0) {
+      return mapDbRowToLoyalty(rows[0]);
+    }
+    return null;
+  } catch (err) {
+    console.warn('Supabase fetchLoyaltyCard error:', err);
+    return null;
+  }
+}
+
+/**
+ * Upsert or save loyalty card in Supabase
+ */
+export async function saveLoyaltyCardToSupabase(
+  card: LoyaltyCard
+): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const payload = {
+      card_number: card.cardNumber,
+      telegram_user_id: card.telegramUserId || 0,
+      customer_name: card.customerName || '',
+      current_stamps: card.currentStamps,
+      total_free_earned: card.totalFreeCoffeesEarned,
+      updated_at: new Date().toISOString(),
+    };
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/loyalty_cards?on_conflict=card_number`,
+      {
+        method: 'POST',
+        headers: {
+          ...SUPABASE_HEADERS,
+          Prefer: 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    return resp.ok;
+  } catch (err) {
+    console.warn('Supabase saveLoyaltyCard error:', err);
+    return false;
+  }
+}
+
+/**
+ * Fetch all loyalty cards for Admin Editor list
+ */
+export async function fetchAllLoyaltyCardsFromSupabase(): Promise<LoyaltyCard[]> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/loyalty_cards?order=updated_at.desc&limit=50`,
+      {
+        method: 'GET',
+        headers: SUPABASE_HEADERS,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!resp.ok) return [];
+    const rows = (await resp.json()) as DbLoyaltyRow[];
+    return Array.isArray(rows) ? rows.map(mapDbRowToLoyalty) : [];
+  } catch (err) {
+    console.warn('Supabase fetchAllLoyaltyCards error:', err);
+    return [];
+  }
+}
+
