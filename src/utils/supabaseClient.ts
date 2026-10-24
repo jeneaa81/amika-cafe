@@ -112,19 +112,66 @@ interface DbOrderRow {
   created_at: string;
 }
 
+function normalizeCartItem(raw: unknown, index: number): Order['items'][number] {
+  const item = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const rawProduct = (typeof item.product === 'object' && item.product !== null ? item.product : {}) as Record<string, unknown>;
+  
+  let nameObj: { ro: string; ru: string };
+  if (typeof rawProduct.name === 'object' && rawProduct.name !== null) {
+    nameObj = {
+      ro: String((rawProduct.name as Record<string, string>).ro || 'Produs'),
+      ru: String((rawProduct.name as Record<string, string>).ru || 'Товар'),
+    };
+  } else if (typeof item.name === 'string') {
+    nameObj = { ro: item.name, ru: item.name };
+  } else {
+    nameObj = { ro: 'Cafea / Desert', ru: 'Кофе / Десерт' };
+  }
+
+  const rawOptions = (typeof item.options === 'object' && item.options !== null ? item.options : {}) as Record<string, unknown>;
+
+  return {
+    cartItemId: String(item.cartItemId || `item-${index}`),
+    product: {
+      id: String(rawProduct.id || `p-${index}`),
+      name: nameObj,
+      description: (typeof rawProduct.description === 'object' && rawProduct.description !== null
+        ? rawProduct.description
+        : { ro: '', ru: '' }) as { ro: string; ru: string },
+      price: Number(item.unitPrice || rawProduct.price || 0),
+      secondPrice: typeof rawProduct.secondPrice === 'number' ? rawProduct.secondPrice : undefined,
+      category: (rawProduct.category as any) || 'coffee',
+      image: String(rawProduct.image || ''),
+      volume: typeof rawProduct.volume === 'string' ? rawProduct.volume : undefined,
+      secondVolume: typeof rawProduct.secondVolume === 'string' ? rawProduct.secondVolume : undefined,
+      options: typeof rawProduct.options === 'object' && rawProduct.options !== null ? rawProduct.options as any : {},
+    },
+    quantity: Number(item.quantity || item.qty || 1),
+    options: {
+      dose: rawOptions.dose as any,
+      milk: typeof rawOptions.milk === 'string' ? rawOptions.milk : undefined,
+      syrup: typeof rawOptions.syrup === 'string' ? rawOptions.syrup : undefined,
+      temperature: rawOptions.temperature as any,
+    },
+    unitPrice: Number(item.unitPrice || rawProduct.price || 0),
+    totalPrice: Number(item.totalPrice || (Number(item.quantity || 1) * Number(item.unitPrice || rawProduct.price || 0))),
+  };
+}
+
 function mapDbRowToOrder(row: DbOrderRow): Order {
+  const rawItems = Array.isArray(row.items) ? row.items : [];
   return {
     id: row.id,
     telegramUserId: row.telegram_user_id,
-    customerName: row.customer_name,
-    customerPhone: row.customer_phone,
-    items: Array.isArray(row.items) ? (row.items as Order['items']) : [],
+    customerName: row.customer_name || 'Oaspete',
+    customerPhone: row.customer_phone || '',
+    items: rawItems.map(normalizeCartItem),
     totalAmount: Number(row.total_amount) || 0,
-    pickupTime: row.pickup_time,
-    paymentMethod: row.payment_method as Order['paymentMethod'],
-    status: row.status as OrderStatus,
+    pickupTime: row.pickup_time || 'Peste 5 min',
+    paymentMethod: (row.payment_method as Order['paymentMethod']) || 'pickup',
+    status: (row.status as OrderStatus) || 'new',
     notes: row.notes || undefined,
-    createdAt: row.created_at,
+    createdAt: row.created_at || new Date().toISOString(),
   };
 }
 

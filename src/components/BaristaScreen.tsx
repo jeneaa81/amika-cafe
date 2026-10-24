@@ -155,13 +155,21 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
     if (nextStatus === 'ready' && order) {
       playMelodicChime();
-      const summary = order.items
-        .map((i) => `${i.quantity}x ${i.product.name[language]}`)
+      const summary = (order.items || [])
+        .map(
+          (i) =>
+            `${i.quantity || 1}x ${
+              i.product?.name?.[language] ||
+              i.product?.name?.ro ||
+              i.product?.name?.ru ||
+              'Produs'
+            }`
+        )
         .join(', ');
       setNotifiedOrderClient({
         id: order.id,
-        name: order.customerName,
-        phone: order.customerPhone,
+        name: order.customerName || 'Oaspete',
+        phone: order.customerPhone || '',
         itemsSummary: summary,
       });
     }
@@ -328,29 +336,34 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   </div>
 
                   <div className="space-y-1.5 text-xs">
-                    {order.items.map((item) => (
+                    {(order.items || []).map((item, idx) => (
                       <div
-                        key={item.cartItemId}
+                        key={item.cartItemId || `item-${idx}`}
                         className="flex items-center justify-between text-stone-200"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-amber-400">{item.quantity}x</span>
-                          <span className="font-medium">{item.product.name[language]}</span>
-                          {item.options.dose && (
+                          <span className="font-bold text-amber-400">{item.quantity || 1}x</span>
+                          <span className="font-medium">
+                            {item.product?.name?.[language] ||
+                              item.product?.name?.ro ||
+                              item.product?.name?.ru ||
+                              'Produs'}
+                          </span>
+                          {item.options?.dose && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                               {item.options.dose === 'double'
-                                ? (item.product.secondVolume || (language === 'ro' ? 'Dublu' : 'Двойной'))
-                                : (item.product.volume || (language === 'ro' ? 'Solo' : 'Одинарный'))}
+                                ? item.product?.secondVolume || (language === 'ro' ? 'Dublu' : 'Двойной')
+                                : item.product?.volume || (language === 'ro' ? 'Solo' : 'Одинарный')}
                             </span>
                           )}
-                          {item.options.milk && item.options.milk !== 'regular' && (
+                          {item.options?.milk && item.options.milk !== 'regular' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300">
                               {item.options.milk}
                             </span>
                           )}
                         </div>
                         <span className="font-mono text-stone-400">
-                          {item.totalPrice} {t.mdl}
+                          {item.totalPrice || item.unitPrice || 0} {t.mdl}
                         </span>
                       </div>
                     ))}
