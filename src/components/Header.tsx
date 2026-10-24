@@ -53,7 +53,8 @@ export const Header: React.FC<HeaderProps> = ({
     ? `Închis acum (${currentTimeStr}) • Deschidem la 08:00`
     : `Сейчас закрыто (${currentTimeStr}) • Открытие в 08:00`;
 
-  const containerWidthClass = viewMode === 'admin' ? 'max-w-7xl' : 'max-w-md';
+  const containerWidthClass =
+    viewMode === 'admin' || viewMode === 'barista' ? 'max-w-7xl' : 'max-w-md';
 
   return (
     <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md border-b border-stone-800 text-stone-100 px-4 py-3 shadow-lg transition-all">
@@ -134,19 +135,29 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Separate Admin Cabinet Button (Tablet / PC) */}
-          <button
-            onClick={() => onChangeViewMode(viewMode === 'admin' ? 'client' : 'admin')}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
-              viewMode === 'admin'
-                ? 'bg-amber-600 text-stone-950 border-amber-400 shadow-md shadow-amber-900/30 font-extrabold'
-                : 'bg-stone-800 text-stone-300 border-stone-700 hover:text-white'
-            }`}
-            title={language === 'ro' ? 'Cabinet Administrator (Editare Meniu & Foto)' : 'Кабинет Администратора (Планшет / ПК)'}
-          >
-            <Settings className={`w-3.5 h-3.5 ${viewMode === 'admin' ? 'text-stone-950' : 'text-amber-400'}`} />
-            <span>{language === 'ro' ? 'Admin' : 'Админ'}</span>
-          </button>
+          {/* Separate Admin Cabinet Button (Hidden in Barista mode per user request) */}
+          {viewMode !== 'barista' && (
+            <button
+              onClick={() => onChangeViewMode(viewMode === 'admin' ? 'client' : 'admin')}
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
+                viewMode === 'admin'
+                  ? 'bg-amber-600 text-stone-950 border-amber-400 shadow-md shadow-amber-900/30 font-extrabold'
+                  : 'bg-stone-800 text-stone-300 border-stone-700 hover:text-white'
+              }`}
+              title={
+                language === 'ro'
+                  ? 'Cabinet Administrator (Editare Meniu & Foto)'
+                  : 'Кабинет Администратора (Планшет / ПК)'
+              }
+            >
+              <Settings
+                className={`w-3.5 h-3.5 ${
+                  viewMode === 'admin' ? 'text-stone-950' : 'text-amber-400'
+                }`}
+              />
+              <span>{language === 'ro' ? 'Admin' : 'Админ'}</span>
+            </button>
+          )}
         </div>
       </div>
 
