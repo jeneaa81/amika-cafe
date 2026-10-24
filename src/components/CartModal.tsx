@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trash2, Plus, Minus, Clock, CreditCard, Banknote, CheckCircle, ArrowRight } from 'lucide-react';
+import { X, Trash2, Plus, Minus, Clock, CreditCard, Banknote, CheckCircle, ArrowRight, Smartphone } from 'lucide-react';
 import type { CartItem, Language, PaymentMethod, Order } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -30,28 +30,71 @@ export const CartModal: React.FC<CartModalProps> = ({
   const [pickupTime, setPickupTime] = useState<string>('in_10');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pickup');
 
-  const tgUser = (typeof window !== 'undefined'
+  const tgWebApp = typeof window !== 'undefined'
     ? (window as unknown as {
         Telegram?: {
           WebApp?: {
             initDataUnsafe?: {
               user?: { id?: number; first_name?: string; last_name?: string };
             };
+            requestContact?: (callback: (shared: boolean, res?: any) => void) => void;
           };
         };
-      }).Telegram?.WebApp?.initDataUnsafe?.user
-    : null);
+      }).Telegram?.WebApp
+    : null;
 
-  const initialName = tgUser?.first_name
-    ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
-    : language === 'ro'
-    ? 'Ion'
-    : 'Иван';
+  const tgUser = tgWebApp?.initDataUnsafe?.user;
 
-  const [customerName, setCustomerName] = useState<string>(initialName);
-  const [customerPhone, setCustomerPhone] = useState<string>('+373 69 123 456');
+  const getInitialPhone = (): string => {
+    try {
+      const stored = localStorage.getItem('amika_customer_phone');
+      if (stored && stored.trim()) return stored.trim();
+    } catch {}
+    return '';
+  };
+
+  const getInitialName = (): string => {
+    try {
+      const stored = localStorage.getItem('amika_customer_name');
+      if (stored && stored.trim()) return stored.trim();
+    } catch {}
+    if (tgUser?.first_name) {
+      return `${tgUser.first_name} ${tgUser.last_name || ''}`.trim();
+    }
+    return language === 'ro' ? 'Oaspete' : 'Гость';
+  };
+
+  const [customerName, setCustomerName] = useState<string>(getInitialName);
+  const [customerPhone, setCustomerPhone] = useState<string>(getInitialPhone);
   const [orderNotes, setOrderNotes] = useState<string>('');
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+
+  // If no phone stored yet, attempt to request contact or check Telegram
+  const handleRequestContact = () => {
+    try {
+      if (tgWebApp?.requestContact) {
+        tgWebApp.requestContact((shared: boolean, res?: any) => {
+          if (shared && res) {
+            let phone = '';
+            if (typeof res === 'object') {
+              phone = res.responseUnsafe?.contact?.phone_number || res.contact?.phone_number || '';
+            }
+            if (phone) {
+              if (!phone.startsWith('+')) {
+                phone = '+' + phone;
+              }
+              setCustomerPhone(phone);
+              try {
+                localStorage.setItem('amika_customer_phone', phone);
+              } catch {}
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('Telegram requestContact error:', err);
+    }
+  };
 
   const totalAmount = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
@@ -78,6 +121,15 @@ export const CartModal: React.FC<CartModalProps> = ({
       customerPhone: customerPhone.trim() || '+373 60 000 000',
       notes: orderNotes.trim() || undefined,
     });
+
+    try {
+      if (customerPhone.trim()) {
+        localStorage.setItem('amika_customer_phone', customerPhone.trim());
+      }
+      if (customerName.trim()) {
+        localStorage.setItem('amika_customer_name', customerName.trim());
+      }
+    } catch {}
 
     setCreatedOrder(order);
     onClearCart();
@@ -324,13 +376,32 @@ export const CartModal: React.FC<CartModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-stone-400 block mb-1">
-                    {t.customerPhoneLabel}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-stone-400">
+                      {t.customerPhoneLabel}
+                    </label>
+                    {tgWebApp?.requestContact && (
+                      <button
+                        type="button"
+                        onClick={handleRequestContact}
+                        className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition cursor-pointer"
+                        title={language === 'ro' ? 'Autocompletare număr din Telegram' : 'Вставить номер из Telegram'}
+                      >
+                        <Smartphone className="w-3 h-3 text-amber-400" />
+                        <span>{language === 'ro' ? 'Nr. Telegram' : 'Номер Telegram'}</span>
+                      </button>
+                    )}
+                  </div>
                   <input
-                    type="text"
+                    type="tel"
+                    placeholder="+373 69 000 000"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value);
+                      try {
+                        localStorage.setItem('amika_customer_phone', e.target.value);
+                      } catch {}
+                    }}
                     className="w-full px-2.5 py-1.5 bg-stone-950 border border-stone-700 rounded-xl text-white font-medium focus:border-amber-500 outline-none"
                   />
                 </div>
