@@ -15,6 +15,11 @@ export function adaptCloudMenuToProducts(
 ): Product[] {
   if (!config) return baseProducts;
 
+  // 1. If modern unified storeProducts master catalog is present, use it directly!
+  if (Array.isArray(config.storeProducts) && config.storeProducts.length > 0) {
+    return config.storeProducts.filter((p) => p.visible !== false);
+  }
+
   const result: Product[] = [];
   const processedCloudIds = new Set<string>();
 

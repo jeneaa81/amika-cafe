@@ -1,4 +1,6 @@
 // Unified Menu & Showcase Store for Amika Café (Admin Panel <-> TV Screen <-> App)
+import type { Product } from '../types';
+import { PRODUCTS } from '../data/products';
 
 export interface TvCoffeeItem {
   id: string;
@@ -47,6 +49,7 @@ export interface TvBoardConfig {
   dessertFooterBrand: string;
   dessertItems: TvDessertItem[];
   slides: TvSlideItem[];
+  storeProducts?: Product[];
 }
 
 export const STORAGE_KEY_TV_CONFIG = 'amika_tv_custom_config_v1';
@@ -307,19 +310,123 @@ export const BUILTIN_INSTA_GALLERY = [
   { label: 'Свежие круассаны на подносе', path: 'insta_hd/hd_14_720x960.jpg' },
 ];
 
+export interface StorePhotoPreset {
+  id: string;
+  category: string;
+  name: { ro: string; ru: string };
+  url: string;
+}
+
+export const STORE_PHOTO_PRESETS: StorePhotoPreset[] = [
+  {
+    id: 'photo-cappuccino',
+    category: 'coffee',
+    name: { ro: 'Cappuccino Cremoso', ru: 'Капучино Классический' },
+    url: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-flatwhite',
+    category: 'coffee',
+    name: { ro: 'Flat White Dublu', ru: 'Флэт Уайт' },
+    url: 'https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-latte',
+    category: 'coffee',
+    name: { ro: 'Caffè Latte Delicat', ru: 'Латте Нежный' },
+    url: 'https://images.unsplash.com/photo-1593443320739-77f74939d0da?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-raf',
+    category: 'coffee',
+    name: { ro: 'Raf Vanilie & Lavandă', ru: 'Раф Ваниль-Лаванда' },
+    url: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-espresso',
+    category: 'coffee',
+    name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо Соло / Двойной' },
+    url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-coldbrew',
+    category: 'coffee',
+    name: { ro: 'Cold Brew Tonic & Portocală', ru: 'Колд Брю Тоник Апельсин' },
+    url: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-croissant',
+    category: 'foodberry',
+    name: { ro: 'Croissant Foodberry Francez', ru: 'Французский круассан Foodberry' },
+    url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-cheesecake',
+    category: 'foodberry',
+    name: { ro: 'Cheesecake San Sebastian', ru: 'Чизкейк Сан-Себастьян' },
+    url: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-eclair',
+    category: 'foodberry',
+    name: { ro: 'Ecler Artizanal Fistic', ru: 'Крафтовый эклер Фисташка' },
+    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-matcha',
+    category: 'matcha_tea',
+    name: { ro: 'Matcha Latte Ceremonial Uji', ru: 'Матча Латте Удзи (Япония)' },
+    url: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-berrytea',
+    category: 'matcha_tea',
+    name: { ro: 'Ceai Cătină & Ghimbir / Fructe', ru: 'Облепиховый / Ягодный чай' },
+    url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-panini',
+    category: 'breakfast',
+    name: { ro: 'Panini Prosciutto & Mozzarella', ru: 'Панини Прошутто & Моцарелла' },
+    url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'photo-beans',
+    category: 'coffee',
+    name: { ro: 'Boabe Cafea Specialty 250g', ru: 'Зерно Specialty 250г' },
+    url: 'https://images.unsplash.com/photo-1587734195503-904fca47e0e9?w=800&auto=format&fit=crop&q=80',
+  },
+];
+
+export function getDefaultStoreProducts(): Product[] {
+  return PRODUCTS.map((p, idx) => ({
+    ...p,
+    visible: p.visible !== false,
+    showOnTv: p.showOnTv !== false,
+    tvColumn: p.tvColumn || (p.category === 'coffee' ? 'coffee' : 'desserts'),
+    sortOrder: idx + 1,
+  }));
+}
+
 export function loadTvConfig(): TvBoardConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_TV_CONFIG);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.coffeeItems) && Array.isArray(parsed.dessertItems) && Array.isArray(parsed.slides)) {
+        if (!Array.isArray(parsed.storeProducts) || parsed.storeProducts.length === 0) {
+          parsed.storeProducts = getDefaultStoreProducts();
+        }
         return { ...DEFAULT_TV_CONFIG, ...parsed };
       }
     }
   } catch (e) {
     console.warn('Failed to load TV config from localStorage:', e);
   }
-  return DEFAULT_TV_CONFIG;
+  return {
+    ...DEFAULT_TV_CONFIG,
+    storeProducts: getDefaultStoreProducts(),
+  };
 }
 
 export function saveTvConfigLocal(config: TvBoardConfig): TvBoardConfig {

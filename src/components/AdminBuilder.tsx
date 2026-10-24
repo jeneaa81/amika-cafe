@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Language, LoyaltyCard } from '../types';
+import type { Language, LoyaltyCard, Product, Category } from '../types';
 import {
   type TvBoardConfig,
   type TvCoffeeItem,
@@ -7,6 +7,8 @@ import {
   type TvSlideItem,
   DEFAULT_TV_CONFIG,
   BUILTIN_INSTA_GALLERY,
+  STORE_PHOTO_PRESETS,
+  getDefaultStoreProducts,
   loadTvConfig,
   saveTvConfigLocal,
   compressImageFile,
@@ -45,6 +47,12 @@ import {
   LogOut,
   AlertTriangle,
   Cloud,
+  ShoppingBag,
+  Edit3,
+  Copy,
+  Search,
+  X,
+  Check,
 } from 'lucide-react';
 
 const ADMIN_PASS_STORAGE_KEY = 'amika_admin_password_v1';
@@ -117,6 +125,7 @@ const ADMIN_I18N = {
     tabCoffee: '1. Coloana Cafea',
     tabDesserts: '2. Coloana 2 (Ceaiuri & Băuturi)',
     tabSlides: '3. Carusel Foto',
+    tabStoreCatalog: '5. Vitrină Magazin',
     // Coffee Column
     coffeeColTitle: 'Coloana 1: Cafea & Băuturi',
     coffeeColSub: 'Coloana din stânga a meniului de pe televizor',
@@ -243,6 +252,7 @@ const ADMIN_I18N = {
     tabCoffee: '1. Колонка Кофе',
     tabDesserts: '2. Колонка 2 (Чаи & Напитки)',
     tabSlides: '3. Фото-карусель',
+    tabStoreCatalog: '5. Витрина Магазина',
     // Coffee Column
     coffeeColTitle: 'Колонка 1: Кофе и Напитки',
     coffeeColSub: 'Левая колонка меню на телевизоре',
@@ -356,12 +366,22 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
   // Default to side-by-side 2-column view for Tablet / PC convenience
-  const [subTab, setSubTab] = useState<'both_columns' | 'coffee' | 'desserts' | 'slides' | 'loyalty'>('both_columns');
+  const [subTab, setSubTab] = useState<
+    'both_columns' | 'coffee' | 'desserts' | 'slides' | 'loyalty' | 'store_catalog'
+  >('both_columns');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showInstaPicker, setShowInstaPicker] = useState<boolean>(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+
+  // Store Catalog Management State (TRK-014)
+  const [storeFilterCategory, setStoreFilterCategory] = useState<Category>('all');
+  const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isNewProduct, setIsNewProduct] = useState<boolean>(false);
+  const [showStorePresetPicker, setShowStorePresetPicker] = useState<boolean>(false);
+  const [isUploadingStorePhoto, setIsUploadingStorePhoto] = useState<boolean>(false);
 
   // Loyalty Management State (Admin Testing & Adjustments)
   const [loyaltyCardsList, setLoyaltyCardsList] = useState<LoyaltyCard[]>([]);
@@ -442,6 +462,181 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           ? `Eroare la salvarea cardului în Supabase`
           : `Ошибка сохранения карты в Supabase`
       );
+    }
+  };
+
+  // ==========================================
+  // Store Catalog Handlers (TRK-014)
+  // ==========================================
+  const getStoreProducts = (): Product[] => {
+    if (Array.isArray(draftConfig.storeProducts) && draftConfig.storeProducts.length > 0) {
+      return draftConfig.storeProducts;
+    }
+    return getDefaultStoreProducts();
+  };
+
+  const handleToggleProductVisibility = (productId: string) => {
+    const list = getStoreProducts();
+    const updated = list.map((p) => {
+      if (p.id === productId) {
+        const nextVis = p.visible === false ? true : false;
+        return { ...p, visible: nextVis };
+      }
+      return p;
+    });
+
+    const targetProduct = updated.find((p) => p.id === productId);
+
+    setDraftConfig((prev) => {
+      const nextCoffee = prev.coffeeItems.map((c) =>
+        c.id === productId ? { ...c, visible: targetProduct?.visible !== false } : c
+      );
+      const nextDesserts = prev.dessertItems.map((d) =>
+        d.id === productId ? { ...d, visible: targetProduct?.visible !== false } : d
+      );
+      return {
+        ...prev,
+        storeProducts: updated,
+        coffeeItems: nextCoffee,
+        dessertItems: nextDesserts,
+      };
+    });
+    setHasUnsavedChanges(true);
+
+    showToast(
+      language === 'ro'
+        ? `${targetProduct?.name.ro}: ${targetProduct?.visible !== false ? '🟢 Activ în vitrină' : '🔴 Pus în Stop-list'}`
+        : `${targetProduct?.name.ru}: ${targetProduct?.visible !== false ? '🟢 В наличии на витрине' : '🔴 Перенесен в Стоп-лист'}`
+    );
+  };
+
+  const handleSaveStoreProduct = (product: Product, isNew: boolean) => {
+    const currentList = getStoreProducts();
+    let updatedList: Product[];
+
+    if (isNew) {
+      updatedList = [product, ...currentList];
+    } else {
+      updatedList = currentList.map((p) => (p.id === product.id ? product : p));
+    }
+
+    setDraftConfig((prev) => {
+      let nextCoffee = [...prev.coffeeItems];
+      let nextDesserts = [...prev.dessertItems];
+
+      if (product.showOnTv) {
+        if (product.tvColumn === 'coffee') {
+          const idx = nextCoffee.findIndex((c) => c.id === product.id || c.name.ro === product.name.ro);
+          const tvItem: TvCoffeeItem = {
+            id: product.id,
+            name: product.name,
+            volume: product.volume || (product.secondVolume ? `${product.volume} / ${product.secondVolume}` : '250 ml'),
+            notes: product.description,
+            price: product.price,
+            secondPrice: product.secondPrice,
+            badge: product.badge || null,
+            visible: product.visible !== false,
+          };
+          if (idx >= 0) nextCoffee[idx] = tvItem;
+          else nextCoffee.push(tvItem);
+        } else {
+          const idx = nextDesserts.findIndex((d) => d.id === product.id || d.name.ro === product.name.ro);
+          const tvItem: TvDessertItem = {
+            id: product.id,
+            name: product.name,
+            volume: product.volume,
+            desc: product.description,
+            price: product.price,
+            secondPrice: product.secondPrice,
+            discountPrice: Math.round(product.price * 0.7),
+            badge: product.badge || null,
+            visible: product.visible !== false,
+          };
+          if (idx >= 0) nextDesserts[idx] = tvItem;
+          else nextDesserts.push(tvItem);
+        }
+      }
+
+      return {
+        ...prev,
+        storeProducts: updatedList,
+        coffeeItems: nextCoffee,
+        dessertItems: nextDesserts,
+      };
+    });
+
+    setEditingProduct(null);
+    setHasUnsavedChanges(true);
+
+    showToast(
+      language === 'ro'
+        ? `Produs salvat: ${product.name.ro}!`
+        : `Товар сохранен: ${product.name.ru}!`
+    );
+  };
+
+  const handleDeleteStoreProduct = (productId: string) => {
+    const currentList = getStoreProducts();
+    const prod = currentList.find((p) => p.id === productId);
+    const confirmText =
+      language === 'ro'
+        ? `Sigur doriți să ștergeți produsul „${prod?.name.ro || productId}”?`
+        : `Вы уверены, что хотите удалить товар «${prod?.name.ru || productId}»?`;
+    if (!window.confirm(confirmText)) return;
+
+    const updated = currentList.filter((p) => p.id !== productId);
+    setDraftConfig((prev) => ({
+      ...prev,
+      storeProducts: updated,
+      coffeeItems: prev.coffeeItems.filter((c) => c.id !== productId),
+      dessertItems: prev.dessertItems.filter((d) => d.id !== productId),
+    }));
+    setHasUnsavedChanges(true);
+
+    showToast(
+      language === 'ro' ? `Produs șters din vitrină` : `Товар удален из витрины`
+    );
+  };
+
+  const handleDuplicateStoreProduct = (product: Product) => {
+    const copy: Product = {
+      ...product,
+      id: 'prod_' + Date.now(),
+      name: {
+        ro: `${product.name.ro} (copie)`,
+        ru: `${product.name.ru} (копия)`,
+      },
+      sortOrder: (product.sortOrder || 0) + 1,
+    };
+    setEditingProduct(copy);
+    setIsNewProduct(true);
+  };
+
+  const handleUploadStorePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingProduct) return;
+    setIsUploadingStorePhoto(true);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 800, 0.82);
+      setEditingProduct({
+        ...editingProduct,
+        image: compressedDataUrl,
+      });
+      showToast(
+        language === 'ro'
+          ? '📸 Fotografie optimizată cu succes!'
+          : '📸 Фотография успешно оптимизирована!'
+      );
+    } catch (err) {
+      console.warn('Store photo compression error:', err);
+      showToast(
+        language === 'ro'
+          ? '⚠️ Eroare la încărcarea fotografiei'
+          : '⚠️ Ошибка при обработке фотографии'
+      );
+    } finally {
+      setIsUploadingStorePhoto(false);
+      e.target.value = '';
     }
   };
 
@@ -1650,7 +1845,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       )}
 
       {/* Navigation Tabs (Designed for Tablet & Desktop) */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-stone-900/90 p-2 rounded-2xl border border-stone-800">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-stone-900/90 p-2 rounded-2xl border border-stone-800">
         <button
           onClick={() => setSubTab('both_columns')}
           className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
@@ -1718,7 +1913,21 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         >
           <Award className="w-4 h-4" />
           <span>
-            {language === 'ro' ? '4. Loialitate (Test)' : '4. Лояльность (Тест)'}
+            {language === 'ro' ? '4. Loialitate' : '4. Лояльность'}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('store_catalog')}
+          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+            subTab === 'store_catalog'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-black shadow-lg shadow-amber-500/30'
+              : 'text-amber-400 hover:text-amber-300 hover:bg-stone-800/60'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4 shrink-0" />
+          <span>
+            {L.tabStoreCatalog} ({(draftConfig.storeProducts || []).length})
           </span>
         </button>
       </div>
@@ -2241,6 +2450,926 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ================= VIEW 5: STORE CATALOG MANAGER (TRK-014) ================= */}
+      {subTab === 'store_catalog' && (
+        <div className="space-y-6">
+          {/* Top Store Overview Card */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-amber-500/30 shadow-2xl space-y-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/30 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-lg">
+                  <ShoppingBag className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-serif flex items-center gap-2">
+                    <span>
+                      {language === 'ro'
+                        ? 'Vitrina Magazinului (Catalog Mini App)'
+                        : 'Витрина Магазина (Каталог Mini App)'}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      TRK-014
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-400">
+                    {language === 'ro'
+                      ? 'Gestionați fotografiile, denumirile RO/RU, prețurile, modificatorii și disponibilitatea pentru botul oaspeților.'
+                      : 'Управление фотографиями, названиями RO/RU, ценами, модификаторами и стоп-листом для Telegram-бота клиентов.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProduct({
+                    id: 'prod_' + Date.now(),
+                    name: { ro: '', ru: '' },
+                    description: { ro: '', ru: '' },
+                    price: 40,
+                    secondPrice: undefined,
+                    volume: '250 ml',
+                    secondVolume: '350 ml',
+                    category: 'coffee',
+                    image: STORE_PHOTO_PRESETS[0].url,
+                    badge: undefined,
+                    options: { milk: true, syrup: true, temperature: true, dose: false },
+                    visible: true,
+                    showOnTv: true,
+                    tvColumn: 'coffee',
+                  });
+                  setIsNewProduct(true);
+                }}
+                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-stone-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-950/50 transition active:scale-98 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>
+                  {language === 'ro' ? 'Adaugă Produs Nou' : 'Добавить новый товар'}
+                </span>
+              </button>
+            </div>
+
+            {/* Live Stats Counters */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-stone-800">
+              <div className="p-3 rounded-xl bg-stone-950/60 border border-stone-800 flex items-center justify-between">
+                <span className="text-xs text-stone-400">
+                  {language === 'ro' ? 'Total Produse:' : 'Всего товаров:'}
+                </span>
+                <span className="text-base font-black text-white">
+                  {getStoreProducts().length}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-xs text-emerald-300">
+                  {language === 'ro' ? 'În Stoc Activ:' : 'В наличии:'}
+                </span>
+                <span className="text-base font-black text-emerald-400">
+                  {getStoreProducts().filter((p) => p.visible !== false).length}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/20 flex items-center justify-between">
+                <span className="text-xs text-rose-300">
+                  {language === 'ro' ? 'În Stop-List:' : 'В стоп-листе:'}
+                </span>
+                <span className="text-base font-black text-rose-400">
+                  {getStoreProducts().filter((p) => p.visible === false).length}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between">
+                <span className="text-xs text-indigo-300">
+                  {language === 'ro' ? 'Afișate pe TV:' : 'На экране ТВ:'}
+                </span>
+                <span className="text-base font-black text-indigo-400">
+                  {getStoreProducts().filter((p) => p.showOnTv).length}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Bar & Search */}
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            {/* Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              {[
+                { id: 'all', ro: 'Toate', ru: 'Всё меню' },
+                { id: 'coffee', ro: '☕ Cafea', ru: '☕ Кофе' },
+                { id: 'foodberry', ro: '🍰 Foodberry', ru: '🍰 Foodberry' },
+                { id: 'matcha_tea', ro: '🍵 Ceai & Matcha', ru: '🍵 Чай & Матча' },
+                { id: 'breakfast', ro: '🥪 Gustări', ru: '🥪 Завтраки' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setStoreFilterCategory(cat.id as Category)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                    storeFilterCategory === cat.id
+                      ? 'bg-amber-500 text-stone-950 font-black shadow-md'
+                      : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+                  }`}
+                >
+                  {cat[language]}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative min-w-[240px]">
+              <Search className="w-4 h-4 text-stone-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={storeSearchQuery}
+                onChange={(e) => setStoreSearchQuery(e.target.value)}
+                placeholder={
+                  language === 'ro'
+                    ? 'Caută produs (nume, descriere)...'
+                    : 'Поиск товара (название, вкус)...'
+                }
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-white placeholder-stone-500 focus:outline-none focus:border-amber-500 transition"
+              />
+              {storeSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setStoreSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getStoreProducts()
+              .filter((p) => {
+                const matchesCat =
+                  storeFilterCategory === 'all' || p.category === storeFilterCategory;
+                const q = storeSearchQuery.toLowerCase().trim();
+                const matchesSearch =
+                  !q ||
+                  p.name.ro.toLowerCase().includes(q) ||
+                  p.name.ru.toLowerCase().includes(q) ||
+                  p.description.ro.toLowerCase().includes(q) ||
+                  p.description.ru.toLowerCase().includes(q);
+                return matchesCat && matchesSearch;
+              })
+              .map((prod) => {
+                const isInStock = prod.visible !== false;
+                return (
+                  <div
+                    key={prod.id}
+                    className={`p-4 rounded-2xl bg-stone-900 border transition flex flex-col justify-between gap-4 shadow-xl ${
+                      isInStock
+                        ? 'border-stone-800 hover:border-amber-500/40'
+                        : 'border-rose-900/40 opacity-70 bg-stone-950/80'
+                    }`}
+                  >
+                    {/* Top Content Row */}
+                    <div className="flex gap-3">
+                      {/* Product Thumbnail */}
+                      <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-stone-800 bg-stone-950">
+                        <img
+                          src={prod.image}
+                          alt={prod.name[language]}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {prod.badge && (
+                          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-amber-500/90 text-stone-950 font-black text-[9px] uppercase tracking-wider shadow">
+                            {prod.badge[language]}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-800 text-stone-400">
+                            {prod.category}
+                          </span>
+                          {prod.showOnTv && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                              📺 TV ({prod.tvColumn === 'desserts' ? 'Col 2' : 'Col 1'})
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="text-sm font-bold text-white truncate font-serif">
+                          {prod.name[language]}
+                        </h4>
+                        <p className="text-[11px] text-stone-400 line-clamp-2 leading-relaxed">
+                          {prod.description[language]}
+                        </p>
+
+                        <div className="pt-1 flex items-baseline gap-2">
+                          <span className="text-sm font-black text-amber-400">
+                            {prod.price} MDL
+                          </span>
+                          {prod.secondPrice && (
+                            <span className="text-xs font-bold text-stone-400">
+                              / {prod.secondPrice} MDL
+                            </span>
+                          )}
+                          <span className="text-[11px] text-stone-400">
+                            {prod.volume}
+                            {prod.secondVolume ? ` / ${prod.secondVolume}` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modifiers Pill Strip */}
+                    <div className="flex items-center gap-1 text-[10px] text-stone-400 overflow-x-auto no-scrollbar">
+                      {prod.options?.milk && (
+                        <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">🥛 Lapte</span>
+                      )}
+                      {prod.options?.syrup && (
+                        <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">🍯 Sirop</span>
+                      )}
+                      {prod.options?.temperature && (
+                        <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">❄️ Cald/Aйс</span>
+                      )}
+                      {prod.options?.dose && (
+                        <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">☕ Doză</span>
+                      )}
+                    </div>
+
+                    {/* Bottom Action Bar */}
+                    <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between gap-2">
+                      {/* 1-Click Availability Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleProductVisibility(prod.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
+                          isInStock
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30'
+                        }`}
+                      >
+                        {isInStock ? (
+                          <>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>{language === 'ro' ? 'În Stoc' : 'В наличии'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="w-2 h-2 rounded-full bg-rose-400" />
+                            <span>{language === 'ro' ? 'Stop-List' : 'Стоп-лист'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Edit, Copy, Delete Buttons */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProduct({ ...prod });
+                            setIsNewProduct(false);
+                          }}
+                          className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition cursor-pointer"
+                          title={language === 'ro' ? 'Editează produs' : 'Редактировать товар'}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicateStoreProduct(prod)}
+                          className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white transition cursor-pointer"
+                          title={language === 'ro' ? 'Duplică produs' : 'Дублировать товар'}
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStoreProduct(prod.id)}
+                          className="p-2 rounded-xl bg-stone-800 hover:bg-rose-900/40 text-stone-400 hover:text-rose-300 transition cursor-pointer"
+                          title={language === 'ro' ? 'Șterge produs' : 'Удалить товар'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Empty Search Fallback */}
+          {getStoreProducts().filter((p) => {
+            const matchesCat =
+              storeFilterCategory === 'all' || p.category === storeFilterCategory;
+            const q = storeSearchQuery.toLowerCase().trim();
+            const matchesSearch =
+              !q ||
+              p.name.ro.toLowerCase().includes(q) ||
+              p.name.ru.toLowerCase().includes(q);
+            return matchesCat && matchesSearch;
+          }).length === 0 && (
+            <div className="p-12 text-center rounded-3xl bg-stone-900/50 border border-dashed border-stone-800 space-y-3">
+              <ShoppingBag className="w-10 h-10 text-stone-600 mx-auto" />
+              <p className="text-sm font-bold text-stone-400">
+                {language === 'ro'
+                  ? 'Nu a fost găsit niciun produs conform filtrului selectat'
+                  : 'По выбранному фильтру товары не найдены'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStoreFilterCategory('all');
+                  setStoreSearchQuery('');
+                }}
+                className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-xs font-bold text-stone-300 transition"
+              >
+                {language === 'ro' ? 'Resetează filtrele' : 'Сбросить фильтры'}
+              </button>
+            </div>
+          )}
+
+          {/* ================= MODAL: EDIT / ADD PRODUCT ================= */}
+          {editingProduct && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+              <div className="bg-stone-900 border border-stone-800 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl max-h-[92vh] overflow-y-auto space-y-6 animate-in zoom-in-95">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-stone-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white font-serif">
+                        {isNewProduct
+                          ? language === 'ro'
+                            ? 'Adăugare Produs Nou'
+                            : 'Добавление нового товара'
+                          : language === 'ro'
+                          ? `Editare: ${editingProduct.name.ro || 'Produs'}`
+                          : `Редактирование: ${editingProduct.name.ru || 'Товар'}`}
+                      </h3>
+                      <p className="text-xs text-stone-400">
+                        ID: <code className="text-amber-400">{editingProduct.id}</code>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Form Fields */}
+                <div className="space-y-5">
+                  {/* PHOTO MANAGEMENT SECTION */}
+                  <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-3">
+                    <label className="text-xs font-bold text-stone-300 flex items-center justify-between">
+                      <span>
+                        {language === 'ro'
+                          ? '📸 Fotografie Produs (Mobile & Retină)'
+                          : '📸 Фотография товара (Мобильный & Retina)'}
+                      </span>
+                      {isUploadingStorePhoto && (
+                        <span className="text-[11px] text-amber-400 animate-pulse">
+                          ⏳ Se optimizează...
+                        </span>
+                      )}
+                    </label>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      {/* Image Preview */}
+                      <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-amber-500/40 bg-stone-900 shrink-0 shadow-lg">
+                        <img
+                          src={editingProduct.image}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Photo Actions */}
+                      <div className="flex-1 space-y-2 w-full">
+                        <div className="flex flex-wrap gap-2">
+                          {/* File input (Camera / Device) */}
+                          <label className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow border border-stone-700">
+                            <Camera className="w-3.5 h-3.5 text-amber-400" />
+                            <span>
+                              {language === 'ro'
+                                ? 'Încarcă de pe telefon / PC'
+                                : 'Загрузить с телефона / ПК'}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleUploadStorePhoto}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {/* Gallery Preset Picker Button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowStorePresetPicker(true)}
+                            className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition border border-stone-700"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>
+                              {language === 'ro' ? 'Alege din Galerie' : 'Выбрать из галереи'}
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Direct URL input */}
+                        <div>
+                          <input
+                            type="text"
+                            value={editingProduct.image}
+                            onChange={(e) =>
+                              setEditingProduct({ ...editingProduct, image: e.target.value })
+                            }
+                            placeholder="https://images.unsplash.com/... sau data:image/..."
+                            className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-300 focus:outline-none focus:border-amber-500 font-mono transition"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BILINGUAL NAMES */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Denumire (Română) *' : 'Название (Румынский) *'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editingProduct.name.ro}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            name: { ...editingProduct.name, ro: e.target.value },
+                          })
+                        }
+                        placeholder="Ex: Cappuccino Cremoso"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Denumire (Rusă) *' : 'Название (Русский) *'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editingProduct.name.ru}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            name: { ...editingProduct.name, ru: e.target.value },
+                          })
+                        }
+                        placeholder="Напр: Капучино Классический"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* CATEGORY & BADGE */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Category Selector */}
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Categorie Produs' : 'Категория товара'}
+                      </label>
+                      <select
+                        value={editingProduct.category}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            category: e.target.value as Category,
+                            isFoodberry: e.target.value === 'foodberry',
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
+                      >
+                        <option value="coffee">☕ Cafea Specialty (Кофе)</option>
+                        <option value="foodberry">🍰 Deserturi Foodberry (Десерты)</option>
+                        <option value="matcha_tea">🍵 Matcha & Ceaiuri (Чай & Матча)</option>
+                        <option value="breakfast">🥪 Gustări & Panini (Панини & Завтраки)</option>
+                      </select>
+                    </div>
+
+                    {/* Promo Badge */}
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Badge Promo (Opțional)' : 'Промо-бейдж (Необязательно)'}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editingProduct.badge?.ro || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingProduct({
+                              ...editingProduct,
+                              badge: val
+                                ? { ro: val, ru: editingProduct.badge?.ru || val }
+                                : undefined,
+                            });
+                          }}
+                          placeholder="Ex: TOP / HÎT"
+                          className="w-1/2 px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500"
+                        />
+                        <input
+                          type="text"
+                          value={editingProduct.badge?.ru || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingProduct({
+                              ...editingProduct,
+                              badge: val
+                                ? { ro: editingProduct.badge?.ro || val, ru: val }
+                                : undefined,
+                            });
+                          }}
+                          placeholder="Напр: ХИТ"
+                          className="w-1/2 px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PRICES & VOLUMES (DUAL PRICING) */}
+                  <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-400">
+                        {language === 'ro'
+                          ? '💰 Prețuri & Volume (MDL)'
+                          : '💰 Цены и Объемы (MDL)'}
+                      </span>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300 font-bold">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.secondPrice)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              secondPrice: e.target.checked ? (editingProduct.price ? editingProduct.price + 10 : 35) : undefined,
+                              secondVolume: e.target.checked ? '350 ml' : undefined,
+                            })
+                          }
+                          className="w-4 h-4 accent-amber-500 rounded"
+                        />
+                        <span>
+                          {language === 'ro'
+                            ? 'Activează Preț Dublu (Solo / Doppio)'
+                            : 'Включить двойную порцию (Solo / Doppio)'}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-stone-400 mb-1">
+                          {language === 'ro' ? 'Preț de bază (MDL) *' : 'Базовая цена (MDL) *'}
+                        </label>
+                        <input
+                          type="number"
+                          value={editingProduct.price}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              price: Number(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-xs text-white font-bold focus:border-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-stone-400 mb-1">
+                          {language === 'ro' ? 'Volum de bază' : 'Базовый объем'}
+                        </label>
+                        <input
+                          type="text"
+                          value={editingProduct.volume || ''}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              volume: e.target.value,
+                            })
+                          }
+                          placeholder="250 ml / 40 ml"
+                          className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-xs text-white focus:border-amber-500"
+                        />
+                      </div>
+
+                      {/* Second Price / Second Volume if enabled */}
+                      {Boolean(editingProduct.secondPrice) && (
+                        <>
+                          <div>
+                            <label className="block text-[11px] text-amber-400 mb-1 font-bold">
+                              {language === 'ro' ? 'Preț dublu (MDL)' : 'Вторая цена (MDL)'}
+                            </label>
+                            <input
+                              type="number"
+                              value={editingProduct.secondPrice || ''}
+                              onChange={(e) =>
+                                setEditingProduct({
+                                  ...editingProduct,
+                                  secondPrice: Number(e.target.value) || undefined,
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-amber-500/40 text-xs text-amber-300 font-bold focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-amber-400 mb-1 font-bold">
+                              {language === 'ro' ? 'Volum dublu' : 'Второй объем'}
+                            </label>
+                            <input
+                              type="text"
+                              value={editingProduct.secondVolume || ''}
+                              onChange={(e) =>
+                                setEditingProduct({
+                                  ...editingProduct,
+                                  secondVolume: e.target.value,
+                                })
+                              }
+                              placeholder="350 ml / 80 ml"
+                              className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-amber-500/40 text-xs text-amber-300 focus:border-amber-500"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* BILINGUAL DESCRIPTIONS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Descriere Gust / Compoziție (RO)' : 'Описание вкуса / состава (RO)'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={editingProduct.description.ro}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            description: { ...editingProduct.description, ro: e.target.value },
+                          })
+                        }
+                        placeholder="Ex: Espresso dublu din 100% Arabica, lapte cremos texturat mătăsos."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        {language === 'ro' ? 'Descriere Gust / Compoziție (RU)' : 'Описание вкуса / состава (RU)'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={editingProduct.description.ru}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            description: { ...editingProduct.description, ru: e.target.value },
+                          })
+                        }
+                        placeholder="Напр: Двойной эспрессо из 100% арабики, шелковистая молочная пенка."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* CUSTOMIZATION MODIFIERS OPTIONS */}
+                  <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-2">
+                    <span className="text-xs font-bold text-stone-300 block">
+                      {language === 'ro'
+                        ? '⚙️ Modificatori disponibili pentru client în Telegram Mini App:'
+                        : '⚙️ Модификаторы, доступные гостю в Telegram Mini App:'}
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.options?.milk)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              options: { ...editingProduct.options, milk: e.target.checked },
+                            })
+                          }
+                          className="w-4 h-4 accent-amber-500 rounded"
+                        />
+                        <span>🥛 Lapte vegetal</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.options?.syrup)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              options: { ...editingProduct.options, syrup: e.target.checked },
+                            })
+                          }
+                          className="w-4 h-4 accent-amber-500 rounded"
+                        />
+                        <span>🍯 Siropuri</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.options?.temperature)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              options: { ...editingProduct.options, temperature: e.target.checked },
+                            })
+                          }
+                          className="w-4 h-4 accent-amber-500 rounded"
+                        />
+                        <span>❄️ Cald / Iced</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.options?.dose)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              options: { ...editingProduct.options, dose: e.target.checked },
+                            })
+                          }
+                          className="w-4 h-4 accent-amber-500 rounded"
+                        />
+                        <span>☕ Doză Solo/Dublu</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* SMART TV SYNC & AVAILABILITY */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* TV Integration */}
+                    <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-2">
+                      <label className="flex items-center gap-2 text-xs font-bold text-white cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProduct.showOnTv)}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              showOnTv: e.target.checked,
+                            })
+                          }
+                          className="w-4 h-4 accent-indigo-500 rounded"
+                        />
+                        <span>📺 Afișează pe televizor în sală (Smart TV)</span>
+                      </label>
+
+                      {editingProduct.showOnTv && (
+                        <div className="pt-2">
+                          <label className="block text-[11px] text-stone-400 mb-1">
+                            {language === 'ro' ? 'Coloana pe ecranul TV:' : 'Колонка на ТВ:'}
+                          </label>
+                          <select
+                            value={editingProduct.tvColumn || 'coffee'}
+                            onChange={(e) =>
+                              setEditingProduct({
+                                ...editingProduct,
+                                tvColumn: e.target.value as 'coffee' | 'desserts',
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-xs text-white"
+                          >
+                            <option value="coffee">Coloana 1: Cafea & Băuturi (Колонка 1)</option>
+                            <option value="desserts">Coloana 2: Ceaiuri & Deserturi (Колонка 2)</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* In-Stock / Availability */}
+                    <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold text-white block">
+                          {language === 'ro' ? 'Disponibilitate în vitrină' : 'Наличие на витрине'}
+                        </span>
+                        <span className="text-[11px] text-stone-400">
+                          {editingProduct.visible !== false
+                            ? language === 'ro' ? 'Vizibil pentru precomandă' : 'Доступен для заказа'
+                            : language === 'ro' ? 'Ascuns în Stop-List' : 'Скрыт в стоп-листе'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingProduct.visible !== false}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              visible: e.target.checked,
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-stone-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-bold transition cursor-pointer"
+                  >
+                    {language === 'ro' ? 'Anulează' : 'Отмена'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!editingProduct.name.ro.trim() || !editingProduct.name.ru.trim()) {
+                        alert(
+                          language === 'ro'
+                            ? 'Vă rugăm să introduceți denumirea în ambele limbi (RO și RU)!'
+                            : 'Пожалуйста, введите название на обоих языках (RO и RU)!'
+                        );
+                        return;
+                      }
+                      handleSaveStoreProduct(editingProduct, isNewProduct);
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-stone-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-98 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>
+                      {language === 'ro' ? 'Salvează Produsul' : 'Сохранить товар'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= MODAL: STORE PHOTO PRESET PICKER ================= */}
+          {showStorePresetPicker && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+              <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 max-w-2xl w-full shadow-2xl max-h-[85vh] overflow-y-auto space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-800">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                    <h3 className="text-base font-bold text-white font-serif">
+                      {language === 'ro'
+                        ? 'Galeria Foto Oficială Amika & Foodberry'
+                        : 'Официальная фото-галерея Amika & Foodberry'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStorePresetPicker(false)}
+                    className="p-1.5 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {STORE_PHOTO_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        if (editingProduct) {
+                          setEditingProduct({ ...editingProduct, image: preset.url });
+                        }
+                        setShowStorePresetPicker(false);
+                      }}
+                      className="group p-2 rounded-2xl bg-stone-950 border border-stone-800 hover:border-amber-500 transition text-left cursor-pointer space-y-1.5 shadow"
+                    >
+                      <div className="w-full h-28 rounded-xl overflow-hidden bg-stone-900">
+                        <img
+                          src={preset.url}
+                          alt={preset.name[language]}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                      </div>
+                      <span className="text-[11px] font-bold text-stone-300 group-hover:text-amber-400 block truncate">
+                        {preset.name[language]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Order, OrderStatus, Language } from '../types';
+import type { Order, OrderStatus, Language, Product, Category } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import {
   Clock,
@@ -13,11 +13,20 @@ import {
   ExternalLink,
   Sparkles,
   MessageSquare,
+  ShoppingBag,
+  Search,
+  X,
 } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 import { playMelodicChime } from '../utils/audio';
-import { sendTvCommand } from '../utils/tvSync';
-import { type TvBoardConfig, loadTvConfig } from '../utils/menuStore';
+import { sendTvCommand, publishTvConfigToCloud } from '../utils/tvSync';
+import {
+  type TvBoardConfig,
+  type TvSlideItem,
+  loadTvConfig,
+  saveTvConfigLocal,
+  getDefaultStoreProducts,
+} from '../utils/menuStore';
 
 interface BaristaScreenProps {
   language: Language;
@@ -127,8 +136,57 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 }) => {
   const t = TRANSLATIONS[language];
   const B = BARISTA_I18N[language];
-  const [activeTab, setActiveTab] = useState<'orders' | 'tv_remote'>('orders');
-  const [tvConfig] = useState<TvBoardConfig>(() => loadTvConfig());
+  const [activeTab, setActiveTab] = useState<'orders' | 'stop_list' | 'tv_remote'>('orders');
+  const [baristaConfig, setBaristaConfig] = useState<TvBoardConfig>(() => loadTvConfig());
+  const [stopListFilterCat, setStopListFilterCat] = useState<Category>('all');
+  const [stopListSearch, setStopListSearch] = useState<string>('');
+
+  const baristaProducts: Product[] =
+    Array.isArray(baristaConfig.storeProducts) && baristaConfig.storeProducts.length > 0
+      ? baristaConfig.storeProducts
+      : getDefaultStoreProducts();
+
+  const handleBaristaToggleStopList = async (productId: string) => {
+    const currentProds =
+      Array.isArray(baristaConfig.storeProducts) && baristaConfig.storeProducts.length > 0
+        ? baristaConfig.storeProducts
+        : getDefaultStoreProducts();
+
+    const target = currentProds.find((p) => p.id === productId);
+    if (!target) return;
+
+    const nextVis = target.visible === false ? true : false;
+    const updatedProds = currentProds.map((p) =>
+      p.id === productId ? { ...p, visible: nextVis } : p
+    );
+
+    const nextCoffee = baristaConfig.coffeeItems.map((c) =>
+      c.id === productId ? { ...c, visible: nextVis } : c
+    );
+    const nextDesserts = baristaConfig.dessertItems.map((d) =>
+      d.id === productId ? { ...d, visible: nextVis } : d
+    );
+
+    const updatedConfig: TvBoardConfig = {
+      ...baristaConfig,
+      updatedAt: Date.now(),
+      storeProducts: updatedProds,
+      coffeeItems: nextCoffee,
+      dessertItems: nextDesserts,
+    };
+
+    setBaristaConfig(updatedConfig);
+    saveTvConfigLocal(updatedConfig);
+    await publishTvConfigToCloud(updatedConfig);
+    playMelodicChime();
+
+    const msg =
+      language === 'ro'
+        ? `${target.name.ro}: ${nextVis ? '🟢 În stoc (activat în bot)' : '🔴 Stop-list (ascuns din bot)'}`
+        : `${target.name.ru}: ${nextVis ? '🟢 В наличии (доступен в боте)' : '🔴 Стоп-лист (скрыт в боте)'}`;
+    setTvCommandToast(msg);
+    setTimeout(() => setTvCommandToast(null), 3500);
+  };
 
   const [selectedDessertId, setSelectedDessertId] = useState<string>('fb-01');
   const discountPercent = 30;
@@ -196,7 +254,9 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
     );
   };
 
-  const visibleSlides = tvConfig.slides.filter((s) => s.visible !== false);
+  const visibleSlides: TvSlideItem[] = (baristaConfig.slides || []).filter(
+    (s: TvSlideItem) => s.visible !== false
+  );
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
@@ -231,31 +291,47 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Navigation Tabs (Strictly Barista tools: Pre-orders & TV Remote) */}
-      <div className="grid grid-cols-2 gap-2 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
+      {/* Main Navigation Tabs (Strictly Barista tools: Pre-orders, 1-Click Stop-List & TV Remote) */}
+      <div className="grid grid-cols-3 gap-2 bg-stone-950 p-1.5 rounded-2xl border border-stone-800">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+          className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
             activeTab === 'orders'
               ? 'bg-emerald-600 text-white shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Clock className="w-4 h-4" />
+          <Clock className="w-4 h-4 shrink-0" />
           <span className="truncate">
             {B.tabOrders} ({orders.filter((o) => o.status !== 'completed').length})
           </span>
         </button>
 
         <button
+          onClick={() => setActiveTab('stop_list')}
+          className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+            activeTab === 'stop_list'
+              ? 'bg-amber-500 text-stone-950 shadow-md font-black'
+              : 'text-amber-400/80 hover:text-amber-300'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4 shrink-0" />
+          <span className="truncate">
+            {language === 'ro' ? 'Stop-List' : 'Стоп-лист'} (
+            {baristaProducts.filter((p) => p.visible === false).length}
+            )
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('tv_remote')}
-          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+          className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
             activeTab === 'tv_remote'
               ? 'bg-indigo-600 text-white shadow-md font-extrabold'
               : 'text-stone-400 hover:text-stone-200'
           }`}
         >
-          <Tv className="w-4 h-4" />
+          <Tv className="w-4 h-4 shrink-0" />
           <span className="truncate">{B.tabTvRemote}</span>
         </button>
       </div>
@@ -447,6 +523,178 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       )}
 
+      {/* ================= TAB: 1-CLICK FAST STOP-LIST (TRK-014) ================= */}
+      {activeTab === 'stop_list' && (
+        <div className="space-y-4">
+          {tvCommandToast && (
+            <div className="p-3.5 rounded-2xl bg-amber-950 border border-amber-400 text-amber-200 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200 shadow-xl">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{tvCommandToast}</span>
+            </div>
+          )}
+
+          {/* Barista Stop-List Banner */}
+          <div className="p-4 rounded-3xl bg-stone-900 border border-amber-500/30 space-y-3 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white font-serif">
+                  {language === 'ro'
+                    ? '⚡ 1-Click Stop-List Barista'
+                    : '⚡ 1-Click Стоп-Лист Бариста'}
+                </h3>
+                <p className="text-[11px] text-stone-400">
+                  {language === 'ro'
+                    ? 'Atingeți orice poziție pentru a o ascunde sau activa instantaneu în botul oaspeților.'
+                    : 'Нажмите на любую позицию, чтобы мгновенно скрыть или вернуть её в бот гостей.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick counters */}
+            <div className="flex items-center gap-2 text-xs pt-1 border-t border-stone-800">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                🟢 {language === 'ro' ? 'În stoc:' : 'В наличии:'}{' '}
+                {baristaProducts.filter((p) => p.visible !== false).length}
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                🔴 {language === 'ro' ? 'În stop-list:' : 'В стоп-листе:'}{' '}
+                {baristaProducts.filter((p) => p.visible === false).length}
+              </span>
+            </div>
+          </div>
+
+          {/* Category Filter & Search Bar */}
+          <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              {[
+                { id: 'all', ro: 'Toate', ru: 'Все' },
+                { id: 'coffee', ro: '☕ Cafea', ru: '☕ Кофе' },
+                { id: 'foodberry', ro: '🍰 Foodberry', ru: '🍰 Десерты' },
+                { id: 'matcha_tea', ro: '🍵 Ceai', ru: '🍵 Чаи' },
+                { id: 'breakfast', ro: '🥪 Gustări', ru: '🥪 Сэндвичи' },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setStopListFilterCat(c.id as Category)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                    stopListFilterCat === c.id
+                      ? 'bg-amber-500 text-stone-950 font-black'
+                      : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+                  }`}
+                >
+                  {c[language]}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative min-w-[180px]">
+              <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={stopListSearch}
+                onChange={(e) => setStopListSearch(e.target.value)}
+                placeholder={language === 'ro' ? 'Caută...' : 'Поиск...'}
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-stone-900 border border-stone-800 text-xs text-white placeholder-stone-500 focus:outline-none focus:border-amber-500"
+              />
+              {stopListSearch && (
+                <button
+                  type="button"
+                  onClick={() => setStopListSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 hover:text-white"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Product Cards Grid for Barista */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {baristaProducts
+              .filter((p) => {
+                const matchesCat =
+                  stopListFilterCat === 'all' || p.category === stopListFilterCat;
+                const q = stopListSearch.toLowerCase().trim();
+                const matchesSearch =
+                  !q ||
+                  p.name.ro.toLowerCase().includes(q) ||
+                  p.name.ru.toLowerCase().includes(q);
+                return matchesCat && matchesSearch;
+              })
+              .map((prod) => {
+                const isInStock = prod.visible !== false;
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => handleBaristaToggleStopList(prod.id)}
+                    className={`p-3.5 rounded-2xl border transition flex flex-col justify-between gap-3 shadow-md cursor-pointer select-none active:scale-[0.98] ${
+                      isInStock
+                        ? 'bg-stone-900/90 border-stone-800 hover:border-emerald-500/50'
+                        : 'bg-stone-950 border-rose-900/50 opacity-80'
+                    }`}
+                  >
+                    <div className="flex gap-3 items-center">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-stone-800 bg-stone-950">
+                        <img
+                          src={prod.image}
+                          alt={prod.name[language]}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-800 text-stone-400">
+                          {prod.category}
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-bold text-white truncate font-serif mt-0.5">
+                          {prod.name[language]}
+                        </h4>
+                        <span className="text-xs font-black text-amber-400 block">
+                          {prod.price} MDL {prod.volume ? `• ${prod.volume}` : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Touch Button */}
+                    <button
+                      type="button"
+                      className={`w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition cursor-pointer pointer-events-none shadow ${
+                        isInStock
+                          ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 group-hover:bg-emerald-600/40'
+                          : 'bg-rose-600 text-white font-extrabold shadow-rose-950/60'
+                      }`}
+                    >
+                      {isInStock ? (
+                        <>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>
+                            {language === 'ro'
+                              ? '🟢 În Stoc (Apasă pt Stop)'
+                              : '🟢 В НАЛИЧИИ (Нажать)'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2.5 h-2.5 rounded-full bg-white" />
+                          <span>
+                            {language === 'ro'
+                              ? '🔴 STOP-LIST (Apasă pt Activare)'
+                              : '🔴 В СТОП-ЛИСТЕ (Включить)'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* ================= TAB 2: TV REMOTE CONTROL & FLASH SALE ================= */}
       {activeTab === 'tv_remote' && (
         <div className="space-y-4">
@@ -583,7 +831,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             </span>
 
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
-              {visibleSlides.map((s, idx) => (
+              {visibleSlides.map((s: TvSlideItem, idx: number) => (
                 <button
                   key={s.id}
                   onClick={() =>

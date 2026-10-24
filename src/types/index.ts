@@ -26,6 +26,10 @@ export interface Product {
     temperature?: boolean;
     dose?: boolean;
   };
+  visible?: boolean;
+  showOnTv?: boolean;
+  tvColumn?: 'coffee' | 'desserts';
+  sortOrder?: number;
 }
 
 export interface CartItemOption {
