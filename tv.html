@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Amika Café • Live TV Menu Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0c0a09;
+      color: #f5f5f4;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .app-root {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* TOP FLASH SALE MARQUEE */
+    #flashSaleMarquee {
+      display: none;
+      background: -webkit-linear-gradient(left, #b91c1c, #d97706, #b91c1c);
+      background: linear-gradient(90deg, #b91c1c, #d97706, #b91c1c);
+      color: #ffffff;
+      padding: 8px 24px;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(185, 28, 28, 0.5);
+      z-index: 60;
+    }
+    #flashSaleMarquee.active {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+    }
+    .marquee-text {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    /* ADMIN UPDATE TOAST */
+    #syncToast {
+      display: none;
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      background: rgba(6, 78, 59, 0.95);
+      border: 2px solid #34d399;
+      color: #ecfdf5;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 800;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+    #syncToast.active {
+      display: block;
+    }
+
+    /* HEADER */
+    .tv-header {
+      background-color: rgba(28, 25, 23, 0.95);
+      border-bottom: 1px solid #292524;
+      padding: 10px 24px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      height: 70px;
+      flex-shrink: 0;
+    }
+    .brand-block {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .brand-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .badge-specialty {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      margin-left: 8px;
+    }
+    .badge-foodberry {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      margin-left: 4px;
+    }
+    .brand-address {
+      font-size: 11px;
+      color: #a8a29e;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* CENTER CLOCK & CLOUD STATUS */
+    .header-center {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 18px;
+    }
+    .cloud-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 14px;
+      background: rgba(12, 10, 9, 0.8);
+      border: 1px solid #292524;
+      color: #a8a29e;
+    }
+    .cloud-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+    .clock-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 10px;
+      background: rgba(12, 10, 9, 0.8);
+      border: 1px solid #292524;
+      padding: 6px 16px;
+      border-radius: 16px;
+    }
+    .clock-time {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #f59e0b;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 11px;
+      color: #a8a29e;
+      text-transform: capitalize;
+      font-weight: 600;
+    }
+
+    /* CONTROLS RIGHT */
+    .header-controls {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-toggle {
+      background: #292524;
+      border: 1px solid #44403c;
+      color: #d6d3d1;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-toggle.active {
+      background: #d97706;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+    .btn-toggle.flash-active {
+      background: #e11d48;
+      color: #ffffff;
+      border-color: #f43f5e;
+    }
+
+    /* MAIN CONTAINER: 2 COLUMNS (FLEXBOX) */
+    .main-content {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      padding: 16px 20px;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    /* LEFT 58% : DIGITAL MENU BOARD (2 SUB-COLUMNS) */
+    .menu-section {
+      -webkit-box-flex: 58;
+      -webkit-flex: 58;
+      -ms-flex: 58;
+      flex: 58;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .menu-card {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      background: rgba(28, 25, 23, 0.72);
+      border: 1px solid #292524;
+      border-radius: 24px;
+      padding: 16px 18px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    .menu-card.flash-card {
+      border-color: rgba(244, 63, 94, 0.45);
+      background: -webkit-linear-gradient(top left, rgba(68, 10, 20, 0.35), rgba(28, 25, 23, 0.85));
+      background: linear-gradient(135deg, rgba(68, 10, 20, 0.35), rgba(28, 25, 23, 0.85));
+    }
+
+    .card-header {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      border-bottom: 1px solid #292524;
+      padding-bottom: 10px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 19px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-tag {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .card-tag.rose {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+
+    /* MENU ITEMS LIST */
+    .items-container {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: space-evenly;
+      -webkit-justify-content: space-evenly;
+      -ms-flex-pack: space-evenly;
+      justify-content: space-evenly;
+      overflow: hidden;
+    }
+    .item-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      padding: 6px 6px;
+      border-radius: 10px;
+      border-bottom: 1px solid rgba(41, 37, 36, 0.35);
+    }
+    .item-row:last-child {
+      border-bottom: none;
+    }
+    .item-left {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      padding-right: 10px;
+      min-width: 0;
+    }
+    .item-name-line {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .item-name {
+      font-size: 19px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    .item-badge {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.25);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .item-badge.rose {
+      background: rgba(244, 63, 94, 0.25);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .item-volume {
+      font-size: 12px;
+      color: #a8a29e;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .item-desc {
+      font-size: 12px;
+      color: #d6d3d1;
+      font-weight: 500;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-price-block {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .item-price {
+      font-size: 22px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #fbbf24;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .item-price-mdl {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fde68a;
+      margin-left: 2px;
+    }
+    .item-price-old {
+      font-size: 14px;
+      color: #78716c;
+      text-decoration: line-through;
+      margin-right: 6px;
+      font-family: monospace;
+    }
+    .item-price.discounted {
+      color: #f43f5e;
+    }
+
+    .card-footer-note {
+      border-top: 1px solid rgba(41, 37, 36, 0.6);
+      padding-top: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #a8a29e;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* RIGHT 42% : DYNAMIC SHOWCASE SLIDER */
+    .slider-section {
+      -webkit-box-flex: 42;
+      -webkit-flex: 42;
+      -ms-flex: 42;
+      flex: 42;
+      background: #1c1917;
+      border: 1px solid #292524;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+    .slider-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      background: -webkit-linear-gradient(top, rgba(0,0,0,0.8), transparent);
+      background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+      z-index: 20;
+    }
+    .progress-bar {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #f59e0b;
+      width: 0%;
+      -webkit-transition: width 0.3s ease;
+      transition: width 0.3s ease;
+    }
+
+    .slide-image-wrapper {
+      position: relative;
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      overflow: hidden;
+      background: #000000;
+    }
+    .slide-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .slide-gradient {
+      position: absolute;
+      inset: 0;
+      background: -webkit-linear-gradient(bottom, #0c0a09 0%, rgba(12, 10, 9, 0.45) 50%, transparent 100%);
+      background: linear-gradient(0deg, #0c0a09 0%, rgba(12, 10, 9, 0.45) 50%, transparent 100%);
+    }
+
+    .slide-badge-pill {
+      position: absolute;
+      top: 34px;
+      left: 16px;
+      z-index: 10;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(12, 10, 9, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fcd34d;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .slide-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px;
+      z-index: 10;
+    }
+    .slide-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+    .slide-subtitle {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fde68a;
+      margin-bottom: 6px;
+    }
+    .slide-details {
+      font-size: 13px;
+      color: #d6d3d1;
+      line-height: 1.4;
+    }
+
+    /* BOTTOM FOOTER: QR LOYALTY CARD & CAFE HOSPITALITY INFO */
+    .tv-footer {
+      background: rgba(28, 25, 23, 0.95);
+      border-top: 1px solid #292524;
+      padding: 8px 24px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 20px;
+      height: 74px;
+      flex-shrink: 0;
+    }
+    .qr-block {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 12px;
+      background: rgba(12, 10, 9, 0.85);
+      padding: 6px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .qr-img {
+      width: 50px;
+      height: 50px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .qr-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .qr-sub {
+      font-size: 12px;
+      color: #fbbf24;
+      font-weight: 800;
+    }
+    .qr-desc {
+      font-size: 10px;
+      color: #a8a29e;
+    }
+
+    .hospitality-banner {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      background: rgba(12, 10, 9, 0.65);
+      border: 1px solid #292524;
+      border-radius: 16px;
+      padding: 10px 20px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      -webkit-box-pack: space-around;
+      -webkit-justify-content: space-around;
+      -ms-flex-pack: distribute;
+      justify-content: space-around;
+    }
+    .hosp-item {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e7e5e4;
+    }
+    .hosp-badge {
+      padding: 4px 10px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .footer-right-info {
+      text-align: right;
+      font-size: 11px;
+      color: #a8a29e;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+
+    <!-- FLASH SALE MARQUEE -->
+    <div id="flashSaleMarquee">
+      <div class="marquee-text" id="marqueeText">
+        🔥 FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!
+      </div>
+      <div style="font-family: monospace; font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 12px;">
+        <span id="marqueeCloseHour">Închidere la 21:00</span>
+      </div>
+    </div>
+
+    <!-- SYNC NOTIFICATION TOAST -->
+    <div id="syncToast">✨ Меню и фотогалерея обновлены администратором!</div>
+
+    <!-- HEADER -->
+    <header class="tv-header">
+      <div class="brand-block">
+        <img src="amika_logo_round.png" alt="Amika Logo" class="brand-logo">
+        <div>
+          <div style="display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;">
+            <span class="brand-title">Amika Café</span>
+            <span class="badge-specialty">Specialty Coffee</span>
+            <span class="badge-foodberry">Foodberry Partner</span>
+          </div>
+          <div class="brand-address">or. Cricova • str. Drumul Viilor 10 • Prăjire proaspătă Briksa</div>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="cloud-pill">
+          <span class="cloud-dot" id="cloudDot"></span>
+          <span id="cloudStatusText">Облако: Админ подключен</span>
+        </div>
+
+        <div class="clock-pill">
+          <div class="clock-time" id="clockTime">20:00:00</div>
+          <div class="clock-date" id="clockDate">Marți, 20 octombrie</div>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <button class="btn-toggle" id="btnFlashSale" onclick="toggleFlashSale()">Flash -30%</button>
+        <button class="btn-toggle active" id="btnLangRo" onclick="setLangMode('ro')">RO</button>
+        <button class="btn-toggle" id="btnLangRu" onclick="setLangMode('ru')">RU</button>
+        <button class="btn-toggle" id="btnLangAuto" onclick="setLangMode('auto')">RO⇄RU</button>
+        <button class="btn-toggle" id="btnFullscreen" onclick="toggleFullscreen()">[ ⛶ ]</button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- LEFT 58%: DIGITAL MENU (COFFEE + FOODBERRY) -->
+      <section class="menu-section">
+        <!-- COFFEE COLUMN -->
+        <div class="menu-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>☕</span>
+              <span id="coffeeHeaderTitle">Cafea & Băuturi</span>
+            </div>
+            <span class="card-tag" id="coffeeHeaderBadge">100% Arabica</span>
+          </div>
+
+          <div class="items-container" id="coffeeList">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="card-footer-note">
+            <span id="milkNoteText">🥛 Lapte alternativ: Oatly ovăz / migdale / fără lactoză</span>
+            <span style="color: #fbbf24; font-family: monospace; font-weight: 800;" id="milkNotePrice">+10 / 12 L</span>
+          </div>
+        </div>
+
+        <!-- DESSERTS / COLUMN 2 -->
+        <div class="menu-card" id="dessertCard">
+          <div class="card-header">
+            <div class="card-title">
+              <span>🍵</span>
+              <span id="dessertHeaderTitle">Ceaiuri & Specialități</span>
+            </div>
+            <span class="card-tag" style="color: #34d399; background: rgba(16, 185, 129, 0.15);" id="dessertHeaderBadge">Natural & Bio</span>
+          </div>
+
+          <div class="items-container" id="dessertList">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="card-footer-note">
+            <span id="freshDeliveryText">🌿 Infuzii naturale și băuturi preparate cu grijă</span>
+            <span style="color: #34d399; font-weight: 800;" id="freshDeliveryBrand">100% Natural</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT 42%: SHOWCASE ROTATING SLIDER -->
+      <section class="slider-section">
+        <div class="slider-progress" id="sliderProgressBar">
+          <!-- Dynamically generated progress bars for arbitrary number of slides -->
+        </div>
+
+        <div class="slide-image-wrapper">
+          <img src="insta_hd/hd_6_720x1280.jpg" alt="Showcase" class="slide-image" id="slideImg">
+          <div class="slide-gradient"></div>
+          <div class="slide-badge-pill" id="slideBadge">Partener Oficial Foodberry</div>
+
+          <div class="slide-info">
+            <div class="slide-title" id="slideTitle">Deserturi Artizanale Proaspete</div>
+            <div class="slide-subtitle" id="slideSubtitle">Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană</div>
+            <div class="slide-details" id="slideDetails">Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTTOM FOOTER -->
+    <footer class="tv-footer">
+      <div class="qr-block">
+        <img src="amika_qr.svg" alt="QR" class="qr-img">
+        <div>
+          <div class="qr-title" id="qrTitleText">Card de Fidelitate Digital & Precomandă</div>
+          <div class="qr-sub" id="qrSubText">A 6-a cafea este CADOU! ☕</div>
+          <div class="qr-desc" id="qrDescText">Scanează cu camera telefonului • Comandă fără coadă</div>
+        </div>
+      </div>
+
+      <!-- HOSPITALITY HIGHLIGHTS -->
+      <div class="hospitality-banner">
+        <div class="hosp-item">
+          <span class="hosp-badge">100% ARABICA</span>
+          <span id="hospText1">Prăjire proaspătă artizanală Briksa</span>
+        </div>
+        <div class="hosp-item">
+          <span class="hosp-badge" style="color: #fda4af; background: rgba(244,63,94,0.15);">FOODBERRY</span>
+          <span id="hospText2">Deserturi naturale fără conservanți</span>
+        </div>
+        <div class="hosp-item">
+          <span class="hosp-badge" style="color: #34d399; background: rgba(16,185,129,0.15);">08:00 – 21:00</span>
+          <span id="hospText3">Vă așteptăm zilnic cu drag!</span>
+        </div>
+      </div>
+
+      <div class="footer-right-info">
+        <div style="color: #34d399; font-weight: 800;">Amika Digital Menu ●</div>
+        <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 13px; color: #ffffff;">Cricova • Moldova</div>
+        <div style="color: #f59e0b; font-family: monospace;">Full HD 1080p</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- PURE ES5 SCRIPT FOR UNIVERSAL SMART TV COMPATIBILITY (LG webOS 3.0+, Samsung Tizen, Android TV) -->
+  <script>
+    var STORAGE_KEY = 'amika_tv_custom_config_v1';
+    var currentLang = 'ro';
+    var isAutoRotateLang = false;
+    var isFlashSaleActive = false;
+    var currentSlideIdx = 0;
+    var soundEnabled = true;
+
+    // Default Configuration
+    var boardConfig = {
+      updatedAt: 0,
+      coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },
+      coffeeBadge: '100% Arabica',
+      coffeeFooterNote: {
+        ro: '🥛 Lapte alternativ: Oatly ovăz / migdale / fără lactoză',
+        ru: '🥛 Альтернативное молоко: овсяное Oatly / миндаль / безлактозное'
+      },
+      coffeeFooterPrice: '+10 / 12 L',
+      coffeeItems: [
+        { name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' }, volume: '40 / 80 ml', notes: { ro: '100% Arabica Briksa, ciocolată', ru: '100% арабика Briksa, темный шоколад' }, price: 25, secondPrice: 35, badge: null, visible: true },
+        { name: { ro: 'Cappuccino Cremoso', ru: 'Капучино Классический' }, volume: '250 ml', notes: { ro: 'Espresso dublu, micro-spumă catifelată', ru: 'Двойной эспрессо, нежная молочная пенка' }, price: 40, badge: { ro: 'TOP', ru: 'ХИТ' }, visible: true },
+        { name: { ro: 'Flat White Dublu', ru: 'Флэт Уайт' }, volume: '200 ml', notes: { ro: 'Gust intens de cafea, dublu ristretto', ru: 'Двойной шот ристретто, шелковая пенка' }, price: 48, badge: { ro: 'BARISTA', ru: 'ВЫБОР' }, visible: true },
+        { name: { ro: 'Caffè Latte Delicat', ru: 'Латте Классический' }, volume: '350 ml', notes: { ro: 'Lapte mătăsos, gust fin și cremos', ru: 'Большой объем нежного взбитого молока' }, price: 45, badge: null, visible: true },
+        { name: { ro: 'Raf Vanilie & Lavandă', ru: 'Раф Ваниль-Лаванда' }, volume: '300 ml', notes: { ro: 'Specialitatea casei cu flori de lavandă', ru: 'Фирменный рецепт с натуральной лавандой' }, price: 55, badge: { ro: 'SPECIALITATE', ru: 'ФИРМЕННЫЙ' }, visible: true },
+        { name: { ro: 'Cold Brew Tonic & Portocală', ru: 'Колд Брю Тоник Апельсин' }, volume: '350 ml', notes: { ro: 'Infuzat la rece 16 ore, apă tonică', ru: '16 ч заваривания, тоник, сочный цитрус' }, price: 55, badge: null, visible: true },
+        { name: { ro: 'Matcha Latte Ceremonial Uji', ru: 'Матча Латте Удзи (Япония)' }, volume: '300 ml', notes: { ro: 'Pudră verde bio, tel de bambus chasen', ru: 'Оригинальная церемониальная матча' }, price: 55, badge: { ro: 'BIO', ru: 'ЯПОНИЯ' }, visible: true },
+        { name: { ro: 'Ceai Cătină & Ghimbir', ru: 'Облепиховый чай с имбирем' }, volume: '400 ml', notes: { ro: 'Cătină moldovenească, miere, scorțișoară', ru: 'Местная облепиха, натуральный мед' }, price: 45, badge: null, visible: true }
+      ],
+      dessertHeader: { ro: 'Ceaiuri & Specialități', ru: 'Чаи & Напитки' },
+      dessertBadge: 'Natural & Bio',
+      dessertFooterNote: {
+        ro: '🌿 Infuzii naturale și băuturi preparate cu grijă',
+        ru: '🌿 Натуральные листовые чаи и авторские настои'
+      },
+      dessertFooterBrand: '100% Natural',
+      dessertItems: [
+        { name: { ro: 'Ceai Cătină & Ghimbir', ru: 'Облепиховый чай с имбирем' }, volume: '450 ml', desc: { ro: 'Cătină moldovenească bio, miere, ghimbir', ru: 'Натуральная облепиха, свежий имбирь, мед' }, price: 45, discountPrice: 35, badge: { ro: 'TOP', ru: 'ХИТ' }, visible: true },
+        { name: { ro: 'Ceai Verde Sencha Uji', ru: 'Зеленый чай Сенча (Япония)' }, volume: '400 ml', desc: { ro: 'Frunze întregi, aromă proaspătă și fină', ru: 'Премиальный японский чай, травянистый аромат' }, price: 40, discountPrice: 30, badge: { ro: 'BIO', ru: 'БИО' }, visible: true },
+        { name: { ro: 'Infuzie Fructe de Pădure & Mentă', ru: 'Ягодный чай с дикой мятой' }, volume: '450 ml', desc: { ro: 'Zmeură, coacăze, flori de hibiscus, mentă', ru: 'Малина, черная смородина, гибискус, мята' }, price: 45, discountPrice: 35, badge: null, visible: true },
+        { name: { ro: 'Ceai Negru Assam & Condimente', ru: 'Черный чай Ассам Пряный' }, volume: '400 ml', desc: { ro: 'Ceai nobil din India, nuanțe de malț', ru: 'Индийский классический черный чай' }, price: 40, discountPrice: 30, badge: null, visible: true },
+        { name: { ro: 'Cascara Infuzie Cireșe Cafea', ru: 'Каскара (Настой кофейных ягод)' }, volume: '350 ml', desc: { ro: 'Pulpă uscată de cafea, măceș și miere', ru: 'Настой мякоти кофейных ягод, шиповник' }, price: 45, discountPrice: 35, badge: { ro: 'SPECIALITATE', ru: 'СПЕШЕЛТИ' }, visible: true },
+        { name: { ro: 'Limonadă Artizanală Citrice & Mentă', ru: 'Крафтовый лимонад Цитрус-Мята' }, volume: '400 ml', desc: { ro: 'Suc proaspăt stors de lămâie și portocală', ru: 'Свежевыжатый сок цитрусовых, мята, лед' }, price: 45, discountPrice: 35, badge: { ro: 'PROASPĂT', ru: 'ФРЕШ' }, visible: true }
+      ],
+      slides: [
+        { image: 'insta_hd/hd_6_720x1280.jpg', badge: { ro: 'Partener Oficial Foodberry', ru: 'Официальный партнер Foodberry' }, title: { ro: 'Deserturi Artizanale Proaspete', ru: 'Крафтовые десерты Foodberry' }, subtitle: { ro: 'Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană', ru: 'Французское масло 82%, сицилийская фисташка и бельгийский шоколад' }, details: { ro: 'Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.', ru: 'Свежая утренняя доставка напрямую из крафтовой кондитерской SweetMe.' }, visible: true },
+        { image: 'insta_hd/hd_17_720x1280.jpg', badge: { ro: 'Originea Săptămânii • Specialty', ru: 'Зерно недели • Specialty' }, title: { ro: '100% Arabica Ethiopia Guji', ru: '100% Arabica Ethiopia Guji' }, subtitle: { ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci', ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса' }, details: { ro: 'Prăjire proaspătă artizanală de la partenerul nostru Briksa.', ru: 'Свежая местная обжарка от партнера Briksa. Шелковистая пенка.' }, visible: true },
+        { image: 'insta_hd/hd_8_720x1280.jpg', badge: { ro: 'Amika Café • Familie & Pasiune', ru: 'Amika Café • Семья и уют' }, title: { ro: 'Ospitalitate Caldă din Cricova', ru: 'Тепло и забота в каждой чашке' }, subtitle: { ro: '„Ajutorul meu” — cafea pregătită și servită din suflet', ru: '«Мой главный помощник» — кофе, приготовленный с любовью' }, details: { ro: 'Locul unde fiecare oaspete este întâmpinat ca un prieten drag. Str. Drumul Viilor 10.', ru: 'Локальная кофейня, где ценят каждого гостя. Крикова, str. Drumul Viilor 10.' }, visible: true },
+        { image: 'insta_hd/hd_2_720x1280.jpg', badge: { ro: 'Design & Atmosferă', ru: 'Интерьер & Атмосфера' }, title: { ro: 'Barul Amika & Terasa la Apus', ru: 'Барная стойка Amika & Закаты' }, subtitle: { ro: 'Vedere panoramică spre viile Cricovei și leagăn la asfințit', ru: 'Панорамный вид на виноградники Крикова и качели на закате' }, details: { ro: 'Vino să te bucuri de un latte fin sau un matcha într-o atmosferă luminoasă.', ru: 'Идеальное место для неспешного утра или вечера со спешелти кофе.' }, visible: true },
+        { image: 'insta_hd/hd_3_720x1280.jpg', badge: { ro: 'Băuturi Speciale Amika', ru: 'Авторские напитки Amika' }, title: { ro: 'Matcha Uji & Cold Brew Tonic', ru: 'Церемониальная Матча & Колд Брю' }, subtitle: { ro: 'Ceai matcha ceremonial bătut cu tel de bambus și lapte Oatly', ru: 'Оригинальная матча из Японии, взбитая венчиком на овсяном молоке' }, details: { ro: 'Sau încearcă deserturile trifles în pahar cu mascarpone și fructe.', ru: 'А также муссовые десерты в стаканчиках с лесными ягодами.' }, visible: true }
+      ]
+    };
+
+    // Load saved custom config from TV localStorage
+    function loadSavedConfig() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.coffeeItems && parsed.dessertItems && parsed.slides) {
+            boardConfig = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    function applyNewConfig(cfg, showNotification) {
+      if (!cfg || !cfg.coffeeItems || !cfg.dessertItems || !cfg.slides) return;
+      boardConfig = cfg;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+      } catch (e) {}
+      currentSlideIdx = 0;
+      renderMenu();
+      if (showNotification) {
+        playMelodicChime();
+        var t = document.getElementById('syncToast');
+        t.className = 'active';
+        setTimeout(function() { t.className = ''; }, 4000);
+      }
+    }
+
+    // Download remote config file (with custom photos) via ES5 XMLHttpRequest
+    var lastLoadedUrl = '';
+    function fetchConfigFromUrl(url, showNotification) {
+      if (!url || url === lastLoadedUrl) return;
+      lastLoadedUrl = url;
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+              var cfg = JSON.parse(xhr.responseText);
+              if (cfg && (!boardConfig.updatedAt || cfg.updatedAt >= boardConfig.updatedAt)) {
+                applyNewConfig(cfg, showNotification);
+              }
+            } catch (e) {}
+          }
+        };
+        xhr.send();
+      } catch (e) {}
+    }
+
+    // SUPABASE CLOUD DATABASE CONFIG (ES5 XMLHttpRequest for LG webOS 3.0 Chromium 38)
+    var SUPABASE_URL = 'https://ildagazsbdtgjlzlkfaq.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZGFnYXpzYmR0Z2psemxrZmFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NzA3NDgsImV4cCI6MjEwODE0Njc0OH0.BSGfGWuXT7HNfsCjmUbeisbcGzXs0FJvUHMz5lC-FeQ';
+
+    function fetchSupabaseConfig(showNotification) {
+      try {
+        var xhr = new XMLHttpRequest();
+        var targetUrl = SUPABASE_URL + '/rest/v1/menu_config?id=eq.current&select=*&_t=' + new Date().getTime();
+        xhr.open('GET', targetUrl, true);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+              var rows = JSON.parse(xhr.responseText);
+              if (rows && rows.length > 0 && rows[0].config) {
+                var cfg = rows[0].config;
+                if (cfg && cfg.coffeeItems && cfg.dessertItems && cfg.slides) {
+                  if (!boardConfig.updatedAt || !cfg.updatedAt || cfg.updatedAt >= boardConfig.updatedAt) {
+                    applyNewConfig(cfg, showNotification);
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+        };
+        xhr.send();
+      } catch (e) {}
+    }
+
+    // Get visible slides array
+    function getVisibleSlides() {
+      var arr = [];
+      for (var i = 0; i < boardConfig.slides.length; i++) {
+        if (boardConfig.slides[i].visible !== false) {
+          arr.push(boardConfig.slides[i]);
+        }
+      }
+      return arr.length > 0 ? arr : boardConfig.slides;
+    }
+
+    // MELODIC BOUTIQUE CHIME (G5 -> C6 -> E6)
+    function playMelodicChime() {
+      if (!soundEnabled) return;
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        var ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        var notes = [
+          { freq: 783.99, time: 0.0, dur: 0.9, gain: 0.22 },
+          { freq: 1046.50, time: 0.16, dur: 1.1, gain: 0.24 },
+          { freq: 1318.51, time: 0.32, dur: 1.5, gain: 0.20 }
+        ];
+
+        for (var i = 0; i < notes.length; i++) {
+          (function(n) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.time);
+
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime + n.time);
+            gain.gain.exponentialRampToValueAtTime(n.gain, ctx.currentTime + n.time + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + n.time + n.dur);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime + n.time);
+            osc.stop(ctx.currentTime + n.time + n.dur);
+          })(notes[i]);
+        }
+      } catch (e) {}
+    }
+
+    // RENDER MENU ITEMS
+    function renderMenu() {
+      var isRo = currentLang === 'ro';
+
+      // Headers & static labels
+      document.getElementById('coffeeHeaderTitle').innerText = isRo
+        ? (boardConfig.coffeeHeader ? boardConfig.coffeeHeader.ro : 'Cafea & Băuturi')
+        : (boardConfig.coffeeHeader ? boardConfig.coffeeHeader.ru : 'Кофе & Напитки');
+      document.getElementById('dessertHeaderTitle').innerText = isRo
+        ? (boardConfig.dessertHeader ? boardConfig.dessertHeader.ro : 'Vitrina Foodberry')
+        : (boardConfig.dessertHeader ? boardConfig.dessertHeader.ru : 'Десерты Foodberry');
+      document.getElementById('dessertHeaderBadge').innerText = isFlashSaleActive ? '-30% REDUCERE' : (boardConfig.dessertBadge || 'Craft Bakery');
+      document.getElementById('milkNoteText').innerText = isRo
+        ? (boardConfig.coffeeFooterNote ? boardConfig.coffeeFooterNote.ro : '🥛 Lapte alternativ: Oatly ovăz / migdale')
+        : (boardConfig.coffeeFooterNote ? boardConfig.coffeeFooterNote.ru : '🥛 Альтернативное молоко: овсяное Oatly / миндаль');
+      document.getElementById('freshDeliveryText').innerText = isRo
+        ? (boardConfig.dessertFooterNote ? boardConfig.dessertFooterNote.ro : '✨ Livrări proaspete zilnic la 08:00')
+        : (boardConfig.dessertFooterNote ? boardConfig.dessertFooterNote.ru : '✨ Свежая доставка каждое утро к 08:00');
+
+      document.getElementById('qrTitleText').innerText = isRo ? 'Card de Fidelitate Digital & Precomandă' : 'Электронная Карта Гостя и Предзаказ';
+      document.getElementById('qrSubText').innerText = isRo ? 'A 6-a cafea este CADOU! ☕' : '6-я чашка кофе в ПОДАРОК! ☕';
+      document.getElementById('qrDescText').innerText = isRo ? 'Scanează cu camera telefonului • Comandă fără coadă' : 'Наведи камеру телефона • Заказ без очереди';
+      document.getElementById('hospText1').innerText = isRo ? 'Prăjire proaspătă artizanală Briksa' : 'Свежая крафтовая обжарка Briksa';
+      document.getElementById('hospText2').innerText = isRo ? 'Deserturi naturale fără conservanți' : 'Натуральные десерты без консервантов';
+      document.getElementById('hospText3').innerText = isRo ? 'Vă așteptăm zilnic cu drag!' : 'Ждем вас каждый день с любовью!';
+      document.getElementById('marqueeCloseHour').innerText = isRo ? 'Închidere la 21:00' : 'До закрытия в 21:00';
+
+      // Coffee list
+      var coffeeHtml = '';
+      var cItems = boardConfig.coffeeItems || [];
+      for (var c = 0; c < cItems.length; c++) {
+        var ci = cItems[c];
+        if (ci.visible === false) continue;
+        var name = isRo ? ci.name.ro : ci.name.ru;
+        var desc = isRo ? ci.notes.ro : ci.notes.ru;
+        var badge = ci.badge ? (isRo ? ci.badge.ro : ci.badge.ru) : '';
+
+          var coffeePriceText = ci.secondPrice ? (ci.price + ' / ' + ci.secondPrice) : ci.price;
+          coffeeHtml += '<div class="item-row">' +
+            '<div class="item-left">' +
+              '<div class="item-name-line">' +
+                '<span class="item-name">' + name + '</span>' +
+                (badge ? '<span class="item-badge">' + badge + '</span>' : '') +
+                '<span class="item-volume">' + (ci.volume || '') + '</span>' +
+              '</div>' +
+              '<div class="item-desc">' + desc + '</div>' +
+            '</div>' +
+            '<div class="item-price-block">' +
+              '<span class="item-price">' + coffeePriceText + '</span>' +
+              '<span class="item-price-mdl">MDL</span>' +
+            '</div>' +
+          '</div>';
+        }
+        document.getElementById('coffeeList').innerHTML = coffeeHtml;
+
+        // Dessert list
+        var dessertHtml = '';
+        var dItems = boardConfig.dessertItems || [];
+        for (var d = 0; d < dItems.length; d++) {
+          var di = dItems[d];
+          if (di.visible === false) continue;
+          var dName = isRo ? di.name.ro : di.name.ru;
+          var dDesc = isRo ? di.desc.ro : di.desc.ru;
+          var dBadge = di.badge ? (isRo ? di.badge.ro : di.badge.ru) : '';
+
+          var priceMarkup = '';
+          if (isFlashSaleActive) {
+            priceMarkup = '<span class="item-price-old">' + di.price + '</span>' +
+              '<span class="item-price discounted">' + di.discountPrice + '</span>' +
+              '<span class="item-price-mdl" style="color: #fda4af;">L</span>';
+          } else {
+            var dessertPriceText = di.secondPrice ? (di.price + ' / ' + di.secondPrice) : di.price;
+            priceMarkup = '<span class="item-price">' + dessertPriceText + '</span>' +
+              '<span class="item-price-mdl">MDL</span>';
+          }
+
+        var dVol = di.volume ? '<span class="item-volume">' + di.volume + '</span>' : '';
+
+        dessertHtml += '<div class="item-row">' +
+          '<div class="item-left">' +
+            '<div class="item-name-line">' +
+              '<span class="item-name">' + dName + '</span>' +
+              (dBadge && !isFlashSaleActive ? '<span class="item-badge rose">' + dBadge + '</span>' : '') +
+              dVol +
+            '</div>' +
+            '<div class="item-desc">' + dDesc + '</div>' +
+          '</div>' +
+          '<div class="item-price-block">' +
+            priceMarkup +
+          '</div>' +
+        '</div>';
+      }
+      document.getElementById('dessertList').innerHTML = dessertHtml;
+
+      renderSlide();
+    }
+
+    // RENDER ACTIVE SLIDE (Supports arbitrary number of slides!)
+    function renderSlide() {
+      var isRo = currentLang === 'ro';
+      var visSlides = getVisibleSlides();
+      if (visSlides.length === 0) return;
+
+      if (currentSlideIdx >= visSlides.length) currentSlideIdx = 0;
+      var sl = visSlides[currentSlideIdx];
+
+      document.getElementById('slideImg').src = sl.image;
+      document.getElementById('slideBadge').innerText = isRo ? sl.badge.ro : sl.badge.ru;
+      document.getElementById('slideTitle').innerText = isRo ? sl.title.ro : sl.title.ru;
+      document.getElementById('slideSubtitle').innerText = isRo ? sl.subtitle.ro : sl.subtitle.ru;
+      document.getElementById('slideDetails').innerText = isRo ? sl.details.ro : sl.details.ru;
+
+      // Dynamically build progress bar for visSlides.length
+      var progContainer = document.getElementById('sliderProgressBar');
+      var progHtml = '';
+      for (var b = 0; b < visSlides.length; b++) {
+        var w = b <= currentSlideIdx ? '100%' : '0%';
+        progHtml += '<div class="progress-bar"><div class="progress-fill" style="width: ' + w + ';"></div></div>';
+      }
+      progContainer.innerHTML = progHtml;
+    }
+
+    // TOGGLE FLASH SALE
+    function toggleFlashSale(mode) {
+      if (mode === 'active') {
+        isFlashSaleActive = true;
+      } else if (mode === 'inactive') {
+        isFlashSaleActive = false;
+      } else {
+        isFlashSaleActive = !isFlashSaleActive;
+      }
+
+      var marquee = document.getElementById('flashSaleMarquee');
+      var card = document.getElementById('dessertCard');
+      var btn = document.getElementById('btnFlashSale');
+
+      if (isFlashSaleActive) {
+        marquee.className = 'active';
+        card.className = 'menu-card flash-card';
+        btn.className = 'btn-toggle flash-active';
+      } else {
+        marquee.className = '';
+        card.className = 'menu-card';
+        btn.className = 'btn-toggle';
+      }
+      renderMenu();
+    }
+
+    // LANGUAGE MODE
+    function setLangMode(mode) {
+      if (mode === 'auto') {
+        isAutoRotateLang = true;
+        document.getElementById('btnLangAuto').className = 'btn-toggle active';
+        document.getElementById('btnLangRo').className = 'btn-toggle';
+        document.getElementById('btnLangRu').className = 'btn-toggle';
+      } else {
+        isAutoRotateLang = false;
+        currentLang = mode;
+        document.getElementById('btnLangAuto').className = 'btn-toggle';
+        document.getElementById('btnLangRo').className = mode === 'ro' ? 'btn-toggle active' : 'btn-toggle';
+        document.getElementById('btnLangRu').className = mode === 'ru' ? 'btn-toggle active' : 'btn-toggle';
+        renderMenu();
+      }
+    }
+
+    // FULLSCREEN
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        var el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }
+
+    // CENTRAL COMMAND DISPATCHER
+    var processedCmds = {};
+    function handleRemoteCommand(cmd) {
+      if (!cmd || typeof cmd !== 'object') return;
+      var id = cmd._cmdId || cmd.id || (cmd.type + '_' + cmd._ts);
+      if (id && processedCmds[id]) return;
+      if (id) processedCmds[id] = true;
+
+      if (cmd.type === 'CHIME') {
+        playMelodicChime();
+      } else if (cmd.type === 'CONFIG_SUPABASE_SYNC') {
+        fetchSupabaseConfig(true);
+      } else if (cmd.type === 'CONFIG_SYNC' && cmd.config) {
+        applyNewConfig(cmd.config, true);
+      } else if (cmd.type === 'CONFIG_URL_SYNC' && cmd.url) {
+        fetchConfigFromUrl(cmd.url, true);
+      } else if (cmd.type === 'SET_FLASH_SALE') {
+        toggleFlashSale(cmd.mode);
+      } else if (cmd.type === 'SET_SLIDE' && typeof cmd.index === 'number') {
+        var vis = getVisibleSlides();
+        currentSlideIdx = cmd.index % vis.length;
+        renderSlide();
+      } else if (cmd.type === 'SET_LANG_MODE') {
+        setLangMode(cmd.mode);
+      } else if (cmd.type === 'SET_LANG' && cmd.lang) {
+        setLangMode(cmd.lang);
+      }
+    }
+
+    // Check recent cloud config once on TV startup
+    function checkRecentCloudConfig() {
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://ntfy.adminforge.de/amika_cricova_tv_control/json?poll=1&since=12h', true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            var lines = xhr.responseText.split('\n');
+            var latestAttachmentUrl = '';
+            for (var i = 0; i < lines.length; i++) {
+              if (!lines[i]) continue;
+              try {
+                var item = JSON.parse(lines[i]);
+                if (item.attachment && item.attachment.url) {
+                  latestAttachmentUrl = item.attachment.url;
+                } else if (item.event === 'message' && item.message) {
+                  var msg = JSON.parse(item.message);
+                  if (msg.type === 'CONFIG_URL_SYNC' && msg.url) {
+                    latestAttachmentUrl = msg.url;
+                  } else if (msg.type === 'CONFIG_SYNC' && msg.config) {
+                    if (!boardConfig.updatedAt || msg.config.updatedAt > boardConfig.updatedAt) {
+                      applyNewConfig(msg.config, false);
+                    }
+                  }
+                }
+              } catch (e) {}
+            }
+            if (latestAttachmentUrl) {
+              fetchConfigFromUrl(latestAttachmentUrl, false);
+            }
+          }
+        };
+        xhr.send();
+      } catch (e) {}
+    }
+
+    // MULTI-CLUSTER REAL-TIME SSE CONNECTION
+    function initCloudRelay() {
+      var sseUrls = [
+        'https://ntfy.tedomum.fr/amika_cricova_tv_control/sse',
+        'https://ntfy.adminforge.de/amika_cricova_tv_control/sse'
+      ];
+      var activeCount = 0;
+
+      function updateStatus() {
+        var dot = document.getElementById('cloudDot');
+        var text = document.getElementById('cloudStatusText');
+        if (activeCount > 0) {
+          dot.style.background = '#10b981';
+          dot.style.boxShadow = '0 0 10px #10b981';
+          text.innerText = 'Облако: Админ подключен';
+        } else {
+          dot.style.background = '#f59e0b';
+          dot.style.boxShadow = '0 0 10px #f59e0b';
+          text.innerText = 'Подключение...';
+        }
+      }
+
+      for (var i = 0; i < sseUrls.length; i++) {
+        (function(url) {
+          try {
+            var sse = new EventSource(url);
+            sse.onopen = function() {
+              activeCount++;
+              updateStatus();
+            };
+            sse.onerror = function() {
+              activeCount = Math.max(0, activeCount - 1);
+              updateStatus();
+            };
+            sse.addEventListener('message', function(e) {
+              try {
+                var payload = JSON.parse(e.data);
+                if (payload.attachment && payload.attachment.url) {
+                  fetchConfigFromUrl(payload.attachment.url, true);
+                  return;
+                }
+                if (payload.event === 'message' && payload.message) {
+                  var cmd = JSON.parse(payload.message);
+                  handleRemoteCommand(cmd);
+                }
+              } catch (err) {}
+            });
+          } catch (e) {}
+        })(sseUrls[i]);
+      }
+
+      // Local storage fallback (only on explicit command / Save button click)
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'amika_tv_command' && e.newValue) {
+          try {
+            var c = JSON.parse(e.newValue);
+            handleRemoteCommand(c);
+          } catch (err) {}
+        }
+      });
+
+      // BroadcastChannel fallback
+      try {
+        var bc = new BroadcastChannel('amika_tv_bus');
+        bc.onmessage = function(ev) {
+          handleRemoteCommand(ev.data);
+        };
+      } catch (e) {}
+    }
+
+    // CLOCK TICKER
+    function updateClock() {
+      var d = new Date();
+      var h = d.getHours(); var m = d.getMinutes(); var s = d.getSeconds();
+      var timeStr = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      document.getElementById('clockTime').innerText = timeStr;
+
+      var days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+      var days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+      var months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+      var months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+      var dateStr = currentLang === 'ro'
+        ? days_ro[d.getDay()] + ', ' + d.getDate() + ' ' + months_ro[d.getMonth()]
+        : days_ru[d.getDay()] + ', ' + d.getDate() + ' ' + months_ru[d.getMonth()];
+      document.getElementById('clockDate').innerText = dateStr;
+    }
+
+    // INIT LOOPS
+    window.onload = function() {
+      loadSavedConfig();
+      renderMenu();
+      fetchSupabaseConfig(false);
+      initCloudRelay();
+      checkRecentCloudConfig();
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // Auto-advance slides every 7 seconds
+      setInterval(function() {
+        var vis = getVisibleSlides();
+        if (vis.length > 0) {
+          currentSlideIdx = (currentSlideIdx + 1) % vis.length;
+          renderSlide();
+        }
+      }, 7000);
+
+      // Auto-rotate language every 15 seconds if active
+      setInterval(function() {
+        if (isAutoRotateLang) {
+          currentLang = currentLang === 'ro' ? 'ru' : 'ro';
+          renderMenu();
+        }
+      }, 15000);
+
+      // Failsafe: gentle background sync with Supabase cloud DB every 5 minutes
+      setInterval(function() {
+        fetchSupabaseConfig(false);
+      }, 300000);
+    };
+
+    // KEYBOARD SHORTCUTS
+    window.addEventListener('keydown', function(e) {
+      var vis = getVisibleSlides();
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'l' || e.key === 'L') setLangMode(currentLang === 'ro' ? 'ru' : 'ro');
+      if (e.key === 's' || e.key === 'S') toggleFlashSale();
+      if (e.key === 'ArrowRight' && vis.length > 0) {
+        currentSlideIdx = (currentSlideIdx + 1) % vis.length;
+        renderSlide();
+      }
+      if (e.key === 'ArrowLeft' && vis.length > 0) {
+        currentSlideIdx = (currentSlideIdx - 1 + vis.length) % vis.length;
+        renderSlide();
+      }
+    });
+  </script>
+</body>
+</html>
