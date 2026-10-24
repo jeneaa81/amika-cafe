@@ -16,12 +16,12 @@ flowchart TD
 
     subgraph Cloud["Облачная инфраструктура"]
         GH["GitHub Pages CDN\n(Статический хостинг)"]
-        Supa[("Supabase Cloud\nPostgreSQL REST API\nТаблица public.menu_config")]
+        Supa[("Supabase Cloud\nPostgreSQL REST API\nТаблица public.menu_config (id='current', field='config')")]
         
         subgraph SSE["Realtime Multi-Cluster Relay"]
-            N1["adminforge.de/amika_tv_events"]
-            N2["tedomum.fr/amika_tv_events"]
-            N3["ntfy.sh/amika_tv_events"]
+            N1["ntfy.tedomum.fr/amika_cricova_tv_control"]
+            N2["ntfy.adminforge.de/amika_cricova_tv_control"]
+            N3["ntfy.sh/amika_cricova_tv_control"]
         end
     end
 
@@ -70,22 +70,21 @@ flowchart TD
 
 ### 2. Multi-Cluster SSE Relay (Отказоустойчивость вещания)
 Для моментальной отправки изменений из админки на телевизор используется брокер сообщений на базе SSE:
-- Первичный узел: `https://adminforge.de/amika_tv_events`
-- Резервный узел 1: `https://tedomum.fr/amika_tv_events`
-- Резервный узел 2: `https://ntfy.sh/amika_tv_events`
+- Первичный узел: `https://ntfy.tedomum.fr/amika_cricova_tv_control`
+- Резервный узел 1: `https://ntfy.adminforge.de/amika_cricova_tv_control`
+- Резервный узел 2: `https://ntfy.sh/amika_cricova_tv_control`
 
-Административная панель при сохранении меню отправляет HTTP POST запрос параллельно во все три кластера (`CONFIG_SUPABASE_SYNC`). Телевизор слушает SSE и при получении сигнала за 0.5 секунды перезапрашивает свежий JSON из Supabase.
+Административная панель при сохранении меню отправляет HTTP POST запрос параллельно во все три кластера (`CONFIG_SYNC`). Телевизор слушает SSE и при получении сигнала перезапрашивает свежий JSON из Supabase.
 
 ### 3. Структура базы данных Supabase
 
 - **Таблица:** `public.menu_config`
-- **Строка конфигурации:** `id = "default"`
+- **Строка конфигурации:** `id = "current"`
 - **Поля:**
-  - `id`: `text` (primary key, `"default"`)
-  - `data`: `jsonb` (содержит полный массив категорий, позиций, цен, стоп-листа и настроек бегущей строки)
+  - `id`: `text` (primary key, `"current"`)
+  - `config`: `jsonb` (содержит массивы `coffeeItems`, `dessertItems`, `slides`, заголовки и бейджи)
   - `updated_at`: `timestamptz` (время последней фиксации)
-  - `version`: `int8` (инкрементный счетчик ревизий)
-- **RLS Политики:** Чтение разрешено анонимным ключом (`anon public`), запись — авторизованным запросам или через админ-панель.
+- **RLS Политики:** Чтение и обновление разрешено публичным ключом (`anon public`).
 
 ---
 
