@@ -218,9 +218,10 @@ export async function createOrderInSupabase(
       }
 
       if (resp.status === 409) {
-        // ID collision - generate fresh unique ID and retry
-        console.warn(`Order ID collision on ${orderId}, retrying with unique suffix...`);
-        orderId = `#${Math.floor(1000 + Math.random() * 9000)}`;
+        // ID collision - increment sequential ID and retry
+        const currentNum = parseInt(orderId.replace(/\D/g, ''), 10);
+        orderId = `#${isNaN(currentNum) ? 101 : currentNum + 1}`;
+        console.warn(`Order ID collision on ${order.id}, retrying with next sequential ID: ${orderId}...`);
         continue;
       }
 

@@ -321,8 +321,12 @@ export function App() {
   }): Order => {
     playChime(783.99);
 
-    // Guaranteed collision-free human-friendly 4-digit order ID (#1000..#9999)
-    const newOrderId = `#${Math.floor(1000 + Math.random() * 9000)}`;
+    // Sequential human-friendly order numbering starting from #101
+    const orderNums = orders
+      .map((o) => parseInt(o.id.replace(/\D/g, ''), 10))
+      .filter((n) => !isNaN(n) && n >= 100);
+    const maxNum = orderNums.length > 0 ? Math.max(...orderNums) : 100;
+    const newOrderId = `#${maxNum + 1}`;
 
     const tgUser = (window as unknown as {
       Telegram?: {
