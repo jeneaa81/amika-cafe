@@ -18,7 +18,7 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 BOT_TOKEN = "8935606630:AAHf5kRs6U466GrduKzrwMeBmoKam8ltwEA"
-WEBAPP_URL = "https://jeneaa81.github.io/amika-cafe/"
+WEBAPP_URL = "https://jeneaa81.github.io/amika-cafe/?v=2"
 SUPABASE_URL = "https://ildagazsbdtgjlzlkfaq.supabase.co"
 SUPABASE_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imls"

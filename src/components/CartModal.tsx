@@ -90,6 +90,17 @@ export const CartModal: React.FC<CartModalProps> = ({
             }
           }
         });
+      } else {
+        const promptPhone = window.prompt(
+          language === 'ro' ? 'Introduceți numărul dvs. de telefon:' : 'Введите ваш номер телефона:',
+          customerPhone || '+373 '
+        );
+        if (promptPhone && promptPhone.trim()) {
+          setCustomerPhone(promptPhone.trim());
+          try {
+            localStorage.setItem('amika_customer_phone', promptPhone.trim());
+          } catch {}
+        }
       }
     } catch (err) {
       console.warn('Telegram requestContact error:', err);
@@ -380,7 +391,7 @@ export const CartModal: React.FC<CartModalProps> = ({
                     <label className="text-[10px] text-stone-400">
                       {t.customerPhoneLabel}
                     </label>
-                    {tgWebApp?.requestContact && (
+                    {Boolean(tgWebApp) && (
                       <button
                         type="button"
                         onClick={handleRequestContact}
