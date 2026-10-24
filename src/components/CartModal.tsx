@@ -29,7 +29,26 @@ export const CartModal: React.FC<CartModalProps> = ({
   const t = TRANSLATIONS[language];
   const [pickupTime, setPickupTime] = useState<string>('in_10');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pickup');
-  const [customerName, setCustomerName] = useState<string>('Ion');
+
+  const tgUser = (typeof window !== 'undefined'
+    ? (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            initDataUnsafe?: {
+              user?: { id?: number; first_name?: string; last_name?: string };
+            };
+          };
+        };
+      }).Telegram?.WebApp?.initDataUnsafe?.user
+    : null);
+
+  const initialName = tgUser?.first_name
+    ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
+    : language === 'ro'
+    ? 'Ion'
+    : 'Иван';
+
+  const [customerName, setCustomerName] = useState<string>(initialName);
   const [customerPhone, setCustomerPhone] = useState<string>('+373 69 123 456');
   const [orderNotes, setOrderNotes] = useState<string>('');
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);

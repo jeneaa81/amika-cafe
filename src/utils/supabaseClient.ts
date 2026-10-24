@@ -176,43 +176,63 @@ function mapDbRowToOrder(row: DbOrderRow): Order {
 }
 
 /**
- * Insert a new pre-order into Supabase
+ * Insert a new pre-order into Supabase (with automatic retry on ID collision)
  */
-export async function createOrderInSupabase(order: Order): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7000);
+export async function createOrderInSupabase(
+  order: Order
+): Promise<{ success: boolean; id: string }> {
+  let orderId = order.id;
 
-    const payload = {
-      id: order.id,
-      telegram_user_id: order.telegramUserId || 0,
-      customer_name: order.customerName,
-      customer_phone: order.customerPhone,
-      items: order.items,
-      total_amount: order.totalAmount,
-      pickup_time: order.pickupTime,
-      payment_method: order.paymentMethod,
-      status: order.status || 'new',
-      notes: order.notes || '',
-      created_at: new Date().toISOString(),
-    };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 7000);
 
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
-      method: 'POST',
-      headers: {
-        ...SUPABASE_HEADERS,
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+      const payload = {
+        id: orderId,
+        telegram_user_id: order.telegramUserId || 0,
+        customer_name: order.customerName,
+        customer_phone: order.customerPhone,
+        items: order.items,
+        total_amount: order.totalAmount,
+        pickup_time: order.pickupTime,
+        payment_method: order.paymentMethod,
+        status: order.status || 'new',
+        notes: order.notes || '',
+        created_at: new Date().toISOString(),
+      };
 
-    return resp.ok;
-  } catch (err) {
-    console.warn('Supabase createOrder error:', err);
-    return false;
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+        method: 'POST',
+        headers: {
+          ...SUPABASE_HEADERS,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (resp.ok) {
+        return { success: true, id: orderId };
+      }
+
+      if (resp.status === 409) {
+        // ID collision - generate fresh unique ID and retry
+        console.warn(`Order ID collision on ${orderId}, retrying with unique suffix...`);
+        orderId = `#${Math.floor(1000 + Math.random() * 9000)}`;
+        continue;
+      }
+
+      const errText = await resp.text();
+      console.warn('Supabase createOrder failed:', resp.status, errText);
+      return { success: false, id: orderId };
+    } catch (err) {
+      console.warn('Supabase createOrder error:', err);
+    }
   }
+
+  return { success: false, id: orderId };
 }
 
 /**

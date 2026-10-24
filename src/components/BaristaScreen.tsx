@@ -36,12 +36,8 @@ const BARISTA_I18N = {
     exitBtn: 'La vitrină',
     tabOrders: 'Precomenzi',
     tabTvRemote: 'Telecomandă TV & -30%',
-    notifSentTitle: 'Notificare trimisă clientului în Telegram!',
-    notifSentTag: 'Trimis prin pg_net',
-    notifOrderReady: 'Comanda ta',
-    notifPickupPrompt: 'Te așteptăm la tejgheaua Amika Café (Cricova).',
-    notifClosingWish: 'Să ai o zi minunată și plină de energie!',
-    notifTranslationNote: 'Traducere',
+    notifSentTitle: 'Notificare trimisă clientului în Telegram (RO + RU)!',
+    notifSentTag: 'Trimis în Telegram',
     noOrdersHint:
       'Când un oaspete plasează o precomandă în aplicație, aceasta apare aici cu semnal sonor.',
     paidMia: 'MIA Instant (Achitat)',
@@ -84,12 +80,8 @@ const BARISTA_I18N = {
     exitBtn: 'К витрине',
     tabOrders: 'Предзаказы',
     tabTvRemote: 'Пульт ТВ & Скидка -30%',
-    notifSentTitle: 'Уведомление отправлено клиенту в Telegram!',
-    notifSentTag: 'Отправлено через pg_net',
-    notifOrderReady: 'твой заказ готов!',
-    notifPickupPrompt: 'Ждём тебя у стойки Amika Café в Крикова.',
-    notifClosingWish: 'Чудесного дня и отличного настроения!',
-    notifTranslationNote: 'Перевод',
+    notifSentTitle: 'Уведомление отправлено клиенту в Telegram (RO + RU)!',
+    notifSentTag: 'Отправлено в Telegram',
     noOrdersHint:
       'Когда гость оформляет предзаказ в приложении, он появляется здесь со звуковым сигналом.',
     paidMia: 'MIA Instant (Оплачено)',
@@ -147,7 +139,8 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
     id: string;
     name: string;
     phone: string;
-    itemsSummary: string;
+    itemsSummaryRo: string;
+    itemsSummaryRu: string;
   } | null>(null);
 
   // Update pre-order status & notify customer directly (without cluttering TV screen)
@@ -157,22 +150,34 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
     if (nextStatus === 'ready' && order) {
       playMelodicChime();
-      const summary = (order.items || [])
+      const summaryRo = (order.items || [])
         .map(
           (i) =>
             `${i.quantity || 1}x ${
-              i.product?.name?.[language] ||
               i.product?.name?.ro ||
               i.product?.name?.ru ||
               'Produs'
             }`
         )
         .join(', ');
+
+      const summaryRu = (order.items || [])
+        .map(
+          (i) =>
+            `${i.quantity || 1}x ${
+              i.product?.name?.ru ||
+              i.product?.name?.ro ||
+              'Товар'
+            }`
+        )
+        .join(', ');
+
       setNotifiedOrderClient({
         id: order.id,
         name: order.customerName || 'Oaspete',
         phone: order.customerPhone || '',
-        itemsSummary: summary,
+        itemsSummaryRo: summaryRo || 'Cafea / Desert',
+        itemsSummaryRu: summaryRu || 'Кофе / Десерт',
       });
     }
   };
@@ -274,7 +279,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                 </button>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-stone-950/90 border border-stone-800 text-xs space-y-2">
+              <div className="p-3.5 rounded-2xl bg-stone-950/90 border border-stone-800 text-xs space-y-2.5">
                 <div className="text-[11px] text-amber-400 font-bold flex items-center justify-between">
                   <span>
                     🤖 Amika Café Bot ➜ {notifiedOrderClient.name}{' '}
@@ -283,23 +288,31 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   <span className="text-[10px] text-emerald-400 font-semibold">{B.notifSentTag}</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-stone-900 border border-stone-800/80 text-stone-200 text-xs leading-relaxed space-y-1">
-                  <p>
-                    ☕ <b>{notifiedOrderClient.name}</b>, comanda ta <b>{notifiedOrderClient.id}</b> este gata!
+                {/* Romanian notification card */}
+                <div className="p-3 rounded-xl bg-stone-900 border border-stone-800 text-stone-200 text-xs leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-300">
+                    ☕ Precomanda dvs. {notifiedOrderClient.id} este gata!
                   </p>
-                  <p>
-                    ✨ Te așteptăm la tejgheaua Amika Café (Cricova).
+                  <p className="text-stone-300">
+                    📦 <b>Conținut:</b> {notifiedOrderClient.itemsSummaryRo}.
                   </p>
-                  <p className="text-stone-400 italic">
-                    Să ai o zi minunată și plină de energie!
+                  <p className="text-stone-400 text-[11px]">
+                    ✨ Vă așteptăm la barul Amika Café (Cricova) fără coadă! ❤️
                   </p>
                 </div>
 
-                {language === 'ru' && (
-                  <div className="text-[10px] text-stone-400 italic px-1">
-                    (Перевод: ☕ <b>{notifiedOrderClient.name}</b>, {B.notifOrderReady} {B.notifPickupPrompt} {B.notifClosingWish})
-                  </div>
-                )}
+                {/* Russian notification card */}
+                <div className="p-3 rounded-xl bg-stone-900 border border-stone-800 text-stone-200 text-xs leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-300">
+                    ☕ Ваш предзаказ {notifiedOrderClient.id} готов!
+                  </p>
+                  <p className="text-stone-300">
+                    📦 <b>Состав:</b> {notifiedOrderClient.itemsSummaryRu}.
+                  </p>
+                  <p className="text-stone-400 text-[11px]">
+                    ✨ Ждём вас на барной стойке Amika Café без очереди! ❤️
+                  </p>
+                </div>
               </div>
             </div>
           )}

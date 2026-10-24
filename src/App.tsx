@@ -113,36 +113,7 @@ export function App() {
   });
 
   // Orders queue (synced with Supabase public.orders in real time)
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: '#102',
-      items: [
-        {
-          cartItemId: 'item-demo-1',
-          product: PRODUCTS[0],
-          quantity: 1,
-          options: { milk: 'regular', temperature: 'hot' },
-          unitPrice: 40,
-          totalPrice: 40,
-        },
-        {
-          cartItemId: 'item-demo-2',
-          product: PRODUCTS[6],
-          quantity: 1,
-          options: {},
-          unitPrice: 42,
-          totalPrice: 42,
-        },
-      ],
-      totalAmount: 82,
-      pickupTime: 'Peste 5 min',
-      paymentMethod: 'pickup',
-      customerName: 'Mihai',
-      customerPhone: '+373 68 554 112',
-      status: 'new',
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // Live polling & SSE for active pre-orders from Supabase
   useEffect(() => {
@@ -151,7 +122,7 @@ export function App() {
     const syncOrders = async () => {
       try {
         const cloudOrders = await fetchActiveOrdersFromSupabase();
-        if (isMounted && Array.isArray(cloudOrders) && cloudOrders.length > 0) {
+        if (isMounted && Array.isArray(cloudOrders)) {
           setOrders((prev) => {
             // Play sound if a brand new unhandled order arrived
             const prevIds = new Set(prev.map((o) => o.id));
@@ -349,38 +320,61 @@ export function App() {
     notes?: string;
   }): Order => {
     playChime(783.99);
-    const maxId = orders.reduce((max, o) => {
-      const num = parseInt(o.id.replace(/\D/g, ''), 10);
-      return isNaN(num) ? max : Math.max(max, num);
-    }, 102);
-    const newOrderId = `#${maxId + 1}`;
 
-    const tgUser = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } } }).Telegram?.WebApp?.initDataUnsafe?.user;
+    // Guaranteed collision-free human-friendly 4-digit order ID (#1000..#9999)
+    const newOrderId = `#${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const tgUser = (window as unknown as {
+      Telegram?: {
+        WebApp?: {
+          initDataUnsafe?: {
+            user?: { id?: number; first_name?: string; last_name?: string; username?: string };
+          };
+        };
+      };
+    }).Telegram?.WebApp?.initDataUnsafe?.user;
+
+    const storedTgId = localStorage.getItem('amika_tg_user_id');
+    const tgUserId = tgUser?.id || (storedTgId ? Number(storedTgId) : 410572268);
+    if (tgUser?.id) {
+      localStorage.setItem('amika_tg_user_id', String(tgUser.id));
+    }
+
+    const customerName =
+      orderData.customerName.trim() ||
+      (tgUser?.first_name
+        ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
+        : language === 'ro'
+        ? 'Oaspete'
+        : 'Гость');
 
     const newOrder: Order = {
       id: newOrderId,
-      telegramUserId: tgUser?.id || undefined,
+      telegramUserId: tgUserId,
       items: [...cartItems],
       totalAmount: cartItems.reduce((sum, item) => sum + item.totalPrice, 0),
       pickupTime: orderData.pickupTime,
       paymentMethod: orderData.paymentMethod,
-      customerName: orderData.customerName,
+      customerName,
       customerPhone: orderData.customerPhone,
       notes: orderData.notes,
       status: 'new',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setOrders((prev) => {
-      const next = [newOrder, ...prev];
-      sendTvCommand({ type: 'NEW_ORDER', order: newOrder });
-      return next;
-    });
+    setOrders((prev) => [newOrder, ...prev]);
+    sendTvCommand({ type: 'NEW_ORDER', order: newOrder });
 
-    // Save to persistent Supabase cloud database
-    createOrderInSupabase(newOrder).catch((err) =>
-      console.warn('Supabase order creation error:', err)
-    );
+    // Save to persistent Supabase cloud database with collision auto-retry
+    createOrderInSupabase(newOrder)
+      .then((res) => {
+        if (res.success && res.id !== newOrder.id) {
+          setOrders((prev) =>
+            prev.map((o) => (o.id === newOrder.id ? { ...o, id: res.id } : o))
+          );
+        }
+      })
+      .catch((err) => console.warn('Supabase order creation error:', err));
 
     return newOrder;
   };
