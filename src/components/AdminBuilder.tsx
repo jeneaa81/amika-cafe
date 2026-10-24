@@ -64,6 +64,7 @@ interface AdminBuilderProps {
   language: Language;
   onExitAdminMode?: () => void;
   onOpenTvMode?: () => void;
+  onOpenBaristaMode?: () => void;
 }
 
 const ADMIN_I18N = {
@@ -325,6 +326,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   language,
   onExitAdminMode,
   onOpenTvMode,
+  onOpenBaristaMode,
 }) => {
   const L = ADMIN_I18N[language];
 
@@ -1505,6 +1507,16 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenBaristaMode && (
+              <button
+                onClick={onOpenBaristaMode}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                title={language === 'ro' ? 'Deschide ecranul Barista (Precomenzi)' : 'Открыть экран бариста (Предзаказы)'}
+              >
+                <Coffee className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{language === 'ro' ? 'Ecran Barista' : 'Экран Бариста'}</span>
+              </button>
+            )}
             {onOpenTvMode && (
               <button
                 onClick={onOpenTvMode}

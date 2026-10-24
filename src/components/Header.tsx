@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Sparkles, ShieldCheck, Tv, Settings, Coffee } from 'lucide-react';
+import { MapPin, Sparkles, Tv, Settings } from 'lucide-react';
 import type { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -133,24 +133,6 @@ export const Header: React.FC<HeaderProps> = ({
               RU
             </button>
           </div>
-
-          {/* Separate Barista Button */}
-          <button
-            onClick={() => onChangeViewMode(viewMode === 'barista' ? 'client' : 'barista')}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition active:scale-95 ${
-              viewMode === 'barista'
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30'
-                : 'bg-stone-800 text-stone-300 border-stone-700 hover:text-white'
-            }`}
-            title={language === 'ro' ? 'Interfața Barista (Precomenzi & Telecomandă TV)' : 'Терминал Бариста (Предзаказы и Пульт ТВ)'}
-          >
-            {viewMode === 'barista' ? (
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
-            ) : (
-              <Coffee className="w-3.5 h-3.5 text-emerald-400" />
-            )}
-            <span className="hidden xs:inline">{language === 'ro' ? 'Barista' : 'Бариста'}</span>
-          </button>
 
           {/* Separate Admin Cabinet Button (Tablet / PC) */}
           <button

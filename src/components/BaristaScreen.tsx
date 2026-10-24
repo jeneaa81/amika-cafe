@@ -37,10 +37,11 @@ const BARISTA_I18N = {
     tabOrders: 'Precomenzi',
     tabTvRemote: 'Telecomandă TV & -30%',
     notifSentTitle: 'Notificare trimisă clientului în Telegram!',
-    notifOrderReady: 'Precomanda dvs.',
-    notifReadySuffix: 'este gata!',
-    notifItems: 'Conținut:',
-    notifWaitAtBar: 'Vă așteptăm la barul Amika Café fără coadă! ❤️',
+    notifSentTag: 'Trimis prin pg_net',
+    notifOrderReady: 'Comanda ta',
+    notifPickupPrompt: 'Te așteptăm la tejgheaua Amika Café (Cricova).',
+    notifClosingWish: 'Să ai o zi minunată și plină de energie!',
+    notifTranslationNote: 'Traducere',
     noOrdersHint:
       'Când un oaspete plasează o precomandă în aplicație, aceasta apare aici cu semnal sonor.',
     paidMia: 'MIA Instant (Achitat)',
@@ -84,10 +85,11 @@ const BARISTA_I18N = {
     tabOrders: 'Предзаказы',
     tabTvRemote: 'Пульт ТВ & Скидка -30%',
     notifSentTitle: 'Уведомление отправлено клиенту в Telegram!',
-    notifOrderReady: 'Ваш предзаказ',
-    notifReadySuffix: 'готов!',
-    notifItems: 'Состав:',
-    notifWaitAtBar: 'Ждём вас на барной стойке Amika Café без очереди! ❤️',
+    notifSentTag: 'Отправлено через pg_net',
+    notifOrderReady: 'твой заказ готов!',
+    notifPickupPrompt: 'Ждём тебя у стойки Amika Café в Крикова.',
+    notifClosingWish: 'Чудесного дня и отличного настроения!',
+    notifTranslationNote: 'Перевод',
     noOrdersHint:
       'Когда гость оформляет предзаказ в приложении, он появляется здесь со звуковым сигналом.',
     paidMia: 'MIA Instant (Оплачено)',
@@ -272,20 +274,32 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                 </button>
               </div>
 
-              <div className="p-3 rounded-2xl bg-stone-950/90 border border-stone-800 text-xs space-y-1">
-                <div className="text-[11px] text-amber-400 font-bold">
-                  🤖 Amika Café Bot ➜ {notifiedOrderClient.name} ({notifiedOrderClient.phone})
+              <div className="p-3.5 rounded-2xl bg-stone-950/90 border border-stone-800 text-xs space-y-2">
+                <div className="text-[11px] text-amber-400 font-bold flex items-center justify-between">
+                  <span>
+                    🤖 Amika Café Bot ➜ {notifiedOrderClient.name}{' '}
+                    {notifiedOrderClient.phone ? `(${notifiedOrderClient.phone})` : ''}
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-semibold">{B.notifSentTag}</span>
                 </div>
-                <p className="text-stone-200 leading-relaxed">
-                  ☕{' '}
-                  <b>
-                    {B.notifOrderReady} {notifiedOrderClient.id} {B.notifReadySuffix}
-                  </b>
-                  <br />
-                  {B.notifItems} {notifiedOrderClient.itemsSummary}.
-                  <br />
-                  {B.notifWaitAtBar}
-                </p>
+
+                <div className="p-3 rounded-xl bg-stone-900 border border-stone-800/80 text-stone-200 text-xs leading-relaxed space-y-1">
+                  <p>
+                    ☕ <b>{notifiedOrderClient.name}</b>, comanda ta <b>{notifiedOrderClient.id}</b> este gata!
+                  </p>
+                  <p>
+                    ✨ Te așteptăm la tejgheaua Amika Café (Cricova).
+                  </p>
+                  <p className="text-stone-400 italic">
+                    Să ai o zi minunată și plină de energie!
+                  </p>
+                </div>
+
+                {language === 'ru' && (
+                  <div className="text-[10px] text-stone-400 italic px-1">
+                    (Перевод: ☕ <b>{notifiedOrderClient.name}</b>, {B.notifOrderReady} {B.notifPickupPrompt} {B.notifClosingWish})
+                  </div>
+                )}
               </div>
             </div>
           )}

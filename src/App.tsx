@@ -434,6 +434,7 @@ export function App() {
             language={language}
             onExitAdminMode={() => handleChangeViewMode('client')}
             onOpenTvMode={handleOpenTvMode}
+            onOpenBaristaMode={() => handleChangeViewMode('barista')}
           />
         </main>
       ) : viewMode === 'barista' ? (
@@ -604,13 +605,11 @@ export function App() {
         />
       )}
 
-      {/* BOTTOM MOBILE NAVIGATION BAR (For Client & Barista views) */}
-      {viewMode !== 'admin' && (
+      {/* BOTTOM MOBILE NAVIGATION BAR (For Client view only) */}
+      {viewMode === 'client' && (
         <BottomNav
           activeTab={
-            viewMode === 'barista'
-              ? 'barista'
-              : isCartModalOpen
+            isCartModalOpen
               ? 'cart'
               : isLoyaltyModalOpen
               ? 'loyalty'
@@ -618,28 +617,20 @@ export function App() {
           }
           onChangeTab={(tab) => {
             if (tab === 'menu') {
-              handleChangeViewMode('client');
               setIsCartModalOpen(false);
               setIsLoyaltyModalOpen(false);
             } else if (tab === 'loyalty') {
-              handleChangeViewMode('client');
               setIsCartModalOpen(false);
               setIsLoyaltyModalOpen(true);
             } else if (tab === 'cart') {
-              handleChangeViewMode('client');
               setIsLoyaltyModalOpen(false);
               setIsCartModalOpen(true);
-            } else if (tab === 'barista') {
-              setIsCartModalOpen(false);
-              setIsLoyaltyModalOpen(false);
-              handleChangeViewMode('barista');
             }
           }}
           language={language}
           cartCount={cartCount}
           cartTotal={cartTotal}
           stampsCount={loyaltyCard.currentStamps}
-          isBaristaMode={viewMode === 'barista'}
         />
       )}
     </div>

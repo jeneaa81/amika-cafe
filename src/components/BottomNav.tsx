@@ -1,15 +1,14 @@
-import { Coffee, Sparkles, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { Coffee, Sparkles, ShoppingBag } from 'lucide-react';
 import type { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
 interface BottomNavProps {
-  activeTab: 'menu' | 'loyalty' | 'cart' | 'barista';
-  onChangeTab: (tab: 'menu' | 'loyalty' | 'cart' | 'barista') => void;
+  activeTab: 'menu' | 'loyalty' | 'cart';
+  onChangeTab: (tab: 'menu' | 'loyalty' | 'cart') => void;
   language: Language;
   cartCount: number;
   cartTotal: number;
   stampsCount: number;
-  isBaristaMode: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -19,7 +18,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   cartCount,
   cartTotal,
   stampsCount,
-  isBaristaMode,
 }) => {
   const t = TRANSLATIONS[language];
 
@@ -30,7 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           onClick={() => onChangeTab('menu')}
           className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition ${
-            activeTab === 'menu' && !isBaristaMode
+            activeTab === 'menu'
               ? 'text-amber-400 font-bold'
               : 'text-stone-400 hover:text-stone-200 font-medium'
           }`}
@@ -43,7 +41,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           onClick={() => onChangeTab('loyalty')}
           className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 relative transition ${
-            activeTab === 'loyalty' && !isBaristaMode
+            activeTab === 'loyalty'
               ? 'text-amber-400 font-bold'
               : 'text-stone-400 hover:text-stone-200 font-medium'
           }`}
@@ -77,19 +75,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <span className="text-[11px]">
             {cartCount > 0 ? `${cartTotal} ${t.mdl}` : t.navCart}
           </span>
-        </button>
-
-        {/* Barista Mode Tab */}
-        <button
-          onClick={() => onChangeTab('barista')}
-          className={`flex-1 py-1.5 flex flex-col items-center justify-center gap-1 transition ${
-            isBaristaMode
-              ? 'text-emerald-400 font-bold'
-              : 'text-stone-400 hover:text-stone-200 font-medium'
-          }`}
-        >
-          <ShieldCheck className="w-5 h-5" />
-          <span className="text-[11px]">{t.navBarista}</span>
         </button>
       </div>
     </div>
