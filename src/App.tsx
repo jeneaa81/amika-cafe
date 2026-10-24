@@ -104,11 +104,11 @@ export function App() {
   // Cart
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Loyalty Card (starts with 4/6 stamps for demonstration excitement!)
+  // Loyalty Card (Real 5+1 digital card, starts with 0 stamps)
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard>({
     cardNumber: 'AMIKA-8492',
-    currentStamps: 4,
-    totalFreeCoffeesEarned: 1,
+    currentStamps: 0,
+    totalFreeCoffeesEarned: 0,
     lastUpdated: new Date().toISOString(),
   });
 
@@ -153,30 +153,58 @@ export function App() {
 
   // Sync Loyalty Card with Supabase by Telegram User ID
   useEffect(() => {
-    const tgUser = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number; first_name?: string } } } } }).Telegram?.WebApp?.initDataUnsafe?.user;
-    const tgId = tgUser?.id || 1001; // fallback test ID
+    let isMounted = true;
+    const tgUser = (window as unknown as {
+      Telegram?: {
+        WebApp?: {
+          initDataUnsafe?: {
+            user?: { id?: number; first_name?: string; last_name?: string; username?: string };
+          };
+        };
+      };
+    }).Telegram?.WebApp?.initDataUnsafe?.user;
 
-    fetchLoyaltyCardByTelegramId(tgId)
-      .then((card) => {
+    const storedTgId = localStorage.getItem('amika_tg_user_id');
+    const tgId = tgUser?.id || (storedTgId ? Number(storedTgId) : 410572268);
+    if (tgUser?.id) {
+      localStorage.setItem('amika_tg_user_id', String(tgUser.id));
+    }
+    const customerName = tgUser?.first_name
+      ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
+      : 'Oaspete VIP';
+
+    const syncCard = async () => {
+      try {
+        const card = await fetchLoyaltyCardByTelegramId(tgId);
+        if (!isMounted) return;
         if (card) {
           setLoyaltyCard(card);
         } else {
-          // Initialize fresh card in Supabase
+          // Initialize fresh real card in Supabase with 0 stamps
           const freshCard: LoyaltyCard = {
-            cardNumber: `AMIKA-${String(tgId).slice(-4) || '8492'}`,
+            cardNumber: `AMIKA-${String(tgId).slice(-4)}`,
             telegramUserId: tgId,
-            customerName: tgUser?.first_name || 'Ion',
-            currentStamps: 4,
+            customerName,
+            currentStamps: 0,
             totalFreeCoffeesEarned: 0,
             lastUpdated: new Date().toISOString(),
           };
           saveLoyaltyCardToSupabase(freshCard).catch(() => {});
           setLoyaltyCard(freshCard);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.warn('Loyalty fetch fallback:', err);
-      });
+      }
+    };
+
+    syncCard();
+    // 5-second poll interval so when barista adds stamp on tablet, guest's screen lights up!
+    const interval = setInterval(syncCard, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const t = TRANSLATIONS[language];

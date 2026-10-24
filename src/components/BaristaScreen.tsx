@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Search,
   X,
+  QrCode,
 } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 import { playMelodicChime } from '../utils/audio';
@@ -27,6 +28,7 @@ import {
   saveTvConfigLocal,
   getDefaultStoreProducts,
 } from '../utils/menuStore';
+import { BaristaLoyaltyScanner } from './BaristaLoyaltyScanner';
 
 interface BaristaScreenProps {
   language: Language;
@@ -136,7 +138,9 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 }) => {
   const t = TRANSLATIONS[language];
   const B = BARISTA_I18N[language];
-  const [activeTab, setActiveTab] = useState<'orders' | 'stop_list' | 'tv_remote'>('orders');
+  const [activeTab, setActiveTab] = useState<
+    'orders' | 'stop_list' | 'loyalty_scanner' | 'tv_remote'
+  >('orders');
   const [baristaConfig, setBaristaConfig] = useState<TvBoardConfig>(() => loadTvConfig());
   const [stopListFilterCat, setStopListFilterCat] = useState<Category>('all');
   const [stopListSearch, setStopListSearch] = useState<string>('');
@@ -271,11 +275,23 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
           <p className="text-xs sm:text-sm text-stone-400">{B.topSub}</p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <button
+            onClick={() => setActiveTab('loyalty_scanner')}
+            className={`px-3.5 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-2 transition active:scale-95 shadow-sm cursor-pointer ${
+              activeTab === 'loyalty_scanner'
+                ? 'bg-amber-500 text-stone-950 border-amber-400 font-black'
+                : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+            }`}
+          >
+            <QrCode className="w-4 h-4" />
+            <span>{language === 'ro' ? 'Scanare QR 5+1' : 'Сканер QR 5+1'}</span>
+          </button>
+
           {onOpenTvMode && (
             <button
               onClick={onOpenTvMode}
-              className="px-4 py-2 sm:py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-bold flex items-center gap-2 transition active:scale-95 shadow-sm cursor-pointer"
+              className="px-3.5 py-2 sm:py-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs sm:text-sm font-bold flex items-center gap-2 transition active:scale-95 shadow-sm cursor-pointer"
             >
               <Tv className="w-4 h-4 text-amber-400" />
               <span>{B.openTvBtn}</span>
@@ -284,15 +300,15 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
           <button
             onClick={onExitBaristaMode}
-            className="px-4 py-2 sm:py-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs sm:text-sm font-semibold transition active:scale-95 cursor-pointer"
+            className="px-3.5 py-2 sm:py-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs sm:text-sm font-semibold transition active:scale-95 cursor-pointer"
           >
             {B.exitBtn}
           </button>
         </div>
       </div>
 
-      {/* Main Navigation Tabs (Strictly Barista tools: Pre-orders, 1-Click Stop-List & TV Remote) */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-stone-950 p-1.5 sm:p-2 rounded-2xl border border-stone-800 shadow-md">
+      {/* Main Navigation Tabs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 bg-stone-950 p-1.5 sm:p-2 rounded-2xl border border-stone-800 shadow-md">
         <button
           onClick={() => setActiveTab('orders')}
           className={`py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
@@ -320,6 +336,20 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
             {language === 'ro' ? 'Stop-List' : 'Стоп-лист'} (
             {baristaProducts.filter((p) => p.visible === false).length}
             )
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('loyalty_scanner')}
+          className={`py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+            activeTab === 'loyalty_scanner'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 shadow-lg font-black'
+              : 'text-amber-400/80 hover:text-amber-300'
+          }`}
+        >
+          <QrCode className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+          <span className="truncate">
+            {language === 'ro' ? 'Carduri 5+1' : 'Карты 5+1'}
           </span>
         </button>
 
@@ -703,7 +733,12 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       )}
 
-      {/* ================= TAB 3: TV REMOTE CONTROL & FLASH SALE ================= */}
+      {/* ================= TAB 3: LOYALTY QR CAMERA SCANNER (5+1) ================= */}
+      {activeTab === 'loyalty_scanner' && (
+        <BaristaLoyaltyScanner language={language} />
+      )}
+
+      {/* ================= TAB 4: TV REMOTE CONTROL & FLASH SALE ================= */}
       {activeTab === 'tv_remote' && (
         <div className="space-y-4 sm:space-y-6">
           {tvCommandToast && (

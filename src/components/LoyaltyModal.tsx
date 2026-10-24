@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Sparkles, Coffee, QrCode, CheckCircle2, RotateCcw, Award } from 'lucide-react';
+import QRCode from 'qrcode';
 import type { Language, LoyaltyCard } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -21,6 +22,21 @@ export const LoyaltyModal: React.FC<LoyaltyModalProps> = ({
   const t = TRANSLATIONS[language];
   const isComplete = loyaltyCard.currentStamps >= 6;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (!loyaltyCard.cardNumber) return;
+    QRCode.toDataURL(loyaltyCard.cardNumber, {
+      width: 280,
+      margin: 1.5,
+      color: {
+        dark: '#1c1917',
+        light: '#ffffff',
+      },
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch((err) => console.warn('QR gen error:', err));
+  }, [loyaltyCard.cardNumber]);
 
   const handleSimulateStamp = () => {
     onAddStamp();
@@ -158,17 +174,36 @@ export const LoyaltyModal: React.FC<LoyaltyModalProps> = ({
             </div>
           </div>
 
-          {/* QR Code Presentation */}
-          <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 text-center flex flex-col items-center">
-            <p className="text-xs text-stone-400 mb-3">{t.scanHint}</p>
+          {/* Real Scannable Dynamic QR Code */}
+          <div className="p-4 rounded-3xl bg-stone-950 border border-stone-800 text-center flex flex-col items-center space-y-3 shadow-xl">
+            <p className="text-xs text-stone-400 font-medium">{t.scanHint}</p>
 
-            {/* Visual Simulated QR */}
-            <div className="w-40 h-40 bg-white rounded-2xl p-3 flex flex-col items-center justify-center shadow-xl ring-4 ring-amber-500/20 relative">
-              <div className="w-full h-full bg-stone-100 rounded-lg flex items-center justify-center text-stone-900 p-2">
-                <QrCode className="w-28 h-28 text-stone-900" />
-              </div>
-              <span className="text-[9px] font-mono text-stone-700 mt-1 font-bold">
+            <div className="relative p-2.5 bg-white rounded-2xl shadow-2xl ring-4 ring-amber-500/25">
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt={`QR ${loyaltyCard.cardNumber}`}
+                  className="w-44 h-44 object-contain rounded-lg block"
+                />
+              ) : (
+                <div className="w-44 h-44 flex items-center justify-center bg-stone-100 rounded-lg text-stone-400">
+                  <QrCode className="w-12 h-12 animate-pulse" />
+                </div>
+              )}
+              {/* Corner targeting reticle styling */}
+              <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-amber-500 rounded-tl pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-4 h-4 border-t-2 border-r-2 border-amber-500 rounded-tr pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-4 h-4 border-b-2 border-l-2 border-amber-500 rounded-bl pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-4 h-4 border-b-2 border-r-2 border-amber-500 rounded-br pointer-events-none" />
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <span className="font-mono text-xs font-black text-amber-400 bg-stone-900 px-3 py-1 rounded-xl border border-stone-800 tracking-wider">
                 {loyaltyCard.cardNumber}
+              </span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>Card Activ</span>
               </span>
             </div>
           </div>

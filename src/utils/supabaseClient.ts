@@ -419,3 +419,37 @@ export async function fetchAllLoyaltyCardsFromSupabase(): Promise<LoyaltyCard[]>
   }
 }
 
+/**
+ * Fetch a specific loyalty card by card number (from scanned QR)
+ */
+export async function fetchLoyaltyCardByCardNumber(
+  cardNumber: string
+): Promise<LoyaltyCard | null> {
+  const clean = cardNumber.trim().toUpperCase();
+  if (!clean) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/loyalty_cards?card_number=eq.${encodeURIComponent(clean)}&select=*`,
+      {
+        method: 'GET',
+        headers: SUPABASE_HEADERS,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!resp.ok) return null;
+    const rows = (await resp.json()) as DbLoyaltyRow[];
+    if (Array.isArray(rows) && rows.length > 0) {
+      return mapDbRowToLoyalty(rows[0]);
+    }
+    return null;
+  } catch (err) {
+    console.warn('Supabase fetchLoyaltyCardByCardNumber error:', err);
+    return null;
+  }
+}
+
