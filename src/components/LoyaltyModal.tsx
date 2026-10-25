@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Sparkles, Coffee, QrCode, CheckCircle2, RotateCcw, Award } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Sparkles, Coffee, QrCode, CheckCircle2, Award } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Language, LoyaltyCard } from '../types';
 import { TRANSLATIONS } from '../data/translations';
@@ -8,21 +8,50 @@ interface LoyaltyModalProps {
   language: Language;
   onClose: () => void;
   loyaltyCard: LoyaltyCard;
-  onAddStamp: () => void;
-  onResetCard: () => void;
+  onAddStamp?: () => void;
+  onResetCard?: () => void;
 }
 
 export const LoyaltyModal: React.FC<LoyaltyModalProps> = ({
   language,
   onClose,
   loyaltyCard,
-  onAddStamp,
-  onResetCard,
 }) => {
   const t = TRANSLATIONS[language];
   const isComplete = loyaltyCard.currentStamps >= 6;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  const prevStampsRef = useRef<number>(loyaltyCard.currentStamps);
+
+  // Live feedback when barista adds a stamp on tablet
+  useEffect(() => {
+    if (loyaltyCard.currentStamps > prevStampsRef.current) {
+      setToastMessage(t.stampAddedToast);
+      try {
+        const tg = (window as unknown as {
+          Telegram?: {
+            WebApp?: {
+              HapticFeedback?: {
+                impactOccurred: (s: string) => void;
+                notificationOccurred: (s: string) => void;
+              };
+            };
+          };
+        }).Telegram?.WebApp;
+        if (tg?.HapticFeedback) {
+          if (loyaltyCard.currentStamps >= 6) {
+            tg.HapticFeedback.notificationOccurred('success');
+          } else {
+            tg.HapticFeedback.impactOccurred('medium');
+          }
+        }
+      } catch {}
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevStampsRef.current = loyaltyCard.currentStamps;
+  }, [loyaltyCard.currentStamps, t.stampAddedToast]);
 
   useEffect(() => {
     if (!loyaltyCard.cardNumber) return;
@@ -37,24 +66,6 @@ export const LoyaltyModal: React.FC<LoyaltyModalProps> = ({
       .then((url) => setQrDataUrl(url))
       .catch((err) => console.warn('QR gen error:', err));
   }, [loyaltyCard.cardNumber]);
-
-  const handleSimulateStamp = () => {
-    onAddStamp();
-    try {
-      const tg = (window as unknown as { Telegram?: { WebApp?: { HapticFeedback?: { impactOccurred: (s: string) => void; notificationOccurred: (s: string) => void } } } }).Telegram?.WebApp;
-      if (tg?.HapticFeedback) {
-        if (loyaltyCard.currentStamps + 1 >= 6) {
-          tg.HapticFeedback.notificationOccurred('success');
-        } else {
-          tg.HapticFeedback.impactOccurred('medium');
-        }
-      }
-    } catch {
-      // ignore
-    }
-    setToastMessage(t.stampAddedToast);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -205,40 +216,6 @@ export const LoyaltyModal: React.FC<LoyaltyModalProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 <span>Card Activ</span>
               </span>
-            </div>
-          </div>
-
-          {/* Barista Simulation Trigger (Key for pitching!) */}
-          <div className="p-3.5 rounded-2xl bg-amber-600/10 border border-amber-500/30 text-stone-200">
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide block mb-1">
-              {language === 'ro' ? 'Instrument de prezentare pentru proprietar:' : 'Инструмент показа для владельца:'}
-            </span>
-            <p className="text-xs text-stone-300 mb-3 leading-relaxed">
-              {language === 'ro'
-                ? 'Arată-i proprietarului cât de rapid adaugă barmanul o ștampilă la casă fără cartele de carton:'
-                : 'Покажите владельцу, как бариста в 1 клик начисляет чашку без возни с бумажными штампами:'}
-            </p>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleSimulateStamp}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition active:scale-95"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>{t.simulateBaristaStamp}</span>
-              </button>
-
-              {loyaltyCard.currentStamps > 0 && (
-                <button
-                  type="button"
-                  onClick={onResetCard}
-                  className="p-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-400 hover:text-white border border-stone-700 transition"
-                  title="Resetează"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              )}
             </div>
           </div>
         </div>
