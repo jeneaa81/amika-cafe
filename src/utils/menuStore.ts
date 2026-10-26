@@ -66,74 +66,78 @@ export const DEFAULT_TV_CONFIG: TvBoardConfig = {
   coffeeItems: [
     {
       id: 'c-1',
-      name: { ro: 'Espresso Solo / Dublu', ru: 'Эспрессо / Двойной' },
-      volume: '40 / 80 ml',
-      notes: { ro: '100% Arabica Briksa, note de ciocolată', ru: '100% арабика Briksa, темный шоколад' },
-      price: 25,
+      name: { ro: 'Espresso (milk) / Dublu', ru: 'Эспрессо (milk) / Двойной' },
+      volume: '30 / 60 ml',
+      notes: { ro: '100% Arabica', ru: '100% арабика' },
+      price: 28,
+      secondPrice: 35,
+      badge: null,
+      visible: true,
+    },
+    {
+      id: 'c-6',
+      name: { ro: 'Americano (milk) / Dublu', ru: 'Американо (Milk) / Двойной' },
+      volume: '150 / 250 ml',
+      notes: { ro: 'Cafea Americano aromată', ru: 'Классический американо' },
+      price: 28,
       secondPrice: 35,
       badge: null,
       visible: true,
     },
     {
       id: 'c-2',
-      name: { ro: 'Cappuccino Cremoso', ru: 'Капучино Классический' },
-      volume: '250 ml',
-      notes: { ro: 'Espresso dublu, micro-spumă catifelată', ru: 'Двойной эспрессо, нежная молочная пенка' },
-      price: 40,
+      name: { ro: 'Cappuccino / Vegan', ru: 'Капучино / Веган' },
+      volume: '250 / 350 ml',
+      notes: { ro: 'Espresso dublu, micro-spumă cremoasă', ru: 'Двойной эспрессо, кремовая пенка' },
+      price: 35,
+      secondPrice: 40,
       badge: { ro: 'TOP', ru: 'ХИТ' },
       visible: true,
     },
     {
       id: 'c-3',
-      name: { ro: 'Flat White Dublu', ru: 'Флэт Уайт' },
-      volume: '200 ml',
-      notes: { ro: 'Gust intens de cafea, dublu ristretto', ru: 'Двойной шот ристретто, шелковая пенка' },
-      price: 48,
+      name: { ro: 'Flat White / Vegan', ru: 'Флэт Уайт / Веган' },
+      volume: '200 / 300 ml',
+      notes: { ro: 'Dublu espresso', ru: 'Двойной эспрессо' },
+      price: 50,
+      secondPrice: 55,
       badge: { ro: 'BARISTA', ru: 'ВЫБОР' },
       visible: true,
     },
     {
       id: 'c-4',
-      name: { ro: 'Caffè Latte Delicat', ru: 'Латте Классический' },
-      volume: '350 ml',
-      notes: { ro: 'Lapte mătăsos, gust fin și cremos', ru: 'Большой объем нежного взбитого молока' },
-      price: 45,
+      name: { ro: 'Latte / Latte Mare', ru: 'Латте / Веган' },
+      volume: '300 / 450 ml',
+      notes: { ro: 'Vegan - 45 Lei', ru: 'Веган - 45 лей' },
+      price: 39,
+      secondPrice: 45,
       badge: null,
       visible: true,
     },
     {
       id: 'c-5',
-      name: { ro: 'Raf Vanilie & Lavandă', ru: 'Раф Ваниль-Лаванда' },
+      name: { ro: 'Raf Scortisoara & Lavandă', ru: 'Раф Корица + Лаванда' },
       volume: '300 ml',
-      notes: { ro: 'Specialitatea casei cu flori de lavandă', ru: 'Фирменный рецепт с натуральной лавандой' },
+      notes: { ro: '(sau alt sirop la alegere)', ru: '(или другой сироп на выбор)' },
       price: 55,
       badge: { ro: 'SPECIALITATE', ru: 'ФИРМЕННЫЙ' },
       visible: true,
     },
     {
-      id: 'c-6',
-      name: { ro: 'Cold Brew Tonic & Portocală', ru: 'Колд Брю Тоник Апельсин' },
-      volume: '350 ml',
-      notes: { ro: 'Infuzat la rece 16 ore, apă tonică', ru: '16 ч холодного заваривания, тоник, лед' },
-      price: 55,
-      badge: null,
-      visible: true,
-    },
-    {
       id: 'c-7',
-      name: { ro: 'Matcha Latte Ceremonial Uji', ru: 'Матча Латте Удзи (Япония)' },
+      name: { ro: 'Matcha Latte / Vegan', ru: 'Матча Латте / Веган' },
       volume: '300 ml',
-      notes: { ro: 'Pudră verde bio, tel de bambus chasen', ru: 'Оригинальная церемониальная матча' },
+      notes: { ro: 'Pudră verde bio Uji', ru: 'Оригинальная церемониальная матча' },
       price: 55,
-      badge: { ro: 'BIO', ru: 'ЯПОНИЯ' },
+      badge: { ro: 'Organik', ru: 'Organik' },
       visible: true,
     },
     {
       id: 'c-8',
-      name: { ro: 'Ceai Cătină & Ghimbir', ru: 'Облепиховый чай с имбирем' },
+      name: { ro: 'Ceai Cătină', ru: 'Облепиховый чай' },
       volume: '400 ml',
-      notes: { ro: 'Cătină moldovenească, miere, scorțișoară', ru: 'Местная облепиха, натуральный мед' },
-      price: 45,
+      notes: { ro: 'Cătină, miere, scorțișoară, mentă, lămâie, ghimbir', ru: 'Облепиха, мед, корица, мята, лимон, имбирь' },
+      price: 50,
       badge: null,
       visible: true,
     },
@@ -406,6 +410,48 @@ export function getDefaultStoreProducts(): Product[] {
     tvColumn: p.tvColumn || (p.category === 'coffee' ? 'coffee' : 'desserts'),
     sortOrder: idx + 1,
   }));
+}
+
+export function syncTvColumnsFromStoreProducts(config: TvBoardConfig): TvBoardConfig {
+  const store = Array.isArray(config.storeProducts) && config.storeProducts.length > 0
+    ? config.storeProducts
+    : getDefaultStoreProducts();
+
+  // Left TV Column (Coffee & Drinks)
+  const coffeeItems: TvCoffeeItem[] = store
+    .filter((p) => p.showOnTv && (p.tvColumn === 'coffee' || !p.tvColumn))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      volume: p.volume ? (p.secondVolume ? `${p.volume} / ${p.secondVolume}` : p.volume) : '250 ml',
+      notes: p.description,
+      price: p.price,
+      secondPrice: p.secondPrice,
+      badge: p.badge || null,
+      visible: p.visible !== false,
+    }));
+
+  // Right TV Column (Desserts & Specialities)
+  const dessertItems: TvDessertItem[] = store
+    .filter((p) => p.showOnTv && p.tvColumn === 'desserts')
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      volume: p.volume,
+      desc: p.description,
+      price: p.price,
+      secondPrice: p.secondPrice,
+      discountPrice: Math.round(p.price * 0.7),
+      badge: p.badge || null,
+      visible: p.visible !== false,
+    }));
+
+  return {
+    ...config,
+    storeProducts: store,
+    coffeeItems,
+    dessertItems,
+  };
 }
 
 export function loadTvConfig(): TvBoardConfig {

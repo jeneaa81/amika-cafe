@@ -8,6 +8,7 @@ import {
   BUILTIN_INSTA_GALLERY,
   STORE_PHOTO_PRESETS,
   getDefaultStoreProducts,
+  syncTvColumnsFromStoreProducts,
   loadTvConfig,
   saveTvConfigLocal,
   compressImageFile,
@@ -20,8 +21,6 @@ import {
 } from '../utils/supabaseClient';
 import {
   Coffee,
-  Cake,
-  Image as ImageIcon,
   Plus,
   Trash2,
   ArrowUp,
@@ -36,7 +35,6 @@ import {
   CheckCircle,
   Camera,
   FolderOpen,
-  Columns,
   Tv,
   Award,
   AlertCircle,
@@ -123,7 +121,9 @@ const ADMIN_I18N = {
     tabCoffee: '1. Coloana Cafea',
     tabDesserts: '2. Coloana 2 (Ceaiuri & Băuturi)',
     tabSlides: '3. Carusel Foto',
-    tabStoreCatalog: '5. Vitrină Magazin',
+    tabStoreCatalog: '1. 📦 Catalog Produse (Unificat)',
+    tabTvSettings: '2. 📺 Setări TV & Promo Slides',
+    tabLoyalty: '3. 💳 Carduri Fidelitate 5+1',
     // Coffee Column
     coffeeColTitle: 'Coloana 1: Cafea & Băuturi',
     coffeeColSub: 'Coloana din stânga a meniului de pe televizor',
@@ -250,7 +250,9 @@ const ADMIN_I18N = {
     tabCoffee: '1. Колонка Кофе',
     tabDesserts: '2. Колонка 2 (Чаи & Напитки)',
     tabSlides: '3. Фото-карусель',
-    tabStoreCatalog: '5. Витрина Магазина',
+    tabStoreCatalog: '1. 📦 Единый Каталог Товаров',
+    tabTvSettings: '2. 📺 Настройки ТВ & Промо-Слайды',
+    tabLoyalty: '3. 💳 Карты Лояльности 5+1',
     // Coffee Column
     coffeeColTitle: 'Колонка 1: Кофе и Напитки',
     coffeeColSub: 'Левая колонка меню на телевизоре',
@@ -358,10 +360,10 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [draftConfig, setDraftConfig] = useState<TvBoardConfig>(() => loadTvConfig());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // Default to side-by-side 2-column view for Tablet / PC convenience
+  // Unified Tabs: Unified Product Catalog (Tab 1), TV Settings & Slides (Tab 2), Loyalty (Tab 3)
   const [subTab, setSubTab] = useState<
-    'both_columns' | 'coffee' | 'desserts' | 'slides' | 'loyalty' | 'store_catalog'
-  >('both_columns');
+    'store_catalog' | 'tv_settings' | 'loyalty'
+  >('store_catalog');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showInstaPicker, setShowInstaPicker] = useState<boolean>(false);
@@ -369,7 +371,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
 
   // Store Catalog Management State (TRK-014)
-  const [storeFilterCategory, setStoreFilterCategory] = useState<Category>('all');
+  const [storeFilterCategory, setStoreFilterCategory] = useState<string>('all');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isNewProduct, setIsNewProduct] = useState<boolean>(false);
@@ -481,18 +483,10 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     const targetProduct = updated.find((p) => p.id === productId);
 
     setDraftConfig((prev) => {
-      const nextCoffee = prev.coffeeItems.map((c) =>
-        c.id === productId ? { ...c, visible: targetProduct?.visible !== false } : c
-      );
-      const nextDesserts = prev.dessertItems.map((d) =>
-        d.id === productId ? { ...d, visible: targetProduct?.visible !== false } : d
-      );
-      return {
+      return syncTvColumnsFromStoreProducts({
         ...prev,
         storeProducts: updated,
-        coffeeItems: nextCoffee,
-        dessertItems: nextDesserts,
-      };
+      });
     });
     setHasUnsavedChanges(true);
 
@@ -501,6 +495,50 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         ? `${targetProduct?.name.ro}: ${targetProduct?.visible !== false ? '🟢 Activ în vitrină' : '🔴 Pus în Stop-list'}`
         : `${targetProduct?.name.ru}: ${targetProduct?.visible !== false ? '🟢 В наличии на витрине' : '🔴 Перенесен в Стоп-лист'}`
     );
+  };
+
+  const handleToggleProductTv = (productId: string) => {
+    const list = getStoreProducts();
+    const updated = list.map((p) => {
+      if (p.id === productId) {
+        const nextTv = !p.showOnTv;
+        return { ...p, showOnTv: nextTv };
+      }
+      return p;
+    });
+
+    const targetProduct = updated.find((p) => p.id === productId);
+
+    setDraftConfig((prev) => {
+      return syncTvColumnsFromStoreProducts({
+        ...prev,
+        storeProducts: updated,
+      });
+    });
+    setHasUnsavedChanges(true);
+
+    showToast(
+      language === 'ro'
+        ? `${targetProduct?.name.ro}: ${targetProduct?.showOnTv ? '📺 Afișat pe TV' : '🚫 Ascuns de pe TV'}`
+        : `${targetProduct?.name.ru}: ${targetProduct?.showOnTv ? '📺 Отображается на ТВ' : '🚫 Скрыт с экрана ТВ'}`
+    );
+  };
+
+  const handleMoveProduct = (index: number, direction: -1 | 1) => {
+    const list = [...getStoreProducts()];
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    const temp = list[index];
+    list[index] = list[targetIdx];
+    list[targetIdx] = temp;
+
+    setDraftConfig((prev) => {
+      return syncTvColumnsFromStoreProducts({
+        ...prev,
+        storeProducts: list,
+      });
+    });
+    setHasUnsavedChanges(true);
   };
 
   const handleSaveStoreProduct = (product: Product, isNew: boolean) => {
@@ -514,48 +552,10 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     }
 
     setDraftConfig((prev) => {
-      let nextCoffee = [...prev.coffeeItems];
-      let nextDesserts = [...prev.dessertItems];
-
-      if (product.showOnTv) {
-        if (product.tvColumn === 'coffee') {
-          const idx = nextCoffee.findIndex((c) => c.id === product.id || c.name.ro === product.name.ro);
-          const tvItem: TvCoffeeItem = {
-            id: product.id,
-            name: product.name,
-            volume: product.volume || (product.secondVolume ? `${product.volume} / ${product.secondVolume}` : '250 ml'),
-            notes: product.description,
-            price: product.price,
-            secondPrice: product.secondPrice,
-            badge: product.badge || null,
-            visible: product.visible !== false,
-          };
-          if (idx >= 0) nextCoffee[idx] = tvItem;
-          else nextCoffee.push(tvItem);
-        } else {
-          const idx = nextDesserts.findIndex((d) => d.id === product.id || d.name.ro === product.name.ro);
-          const tvItem: TvDessertItem = {
-            id: product.id,
-            name: product.name,
-            volume: product.volume,
-            desc: product.description,
-            price: product.price,
-            secondPrice: product.secondPrice,
-            discountPrice: Math.round(product.price * 0.7),
-            badge: product.badge || null,
-            visible: product.visible !== false,
-          };
-          if (idx >= 0) nextDesserts[idx] = tvItem;
-          else nextDesserts.push(tvItem);
-        }
-      }
-
-      return {
+      return syncTvColumnsFromStoreProducts({
         ...prev,
         storeProducts: updatedList,
-        coffeeItems: nextCoffee,
-        dessertItems: nextDesserts,
-      };
+      });
     });
 
     setEditingProduct(null);
@@ -578,12 +578,12 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     if (!window.confirm(confirmText)) return;
 
     const updated = currentList.filter((p) => p.id !== productId);
-    setDraftConfig((prev) => ({
-      ...prev,
-      storeProducts: updated,
-      coffeeItems: prev.coffeeItems.filter((c) => c.id !== productId),
-      dessertItems: prev.dessertItems.filter((d) => d.id !== productId),
-    }));
+    setDraftConfig((prev) => {
+      return syncTvColumnsFromStoreProducts({
+        ...prev,
+        storeProducts: updated,
+      });
+    });
     setHasUnsavedChanges(true);
 
     showToast(
@@ -642,8 +642,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
         setIsCloudConnected(true);
         const local = loadTvConfig();
         if (!local.updatedAt || cloudCfg.updatedAt >= local.updatedAt) {
-          saveTvConfigLocal(cloudCfg);
-          setDraftConfig(cloudCfg);
+          const synced = syncTvColumnsFromStoreProducts(cloudCfg);
+          saveTvConfigLocal(synced);
+          setDraftConfig(synced);
         }
       })
       .catch((err) => {
@@ -721,8 +722,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const handleSaveAndSync = async () => {
     setIsSaving(true);
     try {
+      const synced = syncTvColumnsFromStoreProducts(draftConfig);
       const stamped: TvBoardConfig = {
-        ...draftConfig,
+        ...synced,
         updatedAt: Date.now(),
       };
       setDraftConfig(stamped);
@@ -1737,110 +1739,96 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       )}
 
       {/* Navigation Tabs (Designed for Tablet & Desktop) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-stone-900/90 p-2 rounded-2xl border border-stone-800">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-stone-900/90 p-2.5 rounded-2xl border border-stone-800 shadow-xl">
         <button
-          onClick={() => setSubTab('both_columns')}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-            subTab === 'both_columns'
-              ? 'bg-amber-600 text-stone-950 font-extrabold shadow-md'
-              : 'text-stone-400 hover:text-stone-200'
+          type="button"
+          onClick={() => setSubTab('store_catalog')}
+          className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2.5 transition cursor-pointer ${
+            subTab === 'store_catalog'
+              ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-stone-950 shadow-lg shadow-amber-950/40'
+              : 'text-stone-300 hover:text-white hover:bg-stone-800/60'
           }`}
         >
-          <Columns className="w-4 h-4" />
-          <span>{L.tabBoth}</span>
-        </button>
-
-        <button
-          onClick={() => setSubTab('coffee')}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-            subTab === 'coffee'
-              ? 'bg-amber-600 text-stone-950 font-extrabold shadow-md'
-              : 'text-stone-400 hover:text-stone-200'
-          }`}
-        >
-          <Coffee className="w-4 h-4" />
-          <span>
-            {L.tabCoffee} ({draftConfig.coffeeItems.length})
+          <ShoppingBag className="w-4 h-4 shrink-0" />
+          <span>{L.tabStoreCatalog}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-950/40 text-stone-900 font-extrabold ml-1">
+            {getStoreProducts().length}
           </span>
         </button>
 
         <button
-          onClick={() => setSubTab('desserts')}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-            subTab === 'desserts'
-              ? 'bg-rose-600 text-white font-extrabold shadow-md'
-              : 'text-stone-400 hover:text-stone-200'
+          type="button"
+          onClick={() => setSubTab('tv_settings')}
+          className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2.5 transition cursor-pointer ${
+            subTab === 'tv_settings'
+              ? 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-950/40'
+              : 'text-stone-300 hover:text-white hover:bg-stone-800/60'
           }`}
         >
-          <Cake className="w-4 h-4" />
-          <span>
-            {L.tabDesserts} ({draftConfig.dessertItems.length})
+          <Tv className="w-4 h-4 shrink-0" />
+          <span>{L.tabTvSettings}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-950/40 text-stone-200 font-extrabold ml-1">
+            {draftConfig.slides.length} slides
           </span>
         </button>
 
         <button
-          onClick={() => setSubTab('slides')}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-            subTab === 'slides'
-              ? 'bg-indigo-600 text-white font-extrabold shadow-md'
-              : 'text-stone-400 hover:text-stone-200'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>
-            {L.tabSlides} ({draftConfig.slides.length})
-          </span>
-        </button>
-
-        <button
+          type="button"
           onClick={() => {
             setSubTab('loyalty');
             loadLoyaltyCards();
           }}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+          className={`py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2.5 transition cursor-pointer ${
             subTab === 'loyalty'
-              ? 'bg-emerald-600 text-white font-extrabold shadow-md'
-              : 'text-stone-400 hover:text-stone-200'
+              ? 'bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-950/40'
+              : 'text-stone-300 hover:text-white hover:bg-stone-800/60'
           }`}
         >
-          <Award className="w-4 h-4" />
-          <span>
-            {language === 'ro' ? '4. Loialitate' : '4. Лояльность'}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setSubTab('store_catalog')}
-          className={`py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-            subTab === 'store_catalog'
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-black shadow-lg shadow-amber-500/30'
-              : 'text-amber-400 hover:text-amber-300 hover:bg-stone-800/60'
-          }`}
-        >
-          <ShoppingBag className="w-4 h-4 shrink-0" />
-          <span>
-            {L.tabStoreCatalog} ({(draftConfig.storeProducts || []).length})
-          </span>
+          <Award className="w-4 h-4 shrink-0" />
+          <span>{L.tabLoyalty}</span>
         </button>
       </div>
 
-      {/* ================= VIEW 0: BOTH COLUMNS SIDE-BY-SIDE (TABLET / PC) ================= */}
-      {subTab === 'both_columns' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {renderCoffeeEditor()}
-          {renderDessertsEditor()}
-        </div>
-      )}
-
-      {/* ================= VIEW 1: COFFEE COLUMN ONLY ================= */}
-      {subTab === 'coffee' && <div className="max-w-4xl mx-auto">{renderCoffeeEditor()}</div>}
-
-      {/* ================= VIEW 2: DESSERTS COLUMN ONLY ================= */}
-      {subTab === 'desserts' && <div className="max-w-4xl mx-auto">{renderDessertsEditor()}</div>}
-
-      {/* ================= VIEW 3: PHOTO CAROUSEL EDITOR (MULTI-COLUMN GRID ON TABLET/PC) ================= */}
-      {subTab === 'slides' && (
+      {/* ================= VIEW: TV SETTINGS & PROMO SLIDES ================= */}
+      {subTab === 'tv_settings' && (
         <div className="space-y-6">
+          {/* Top TV Overview Banner */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-indigo-500/30 shadow-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center justify-center shrink-0">
+                  <Tv className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-serif">
+                    {language === 'ro' ? 'Setări Ecran TV & Carusel Foto' : 'Настройки Экрана ТВ & Фото-Карусели'}
+                  </h3>
+                  <p className="text-xs text-stone-400">
+                    {language === 'ro'
+                      ? 'Personalizați titlurile celor 2 coloane, textele de subsol și caruselul foto promoțional.'
+                      : 'Настройка заголовков двух колонок, подвала и рекламных слайдов для телевизора.'}
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={import.meta.env.BASE_URL + 'tv.html'}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer self-start sm:self-auto shadow-lg"
+              >
+                <Tv className="w-4 h-4" />
+                <span>{language === 'ro' ? 'Deschide TV (Ecran Complet)' : 'Открыть ТВ (Полный экран)'}</span>
+              </a>
+            </div>
+          </div>
+
+          {/* TV 2-Column Editors (Titles, Footers & Items) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {renderCoffeeEditor()}
+            {renderDessertsEditor()}
+          </div>
+
           {/* Upload Custom Photos Box */}
           <div className="p-5 rounded-3xl bg-indigo-950/40 border border-indigo-500/40 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -2443,7 +2431,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
 
           {/* Filter Bar & Search */}
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-            {/* Category Pills */}
+            {/* Category & Channel Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {[
                 { id: 'all', ro: 'Toate', ru: 'Всё меню' },
@@ -2451,11 +2439,13 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 { id: 'foodberry', ro: '🍰 Foodberry', ru: '🍰 Foodberry' },
                 { id: 'matcha_tea', ro: '🍵 Ceai & Matcha', ru: '🍵 Чай & Матча' },
                 { id: 'breakfast', ro: '🥪 Gustări', ru: '🥪 Завтраки' },
+                { id: 'on_tv', ro: '📺 Pe Ecran TV', ru: '📺 На экране ТВ' },
+                { id: 'stop_list', ro: '🔴 Stop-List', ru: '🔴 Стоп-лист' },
               ].map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setStoreFilterCategory(cat.id as Category)}
+                  onClick={() => setStoreFilterCategory(cat.id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                     storeFilterCategory === cat.id
                       ? 'bg-amber-500 text-stone-950 font-black shadow-md'
@@ -2497,8 +2487,14 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {getStoreProducts()
               .filter((p) => {
-                const matchesCat =
-                  storeFilterCategory === 'all' || p.category === storeFilterCategory;
+                let matchesCat = true;
+                if (storeFilterCategory === 'coffee') matchesCat = p.category === 'coffee';
+                else if (storeFilterCategory === 'foodberry') matchesCat = p.category === 'foodberry';
+                else if (storeFilterCategory === 'matcha_tea') matchesCat = p.category === 'matcha_tea';
+                else if (storeFilterCategory === 'breakfast') matchesCat = p.category === 'breakfast';
+                else if (storeFilterCategory === 'on_tv') matchesCat = Boolean(p.showOnTv);
+                else if (storeFilterCategory === 'stop_list') matchesCat = p.visible === false;
+
                 const q = storeSearchQuery.toLowerCase().trim();
                 const matchesSearch =
                   !q ||
@@ -2590,32 +2586,75 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                     </div>
 
                     {/* Bottom Action Bar */}
-                    <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between gap-2">
-                      {/* 1-Click Availability Toggle */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleProductVisibility(prod.id)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
-                          isInStock
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30'
-                        }`}
-                      >
-                        {isInStock ? (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>{language === 'ro' ? 'În Stoc' : 'В наличии'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-rose-400" />
-                            <span>{language === 'ro' ? 'Stop-List' : 'Стоп-лист'}</span>
-                          </>
-                        )}
-                      </button>
+                    <div className="pt-2 border-t border-stone-800/80 flex flex-wrap items-center justify-between gap-2">
+                      {/* Left: Quick Channel Toggles */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* 1-Click Availability in Bot Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProductVisibility(prod.id)}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                            isInStock
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30'
+                          }`}
+                          title={language === 'ro' ? 'Comută disponibilitatea în botul Telegram' : 'Переключить видимость в боте'}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                          <span>{isInStock ? (language === 'ro' ? '📱 În Bot' : '📱 В боте') : (language === 'ro' ? '📱 Oprit' : '📱 Стоп')}</span>
+                        </button>
 
-                      {/* Edit, Copy, Delete Buttons */}
+                        {/* 1-Click TV Display Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProductTv(prod.id)}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                            prod.showOnTv
+                              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30'
+                              : 'bg-stone-800 text-stone-500 border border-stone-700 hover:text-stone-300'
+                          }`}
+                          title={language === 'ro' ? 'Comută afișarea pe ecranul TV' : 'Переключить показ на ТВ'}
+                        >
+                          <Tv className="w-3.5 h-3.5" />
+                          <span>
+                            {prod.showOnTv
+                              ? prod.tvColumn === 'desserts'
+                                ? '📺 Col 2'
+                                : '📺 Col 1'
+                              : '📺 Oprit'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Right: Reorder + Edit + Copy + Delete */}
                       <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5 bg-stone-950 p-0.5 rounded-xl border border-stone-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const fullList = getStoreProducts();
+                              const idx = fullList.findIndex((p) => p.id === prod.id);
+                              if (idx > 0) handleMoveProduct(idx, -1);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition cursor-pointer"
+                            title={language === 'ro' ? 'Mută mai sus' : 'Выше'}
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const fullList = getStoreProducts();
+                              const idx = fullList.findIndex((p) => p.id === prod.id);
+                              if (idx >= 0 && idx < fullList.length - 1) handleMoveProduct(idx, 1);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition cursor-pointer"
+                            title={language === 'ro' ? 'Mută mai jos' : 'Ниже'}
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => {
