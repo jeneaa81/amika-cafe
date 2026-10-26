@@ -5,7 +5,6 @@ import {
   type TvCoffeeItem,
   type TvDessertItem,
   type TvSlideItem,
-  DEFAULT_TV_CONFIG,
   BUILTIN_INSTA_GALLERY,
   STORE_PHOTO_PRESETS,
   getDefaultStoreProducts,
@@ -45,7 +44,6 @@ import {
   Lock,
   KeyRound,
   LogOut,
-  AlertTriangle,
   Cloud,
   ShoppingBag,
   Edit3,
@@ -355,11 +353,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   // Change password panel inside Admin
   const [showChangePasswordBox, setShowChangePasswordBox] = useState<boolean>(false);
   const [newPasswordInput, setNewPasswordInput] = useState<string>('');
-
-  // Factory reset modal state with password verification
-  const [showResetModal, setShowResetModal] = useState<boolean>(false);
-  const [resetPasswordInput, setResetPasswordInput] = useState<string>('');
-  const [resetPasswordError, setResetPasswordError] = useState<boolean>(false);
 
   // Local draft state: edits NEVER trigger TV updates until "Save & Send to TV" is clicked
   const [draftConfig, setDraftConfig] = useState<TvBoardConfig>(() => loadTvConfig());
@@ -740,30 +733,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       setHasUnsavedChanges(false);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Open password confirmation modal for factory reset
-  const handleOpenResetModal = () => {
-    setShowResetModal(true);
-    setResetPasswordInput('');
-    setResetPasswordError(false);
-  };
-
-  // Perform factory reset only after correct admin or master password
-  const handleConfirmReset = (e: React.FormEvent) => {
-    e.preventDefault();
-    const expected = getStoredAdminPassword();
-    const input = resetPasswordInput.trim();
-    if (input === expected || input === MASTER_DEVELOPER_PASSWORD) {
-      const fresh = JSON.parse(JSON.stringify(DEFAULT_TV_CONFIG)) as TvBoardConfig;
-      updateDraft(fresh);
-      setShowResetModal(false);
-      setResetPasswordInput('');
-      setResetPasswordError(false);
-      showToast(L.toastResetDraft);
-    } else {
-      setResetPasswordError(true);
     }
   };
 
@@ -1685,14 +1654,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             />
 
             <button
-              onClick={handleOpenResetModal}
-              className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/60 text-stone-400 hover:text-rose-300 border border-stone-700/80 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{L.resetFactory}</span>
-            </button>
-
-            <button
               onClick={() => setShowChangePasswordBox(!showChangePasswordBox)}
               className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
@@ -1764,75 +1725,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               </button>
             </div>
           </form>
-        )}
-
-        {/* Factory Reset Modal with Password Verification */}
-        {showResetModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="max-w-md w-full p-6 sm:p-7 rounded-3xl bg-stone-900 border border-rose-500/50 shadow-2xl space-y-5 animate-in zoom-in-95">
-              <div className="flex items-center gap-3">
-                <span className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
-                  <AlertTriangle className="w-6 h-6" />
-                </span>
-                <div>
-                  <h3 className="text-base font-black text-white font-serif">
-                    {L.resetModalTitle}
-                  </h3>
-                  <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                    Amika Security Guard
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-stone-300 leading-relaxed">
-                {L.resetModalDesc}
-              </p>
-
-              <form onSubmit={handleConfirmReset} className="space-y-4">
-                <div>
-                  <input
-                    type="password"
-                    value={resetPasswordInput}
-                    onChange={(e) => {
-                      setResetPasswordInput(e.target.value);
-                      if (resetPasswordError) setResetPasswordError(false);
-                    }}
-                    placeholder={L.resetPassPlaceholder}
-                    autoFocus
-                    className="w-full px-4 py-3 rounded-2xl bg-stone-950 border border-stone-700 focus:border-rose-500 focus:outline-none text-xs sm:text-sm text-white font-mono"
-                  />
-                </div>
-
-                {resetPasswordError && (
-                  <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-bold flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span>{L.wrongPassword}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowResetModal(false);
-                      setResetPasswordInput('');
-                      setResetPasswordError(false);
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold transition cursor-pointer"
-                  >
-                    {L.cancelBtn}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-black text-xs shadow-lg shadow-rose-950/60 transition active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>{L.resetConfirmBtn}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
         )}
       </div>
 
