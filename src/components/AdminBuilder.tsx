@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Language, LoyaltyCard, Product, Category } from '../types';
 import {
   type TvBoardConfig,
-  type TvCoffeeItem,
-  type TvDessertItem,
   type TvSlideItem,
   BUILTIN_INSTA_GALLERY,
   STORE_PHOTO_PRESETS,
@@ -524,20 +522,57 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     );
   };
 
-  const handleMoveProduct = (index: number, direction: -1 | 1) => {
-    const list = [...getStoreProducts()];
-    const targetIdx = index + direction;
-    if (targetIdx < 0 || targetIdx >= list.length) return;
-    const temp = list[index];
-    list[index] = list[targetIdx];
-    list[targetIdx] = temp;
+  const handleMoveProduct = (productId: string, direction: -1 | 1) => {
+    const fullList = [...getStoreProducts()];
 
-    setDraftConfig((prev) => {
-      return syncTvColumnsFromStoreProducts({
-        ...prev,
-        storeProducts: list,
-      });
+    // Find the list currently visible in the active filter
+    const visibleFiltered = fullList.filter((p) => {
+      let matchesCat = true;
+      if (storeFilterCategory === 'coffee') matchesCat = p.category === 'coffee';
+      else if (storeFilterCategory === 'foodberry') matchesCat = p.category === 'foodberry';
+      else if (storeFilterCategory === 'matcha_tea') matchesCat = p.category === 'matcha_tea';
+      else if (storeFilterCategory === 'breakfast') matchesCat = p.category === 'breakfast';
+      else if (storeFilterCategory === 'on_tv') matchesCat = Boolean(p.showOnTv);
+      else if (storeFilterCategory === 'stop_list') matchesCat = p.visible === false;
+
+      const q = storeSearchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        p.name.ro.toLowerCase().includes(q) ||
+        p.name.ru.toLowerCase().includes(q) ||
+        p.description.ro.toLowerCase().includes(q) ||
+        p.description.ru.toLowerCase().includes(q);
+      return matchesCat && matchesSearch;
     });
+
+    const currentFilteredIdx = visibleFiltered.findIndex((p) => p.id === productId);
+    if (currentFilteredIdx < 0) return;
+    const targetFilteredIdx = currentFilteredIdx + direction;
+    if (targetFilteredIdx < 0 || targetFilteredIdx >= visibleFiltered.length) return;
+
+    const targetProduct = visibleFiltered[targetFilteredIdx];
+    const fullIdxCurrent = fullList.findIndex((p) => p.id === productId);
+    const fullIdxTarget = fullList.findIndex((p) => p.id === targetProduct.id);
+
+    if (fullIdxCurrent < 0 || fullIdxTarget < 0) return;
+
+    // Swap in the full master list
+    const temp = fullList[fullIdxCurrent];
+    fullList[fullIdxCurrent] = fullList[fullIdxTarget];
+    fullList[fullIdxTarget] = temp;
+
+    // Rigidly re-index sortOrder from 1 to N
+    fullList.forEach((p, idx) => {
+      p.sortOrder = idx + 1;
+    });
+
+    const synced = syncTvColumnsFromStoreProducts({
+      ...draftConfig,
+      storeProducts: fullList,
+    });
+
+    setDraftConfig(synced);
+    saveTvConfigLocal(synced);
     setHasUnsavedChanges(true);
   };
 
@@ -772,85 +807,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     e.target.value = '';
   };
 
-  // ================= COFFEE COLUMN HANDLERS (DRAFT ONLY) =================
-  const updateCoffeeItem = (idx: number, patch: Partial<TvCoffeeItem>) => {
-    const next = [...draftConfig.coffeeItems];
-    next[idx] = { ...next[idx], ...patch };
-    updateDraft({ ...draftConfig, coffeeItems: next });
-  };
-
-  const addCoffeeItem = () => {
-    const newItem: TvCoffeeItem = {
-      id: 'c-' + Date.now(),
-      name: { ro: 'Băutură Nouă', ru: 'Новый напиток' },
-      volume: '250 ml',
-      notes: { ro: '100% Arabica Specialty', ru: '100% арабика свежей обжарки' },
-      price: 45,
-      badge: { ro: 'NOU', ru: 'НОВИНКА' },
-      visible: true,
-    };
-    updateDraft({
-      ...draftConfig,
-      coffeeItems: [...draftConfig.coffeeItems, newItem],
-    });
-    showToast(L.toastAddedCoffee);
-  };
-
-  const removeCoffeeItem = (idx: number) => {
-    const next = draftConfig.coffeeItems.filter((_, i) => i !== idx);
-    updateDraft({ ...draftConfig, coffeeItems: next });
-  };
-
-  const moveCoffeeItem = (idx: number, dir: -1 | 1) => {
-    const target = idx + dir;
-    if (target < 0 || target >= draftConfig.coffeeItems.length) return;
-    const next = [...draftConfig.coffeeItems];
-    const temp = next[idx];
-    next[idx] = next[target];
-    next[target] = temp;
-    updateDraft({ ...draftConfig, coffeeItems: next });
-  };
-
-  // ================= DESSERT COLUMN HANDLERS (DRAFT ONLY) =================
-  const updateDessertItem = (idx: number, patch: Partial<TvDessertItem>) => {
-    const next = [...draftConfig.dessertItems];
-    next[idx] = { ...next[idx], ...patch };
-    updateDraft({ ...draftConfig, dessertItems: next });
-  };
-
-  const addDessertItem = () => {
-    const newItem: TvDessertItem = {
-      id: 'd-' + Date.now(),
-      name: { ro: 'Ceai / Poziție Nouă', ru: 'Новый чай / напиток' },
-      volume: '400 ml',
-      desc: { ro: 'Infuzie naturală proaspătă', ru: 'Натуральный сбор, свежее заваривание' },
-      price: 45,
-      discountPrice: 35,
-      badge: null,
-      visible: true,
-    };
-    updateDraft({
-      ...draftConfig,
-      dessertItems: [...draftConfig.dessertItems, newItem],
-    });
-    showToast(L.toastAddedDessert);
-  };
-
-  const removeDessertItem = (idx: number) => {
-    const next = draftConfig.dessertItems.filter((_, i) => i !== idx);
-    updateDraft({ ...draftConfig, dessertItems: next });
-  };
-
-  const moveDessertItem = (idx: number, dir: -1 | 1) => {
-    const target = idx + dir;
-    if (target < 0 || target >= draftConfig.dessertItems.length) return;
-    const next = [...draftConfig.dessertItems];
-    const temp = next[idx];
-    next[idx] = next[target];
-    next[target] = temp;
-    updateDraft({ ...draftConfig, dessertItems: next });
-  };
-
   // ================= SLIDES CAROUSEL HANDLERS (DRAFT ONLY) =================
   const updateSlide = (idx: number, patch: Partial<TvSlideItem>) => {
     const next = [...draftConfig.slides];
@@ -1030,532 +986,6 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       </div>
     );
   }
-
-  // Render Coffee Column Editor Block
-  const renderCoffeeEditor = () => (
-    <div className="space-y-4 bg-stone-900/40 p-4 sm:p-5 rounded-3xl border border-stone-800/90">
-      <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
-            <Coffee className="w-5 h-5" />
-          </span>
-          <div>
-            <h4 className="text-sm sm:text-base font-extrabold text-white font-serif">
-              {L.coffeeColTitle} ({draftConfig.coffeeItems.length})
-            </h4>
-            <p className="text-[11px] text-stone-400">{L.coffeeColSub}</p>
-          </div>
-        </div>
-        <button
-          onClick={addCoffeeItem}
-          className="px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{L.addCoffeeTopBtn}</span>
-        </button>
-      </div>
-
-      {/* Column Header Settings */}
-      <div className="p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
-        <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-          {L.coffeeHeaderLabel}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRo}</label>
-            <input
-              type="text"
-              value={draftConfig.coffeeHeader.ro}
-              onChange={(e) =>
-                updateDraft({
-                  ...draftConfig,
-                  coffeeHeader: { ...draftConfig.coffeeHeader, ro: e.target.value },
-                })
-              }
-              className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-white font-bold"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRu}</label>
-            <input
-              type="text"
-              value={draftConfig.coffeeHeader.ru}
-              onChange={(e) =>
-                updateDraft({
-                  ...draftConfig,
-                  coffeeHeader: { ...draftConfig.coffeeHeader, ru: e.target.value },
-                })
-              }
-              className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-white font-bold"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Coffee Items List */}
-      <div className="space-y-3">
-        {draftConfig.coffeeItems.map((item, idx) => (
-          <div
-            key={item.id}
-            className={`p-4 rounded-2xl border space-y-3 transition ${
-              item.visible
-                ? 'bg-stone-900/90 border-stone-800 hover:border-stone-700'
-                : 'bg-stone-950/50 border-stone-800/40 opacity-60'
-            }`}
-          >
-            {/* Item Top Controls */}
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
-                  #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
-                </span>
-                {item.secondPrice ? (
-                  <span className="text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 font-mono">
-                    {item.price} / {item.secondPrice} MDL
-                  </span>
-                ) : item.price > 0 ? (
-                  <span className="text-[11px] font-semibold text-stone-400 font-mono">
-                    {item.price} MDL
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => moveCoffeeItem(idx, -1)}
-                  disabled={idx === 0}
-                  className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title={L.moveUp}
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => moveCoffeeItem(idx, 1)}
-                  disabled={idx === draftConfig.coffeeItems.length - 1}
-                  className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title={L.moveDown}
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => updateCoffeeItem(idx, { visible: !item.visible })}
-                  className={`px-2 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 ${
-                    item.visible
-                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                      : 'bg-stone-800 border-stone-700 text-stone-400'
-                  }`}
-                >
-                  {item.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{item.visible ? L.visibleOnTv : L.hiddenOnTv}</span>
-                </button>
-                <button
-                  onClick={() => removeCoffeeItem(idx)}
-                  className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30"
-                  title={L.deleteItem}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Names RO / RU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRo}</label>
-                <input
-                  type="text"
-                  value={item.name.ro}
-                  onChange={(e) =>
-                    updateCoffeeItem(idx, { name: { ...item.name, ro: e.target.value } })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRu}</label>
-                <input
-                  type="text"
-                  value={item.name.ru}
-                  onChange={(e) =>
-                    updateCoffeeItem(idx, { name: { ...item.name, ru: e.target.value } })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
-                />
-              </div>
-            </div>
-
-            {/* Price 1, Price 2 (Second dose/cup), Volume, Badge */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
-              <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
-                  {L.priceMdl}
-                </label>
-                <input
-                  type="number"
-                  value={item.price}
-                  onChange={(e) =>
-                    updateCoffeeItem(idx, { price: Number(e.target.value) || 0 })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/50 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-300 font-mono font-black"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-amber-300 font-bold block mb-1 truncate" title={L.secondPriceLabel}>
-                  {L.secondPriceLabel}
-                </label>
-                <input
-                  type="number"
-                  placeholder={L.secondPricePlaceholder}
-                  value={item.secondPrice ?? ''}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    updateCoffeeItem(idx, {
-                      secondPrice: raw === '' ? undefined : Number(raw),
-                    });
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/40 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-200 font-mono font-bold"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.volumeMl}>
-                  {L.volumeMl}
-                </label>
-                <input
-                  type="text"
-                  placeholder="40 / 80 ml"
-                  value={item.volume}
-                  onChange={(e) => updateCoffeeItem(idx, { volume: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-stone-200 font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.badgeLabel}>
-                  {L.badgeLabel}
-                </label>
-                <input
-                  type="text"
-                  placeholder={L.badgePlaceholder}
-                  value={item.badge ? (language === 'ro' ? item.badge.ro : item.badge.ru) : ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateCoffeeItem(idx, {
-                      badge: val.trim() ? { ro: val, ru: val } : null,
-                    });
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-amber-500 focus:outline-none text-xs sm:text-sm text-amber-300 font-bold"
-                />
-              </div>
-            </div>
-
-            {/* Description RO / RU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.descRo}</label>
-                <input
-                  type="text"
-                  value={item.notes.ro}
-                  onChange={(e) =>
-                    updateCoffeeItem(idx, { notes: { ...item.notes, ro: e.target.value } })
-                  }
-                  className="w-full p-2 rounded-xl bg-stone-950 border border-stone-800 focus:border-amber-500 focus:outline-none text-xs text-stone-300"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.descRu}</label>
-                <input
-                  type="text"
-                  value={item.notes.ru}
-                  onChange={(e) =>
-                    updateCoffeeItem(idx, { notes: { ...item.notes, ru: e.target.value } })
-                  }
-                  className="w-full p-2 rounded-xl bg-stone-950 border border-stone-800 focus:border-amber-500 focus:outline-none text-xs text-stone-300"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={addCoffeeItem}
-        className="w-full py-3.5 rounded-2xl bg-amber-600/20 hover:bg-amber-600/30 border border-dashed border-amber-500/50 text-amber-300 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
-      >
-        <Plus className="w-4 h-4" />
-        <span>{L.addCoffeeBottomBtn}</span>
-      </button>
-    </div>
-  );
-
-  // Render Desserts / Column 2 Editor Block
-  const renderDessertsEditor = () => (
-    <div className="space-y-4 bg-stone-900/40 p-4 sm:p-5 rounded-3xl border border-stone-800/90">
-      <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="p-2 rounded-xl bg-teal-500/20 text-teal-300">
-            <Sparkles className="w-5 h-5" />
-          </span>
-          <div>
-            <h4 className="text-sm sm:text-base font-extrabold text-white font-serif">
-              {L.dessertColTitle} ({draftConfig.dessertItems.length})
-            </h4>
-            <p className="text-[11px] text-stone-400">{L.dessertColSub}</p>
-          </div>
-        </div>
-        <button
-          onClick={addDessertItem}
-          className="px-3 py-2 rounded-xl bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/40 text-teal-300 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{L.addDessertTopBtn}</span>
-        </button>
-      </div>
-
-      {/* Column Header Settings */}
-      <div className="p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
-        <div className="text-[11px] font-bold text-teal-400 uppercase tracking-wider">
-          {L.dessertHeaderLabel}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRo}</label>
-            <input
-              type="text"
-              value={draftConfig.dessertHeader.ro}
-              onChange={(e) =>
-                updateDraft({
-                  ...draftConfig,
-                  dessertHeader: { ...draftConfig.dessertHeader, ro: e.target.value },
-                })
-              }
-              className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-teal-500 focus:outline-none text-xs sm:text-sm text-white font-bold"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] text-stone-400 block mb-1">{L.headerRu}</label>
-            <input
-              type="text"
-              value={draftConfig.dessertHeader.ru}
-              onChange={(e) =>
-                updateDraft({
-                  ...draftConfig,
-                  dessertHeader: { ...draftConfig.dessertHeader, ru: e.target.value },
-                })
-              }
-              className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-teal-500 focus:outline-none text-xs sm:text-sm text-white font-bold"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Dessert Items List */}
-      <div className="space-y-3">
-        {draftConfig.dessertItems.map((item, idx) => (
-          <div
-            key={item.id}
-            className={`p-4 rounded-2xl border space-y-3 transition ${
-              item.visible
-                ? 'bg-stone-900/90 border-stone-800 hover:border-stone-700'
-                : 'bg-stone-950/50 border-stone-800/40 opacity-60'
-            }`}
-          >
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs sm:text-sm font-extrabold text-rose-400 font-mono">
-                  #{idx + 1} • {language === 'ro' ? item.name.ro || item.name.ru : item.name.ru || item.name.ro}
-                </span>
-                {item.secondPrice ? (
-                  <span className="text-[11px] font-bold text-teal-300 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/30 font-mono">
-                    {item.price} / {item.secondPrice} MDL
-                  </span>
-                ) : item.price > 0 ? (
-                  <span className="text-[11px] font-semibold text-stone-400 font-mono">
-                    {item.price} MDL
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => moveDessertItem(idx, -1)}
-                  disabled={idx === 0}
-                  className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title={L.moveUp}
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => moveDessertItem(idx, 1)}
-                  disabled={idx === draftConfig.dessertItems.length - 1}
-                  className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300"
-                  title={L.moveDown}
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => updateDessertItem(idx, { visible: !item.visible })}
-                  className={`px-2 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 ${
-                    item.visible
-                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                      : 'bg-stone-800 border-stone-700 text-stone-400'
-                  }`}
-                >
-                  {item.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{item.visible ? L.visibleOnTv : L.hiddenOnTv}</span>
-                </button>
-                <button
-                  onClick={() => removeDessertItem(idx)}
-                  className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30"
-                  title={L.deleteItem}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Names RO / RU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRo}</label>
-                <input
-                  type="text"
-                  value={item.name.ro}
-                  onChange={(e) =>
-                    updateDessertItem(idx, { name: { ...item.name, ro: e.target.value } })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-rose-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.nameRu}</label>
-                <input
-                  type="text"
-                  value={item.name.ru}
-                  onChange={(e) =>
-                    updateDessertItem(idx, { name: { ...item.name, ru: e.target.value } })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-rose-500 focus:outline-none text-xs sm:text-sm text-white font-semibold"
-                />
-              </div>
-            </div>
-
-            {/* Price 1, Price 2 (Second dose/cup), Volume, Badge, Discount */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 items-end">
-              <div>
-                <label className="text-[11px] text-amber-400 font-bold block mb-1 truncate" title={L.priceMdl}>
-                  {L.priceMdl}
-                </label>
-                <input
-                  type="number"
-                  value={item.price}
-                  onChange={(e) => {
-                    const p = Number(e.target.value) || 0;
-                    updateDessertItem(idx, {
-                      price: p,
-                      discountPrice: item.discountPrice || Math.round(p * 0.7),
-                    });
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/50 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-300 font-mono font-black"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-amber-300 font-bold block mb-1 truncate" title={L.secondPriceLabel}>
-                  {L.secondPriceLabel}
-                </label>
-                <input
-                  type="number"
-                  placeholder={L.secondPricePlaceholder}
-                  value={item.secondPrice ?? ''}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    updateDessertItem(idx, {
-                      secondPrice: raw === '' ? undefined : Number(raw),
-                    });
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-amber-500/40 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-amber-200 font-mono font-bold"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.volumeMl}>
-                  {L.volumeMl}
-                </label>
-                <input
-                  type="text"
-                  placeholder="400 ml"
-                  value={item.volume || ''}
-                  onChange={(e) => updateDessertItem(idx, { volume: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-teal-500 focus:outline-none text-xs sm:text-sm text-stone-200 font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={L.badgeLabel}>
-                  {L.badgeLabel}
-                </label>
-                <input
-                  type="text"
-                  placeholder="BIO / TOP"
-                  value={item.badge ? (language === 'ro' ? item.badge.ro : item.badge.ru) : ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateDessertItem(idx, {
-                      badge: val.trim() ? { ro: val, ru: val } : null,
-                    });
-                  }}
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-700 focus:border-teal-500 focus:outline-none text-xs sm:text-sm text-teal-300 font-bold"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1 truncate" title={`${L.discountPriceMdl} (Telegram)`}>
-                  {L.discountPriceMdl}
-                </label>
-                <input
-                  type="number"
-                  value={item.discountPrice}
-                  onChange={(e) =>
-                    updateDessertItem(idx, { discountPrice: Number(e.target.value) || 0 })
-                  }
-                  className="w-full p-2.5 rounded-xl bg-stone-950 border border-stone-800 focus:border-rose-400 focus:outline-none text-xs sm:text-sm text-stone-300 font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Description RO / RU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.ingredientsRo}</label>
-                <input
-                  type="text"
-                  value={item.desc.ro}
-                  onChange={(e) =>
-                    updateDessertItem(idx, { desc: { ...item.desc, ro: e.target.value } })
-                  }
-                  className="w-full p-2 rounded-xl bg-stone-950 border border-stone-800 focus:border-rose-500 focus:outline-none text-xs text-stone-300"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-stone-400 block mb-1">{L.ingredientsRu}</label>
-                <input
-                  type="text"
-                  value={item.desc.ru}
-                  onChange={(e) =>
-                    updateDessertItem(idx, { desc: { ...item.desc, ru: e.target.value } })
-                  }
-                  className="w-full p-2 rounded-xl bg-stone-950 border border-stone-800 focus:border-rose-500 focus:outline-none text-xs text-stone-300"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={addDessertItem}
-        className="w-full py-3.5 rounded-2xl bg-rose-600/20 hover:bg-rose-600/30 border border-dashed border-rose-500/50 text-rose-300 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
-      >
-        <Plus className="w-4 h-4" />
-        <span>{L.addDessertBottomBtn}</span>
-      </button>
-    </div>
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-16">
@@ -1823,10 +1253,338 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
             </div>
           </div>
 
-          {/* TV 2-Column Editors (Titles, Footers & Items) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {renderCoffeeEditor()}
-            {renderDessertsEditor()}
+          {/* TV Screen Headers, Badges & Footers Settings */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-stone-800 shadow-xl space-y-6">
+            <div className="flex items-center gap-3 border-b border-stone-800 pb-4">
+              <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                <Tv className="w-5 h-5" />
+              </span>
+              <div>
+                <h4 className="text-base font-bold text-white font-serif">
+                  {language === 'ro'
+                    ? 'Antete și Note de Subsol Meniu TV (2 Coloane)'
+                    : 'Заголовки и Подвал Меню ТВ (2 Колонки)'}
+                </h4>
+                <p className="text-xs text-stone-400">
+                  {language === 'ro'
+                    ? 'Editați titlurile celor 2 coloane afișate pe televizor, ecusoanele și tariful laptelui vegetal.'
+                    : 'Настройка заголовков двух колонок ТВ, бейджей и информации о растительном молоке.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Coloana 1 Config */}
+              <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                  <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Coffee className="w-4 h-4" />
+                    <span>{language === 'ro' ? 'Coloana 1: Băuturi & Cafea' : 'Колонка 1: Кофе и Напитки'}</span>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">
+                    {draftConfig.coffeeItems.length} {language === 'ro' ? 'poziții pe TV' : 'позиций на ТВ'}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Titlu (RO)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.coffeeHeader.ro}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            coffeeHeader: { ...draftConfig.coffeeHeader, ro: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RU)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.coffeeHeader.ru}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            coffeeHeader: { ...draftConfig.coffeeHeader, ru: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-stone-400 block mb-1">Ecuson antet / Бейдж</label>
+                    <input
+                      type="text"
+                      value={draftConfig.coffeeBadge}
+                      onChange={(e) =>
+                        updateDraft({
+                          ...draftConfig,
+                          coffeeBadge: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-white font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Notă subsol (RO)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.coffeeFooterNote.ro}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            coffeeFooterNote: { ...draftConfig.coffeeFooterNote, ro: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-stone-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Подвал (RU)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.coffeeFooterNote.ru}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            coffeeFooterNote: { ...draftConfig.coffeeFooterNote, ru: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-stone-300"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-stone-400 block mb-1">Preț lapte vegetal / Цена альт. молока</label>
+                    <input
+                      type="text"
+                      value={draftConfig.coffeeFooterPrice}
+                      onChange={(e) =>
+                        updateDraft({
+                          ...draftConfig,
+                          coffeeFooterPrice: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-amber-500 text-xs text-amber-400 font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Coloana 2 Config */}
+              <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                  <span className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>{language === 'ro' ? 'Coloana 2: Specialități & Meniu' : 'Колонка 2: Специалитеты & Меню'}</span>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+                    {draftConfig.dessertItems.length} {language === 'ro' ? 'poziții pe TV' : 'позиций на ТВ'}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Titlu (RO)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.dessertHeader.ro}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            dessertHeader: { ...draftConfig.dessertHeader, ro: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Заголовок (RU)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.dessertHeader.ru}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            dessertHeader: { ...draftConfig.dessertHeader, ru: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-stone-400 block mb-1">Ecuson antet / Бейдж</label>
+                    <input
+                      type="text"
+                      value={draftConfig.dessertBadge}
+                      onChange={(e) =>
+                        updateDraft({
+                          ...draftConfig,
+                          dessertBadge: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-white font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Notă subsol (RO)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.dessertFooterNote.ro}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            dessertFooterNote: { ...draftConfig.dessertFooterNote, ro: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-stone-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-stone-400 block mb-1">Подвал (RU)</label>
+                      <input
+                        type="text"
+                        value={draftConfig.dessertFooterNote.ru}
+                        onChange={(e) =>
+                          updateDraft({
+                            ...draftConfig,
+                            dessertFooterNote: { ...draftConfig.dessertFooterNote, ru: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-stone-300"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-stone-400 block mb-1">Brand partener / Бренд</label>
+                    <input
+                      type="text"
+                      value={draftConfig.dessertFooterBrand}
+                      onChange={(e) =>
+                        updateDraft({
+                          ...draftConfig,
+                          dessertFooterBrand: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl bg-stone-900 border border-stone-700 focus:border-rose-500 text-xs text-white font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TV Columns Live Read-Only Overview & Single Source of Truth Notice */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-stone-800 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-3">
+              <div>
+                <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <Tv className="w-4 h-4 text-indigo-400" />
+                  <span>
+                    {language === 'ro'
+                      ? 'Poziții afișate pe ecranul TV (Sincronizate din Catalog)'
+                      : 'Позиции на экране ТВ (Синхронизированы из Каталога)'}
+                  </span>
+                </h4>
+                <p className="text-xs text-stone-400">
+                  {language === 'ro'
+                    ? 'Pentru a adăuga, redenumi sau schimba ordinea pozițiilor pe TV, folosiți Catalogul Unificat.'
+                    : 'Для добавления, изменения названий, цен или порядка позиций используйте Единый Каталог.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSubTab('store_catalog')}
+                className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer self-start sm:self-auto shrink-0"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>{language === 'ro' ? 'Mergi la Catalogul de Produse' : 'Перейти в Единый Каталог'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Col 1 Preview Card */}
+              <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-800">
+                  <span className="text-xs font-black text-amber-400">
+                    {draftConfig.coffeeHeader[language]} ({draftConfig.coffeeItems.length})
+                  </span>
+                  <span className="text-[10px] text-stone-500 uppercase tracking-wider font-mono">
+                    Coloana 1
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {draftConfig.coffeeItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between text-xs py-1 border-b border-stone-900 last:border-0"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-stone-500 font-mono text-[11px] w-4">{idx + 1}.</span>
+                        <span className="text-white truncate font-medium">{item.name[language]}</span>
+                        {item.badge && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold shrink-0">
+                            {item.badge[language]}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-amber-400 font-bold shrink-0 ml-2">
+                        {item.price} {item.secondPrice ? `/ ${item.secondPrice}` : ''} MDL
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Col 2 Preview Card */}
+              <div className="p-4 rounded-2xl bg-stone-950 border border-stone-800 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-800">
+                  <span className="text-xs font-black text-rose-400">
+                    {draftConfig.dessertHeader[language]} ({draftConfig.dessertItems.length})
+                  </span>
+                  <span className="text-[10px] text-stone-500 uppercase tracking-wider font-mono">
+                    Coloana 2
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {draftConfig.dessertItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between text-xs py-1 border-b border-stone-900 last:border-0"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-stone-500 font-mono text-[11px] w-4">{idx + 1}.</span>
+                        <span className="text-white truncate font-medium">{item.name[language]}</span>
+                        {item.badge && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold shrink-0">
+                            {item.badge[language]}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-amber-400 font-bold shrink-0 ml-2">
+                        {item.price} {item.secondPrice ? `/ ${item.secondPrice}` : ''} MDL
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Upload Custom Photos Box */}
@@ -2347,11 +2105,8 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   <h3 className="text-lg font-bold text-white font-serif flex items-center gap-2">
                     <span>
                       {language === 'ro'
-                        ? 'Vitrina Magazinului (Catalog Mini App)'
-                        : 'Витрина Магазина (Каталог Mini App)'}
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      TRK-014
+                        ? 'Catalog Produse Amika Café'
+                        : 'Единый Каталог Товаров Amika Café'}
                     </span>
                   </h3>
                   <p className="text-xs text-stone-400">
@@ -2631,11 +2386,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                         <div className="flex items-center gap-0.5 bg-stone-950 p-0.5 rounded-xl border border-stone-800">
                           <button
                             type="button"
-                            onClick={() => {
-                              const fullList = getStoreProducts();
-                              const idx = fullList.findIndex((p) => p.id === prod.id);
-                              if (idx > 0) handleMoveProduct(idx, -1);
-                            }}
+                            onClick={() => handleMoveProduct(prod.id, -1)}
                             className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition cursor-pointer"
                             title={language === 'ro' ? 'Mută mai sus' : 'Выше'}
                           >
@@ -2643,11 +2394,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              const fullList = getStoreProducts();
-                              const idx = fullList.findIndex((p) => p.id === prod.id);
-                              if (idx >= 0 && idx < fullList.length - 1) handleMoveProduct(idx, 1);
-                            }}
+                            onClick={() => handleMoveProduct(prod.id, 1)}
                             className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition cursor-pointer"
                             title={language === 'ro' ? 'Mută mai jos' : 'Ниже'}
                           >

@@ -561,7 +561,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         </div>
       )}
 
-      {/* ================= TAB 2: 1-CLICK FAST STOP-LIST (TRK-014) ================= */}
+      {/* ================= TAB 2: 1-CLICK FAST STOP-LIST ================= */}
       {activeTab === 'stop_list' && (
         <div className="space-y-4 sm:space-y-6">
           {tvCommandToast && (
