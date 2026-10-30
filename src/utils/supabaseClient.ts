@@ -20,7 +20,7 @@ export async function fetchMenuConfigFromSupabase(): Promise<TvBoardConfig | nul
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/menu_config?id=eq.current&select=*&_t=${Date.now()}`,
+      `${SUPABASE_URL}/rest/v1/menu_config?id=eq.current&id=neq._cb_${Date.now()}&select=*`,
       {
         method: 'GET',
         cache: 'no-store',

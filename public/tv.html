@@ -1246,7 +1246,7 @@
     function fetchSupabaseWithHeadersFallback(showNotification) {
       try {
         var xhr2 = new XMLHttpRequest();
-        var url2 = SUPABASE_URL + '/rest/v1/menu_config?id=eq.current&select=*&_t=' + new Date().getTime();
+        var url2 = SUPABASE_URL + '/rest/v1/menu_config?id=eq.current&id=neq._cb_' + new Date().getTime() + '&select=*';
         xhr2.open('GET', url2, true);
         xhr2.setRequestHeader('apikey', SUPABASE_ANON_KEY);
         xhr2.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
@@ -1263,9 +1263,8 @@
       try {
         var xhr = new XMLHttpRequest();
         var simpleUrl = SUPABASE_URL +
-          '/rest/v1/menu_config?id=eq.current&select=*&apikey=' +
-          encodeURIComponent(SUPABASE_ANON_KEY) +
-          '&_t=' + new Date().getTime();
+          '/rest/v1/menu_config?id=eq.current&id=neq._cb_' + new Date().getTime() +
+          '&select=*&apikey=' + encodeURIComponent(SUPABASE_ANON_KEY);
         xhr.open('GET', simpleUrl, true);
         xhr.timeout = 12000;
         xhr.onreadystatechange = function() {
