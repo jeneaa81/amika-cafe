@@ -18,11 +18,12 @@ const SUPABASE_HEADERS = {
 export async function fetchMenuConfigFromSupabase(): Promise<TvBoardConfig | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+    const timeout = setTimeout(() => controller.abort(), 12000);
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/menu_config?id=eq.current&select=*`,
+      `${SUPABASE_URL}/rest/v1/menu_config?id=eq.current&select=*&_t=${Date.now()}`,
       {
         method: 'GET',
+        cache: 'no-store',
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -63,7 +64,7 @@ export async function saveMenuConfigToSupabase(
 ): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     const resp = await fetch(
       `${SUPABASE_URL}/rest/v1/menu_config?on_conflict=id`,

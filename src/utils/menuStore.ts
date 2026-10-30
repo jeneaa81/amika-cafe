@@ -417,17 +417,39 @@ export function syncTvColumnsFromStoreProducts(config: TvBoardConfig): TvBoardCo
     ? config.storeProducts
     : getDefaultStoreProducts();
 
+  const formatItemVolume = (
+    vol?: string,
+    secVol?: string,
+    defaultVol?: string
+  ): string | undefined => {
+    const base = (vol || '').replace(/\s*\/\s*$/, '').trim();
+    const second = (secVol || '').trim();
+    if (base && second) return `${base} / ${second}`;
+    if (base) return base;
+    return defaultVol;
+  };
+
+  const normalizeBadge = (
+    badge?: { ro: string; ru: string } | null
+  ): { ro: string; ru: string } | null => {
+    if (!badge) return null;
+    const ro = (badge.ro || '').trim();
+    const ru = (badge.ru || '').trim();
+    if (!ro && !ru) return null;
+    return { ro: ro || ru, ru: ru || ro };
+  };
+
   // Left TV Column (Coffee & Drinks)
   const coffeeItems: TvCoffeeItem[] = store
     .filter((p) => p.showOnTv && (p.tvColumn === 'coffee' || !p.tvColumn))
     .map((p) => ({
       id: p.id,
       name: p.name,
-      volume: p.volume ? (p.secondVolume ? `${p.volume} / ${p.secondVolume}` : p.volume) : '250 ml',
+      volume: formatItemVolume(p.volume, p.secondVolume, '250 ml') || '250 ml',
       notes: p.description,
       price: p.price,
       secondPrice: p.secondPrice,
-      badge: p.badge || null,
+      badge: normalizeBadge(p.badge),
       visible: p.visible !== false,
     }));
 
@@ -437,12 +459,12 @@ export function syncTvColumnsFromStoreProducts(config: TvBoardConfig): TvBoardCo
     .map((p) => ({
       id: p.id,
       name: p.name,
-      volume: p.volume,
+      volume: formatItemVolume(p.volume, p.secondVolume),
       desc: p.description,
       price: p.price,
       secondPrice: p.secondPrice,
       discountPrice: Math.round(p.price * 0.7),
-      badge: p.badge || null,
+      badge: normalizeBadge(p.badge),
       visible: p.visible !== false,
     }));
 
@@ -475,8 +497,15 @@ export function loadTvConfig(): TvBoardConfig {
   };
 }
 
-export function saveTvConfigLocal(config: TvBoardConfig): TvBoardConfig {
-  const updated = { ...config, updatedAt: Date.now() };
+export function saveTvConfigLocal(
+  config: TvBoardConfig,
+  preserveTimestamp = false
+): TvBoardConfig {
+  const updated = {
+    ...config,
+    updatedAt:
+      preserveTimestamp && config.updatedAt ? config.updatedAt : Date.now(),
+  };
   try {
     localStorage.setItem(STORAGE_KEY_TV_CONFIG, JSON.stringify(updated));
   } catch (e) {

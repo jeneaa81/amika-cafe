@@ -468,6 +468,93 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     return getDefaultStoreProducts();
   };
 
+  const baseCloudUpdatedAtRef = useRef<number>(draftConfig.updatedAt || 0);
+  const hasUnsavedChangesRef = useRef<boolean>(false);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChangesRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Serialized cloud persistence with multi-admin conflict detection
+  const persistConfigToCloud = (
+    nextConfig: TvBoardConfig,
+    customSuccessToast?: string
+  ) => {
+    const synced = syncTvColumnsFromStoreProducts(nextConfig);
+    setDraftConfig(synced);
+    setHasUnsavedChanges(true);
+
+    saveQueueRef.current = saveQueueRef.current.then(async () => {
+      setIsSaving(true);
+      try {
+        const latestCloud = await fetchMenuConfigFromSupabase();
+        if (
+          latestCloud &&
+          latestCloud.updatedAt &&
+          baseCloudUpdatedAtRef.current > 0 &&
+          latestCloud.updatedAt > baseCloudUpdatedAtRef.current
+        ) {
+          const remoteTime = new Date(latestCloud.updatedAt).toLocaleTimeString(
+            language === 'ro' ? 'ro-RO' : 'ru-RU'
+          );
+          const loadRemoteInstead = window.confirm(
+            language === 'ro'
+              ? `⚠️ Atenție! Un alt administrator a salvat o versiune mai nouă în cloud (${remoteTime}).\n\nApăsați OK pentru a încărca versiunea nouă din cloud (recomandat, fără a șterge munca colegului), sau Anulare pentru a suprascrie cu versiunea dvs.`
+              : `⚠️ Внимание! На другом устройстве только что сохранили более свежую версию меню (${remoteTime}).\n\nНажмите ОК, чтобы загрузить свежую версию из облака (рекомендуется, чтобы не затереть чужие правки), или Отмена, чтобы перезаписать её вашей версией.`
+          );
+          if (loadRemoteInstead) {
+            const remoteSynced = syncTvColumnsFromStoreProducts(latestCloud);
+            saveTvConfigLocal(remoteSynced, true);
+            baseCloudUpdatedAtRef.current = remoteSynced.updatedAt || 0;
+            setDraftConfig(remoteSynced);
+            setHasUnsavedChanges(false);
+            setIsCloudConnected(true);
+            showToast(
+              language === 'ro'
+                ? '☁️ Versiunea actualizată din cloud a fost încărcată!'
+                : '☁️ Загружена актуальная версия меню из облака!'
+            );
+            return;
+          }
+        }
+
+        const ok = await publishTvConfigToCloud(
+          synced,
+          customSuccessToast ? undefined : (msg) => showToast(msg)
+        );
+        if (ok) {
+          const persisted = loadTvConfig();
+          baseCloudUpdatedAtRef.current = persisted.updatedAt || Date.now();
+          setDraftConfig(persisted);
+          setHasUnsavedChanges(false);
+          setIsCloudConnected(true);
+          if (customSuccessToast) {
+            showToast(customSuccessToast);
+          }
+        } else {
+          setIsCloudConnected(false);
+          setHasUnsavedChanges(true);
+          showToast(
+            language === 'ro'
+              ? '⚠️ Eroare conexiune Supabase! Modificările nu au ajuns în cloud — verificați internetul și apăsați „Salvează”.'
+              : '⚠️ Ошибка связи с облаком Supabase! Проверьте интернет и нажмите «Сохранить» ещё раз.'
+          );
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    });
+  };
+
   const handleToggleProductVisibility = (productId: string) => {
     const list = getStoreProducts();
     const updated = list.map((p) => {
@@ -479,19 +566,16 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     });
 
     const targetProduct = updated.find((p) => p.id === productId);
-
-    setDraftConfig((prev) => {
-      return syncTvColumnsFromStoreProducts({
-        ...prev,
-        storeProducts: updated,
-      });
+    const nextSynced = syncTvColumnsFromStoreProducts({
+      ...draftConfig,
+      storeProducts: updated,
     });
-    setHasUnsavedChanges(true);
 
-    showToast(
+    persistConfigToCloud(
+      nextSynced,
       language === 'ro'
-        ? `${targetProduct?.name.ro}: ${targetProduct?.visible !== false ? '🟢 Activ în vitrină' : '🔴 Pus în Stop-list'}`
-        : `${targetProduct?.name.ru}: ${targetProduct?.visible !== false ? '🟢 В наличии на витрине' : '🔴 Перенесен в Стоп-лист'}`
+        ? `☁️ ${targetProduct?.name.ro}: ${targetProduct?.visible !== false ? '🟢 Activ în vitrină' : '🔴 Pus în Stop-list'}`
+        : `☁️ ${targetProduct?.name.ru}: ${targetProduct?.visible !== false ? '🟢 В наличии на витрине' : '🔴 Перенесен в Стоп-лист'}`
     );
   };
 
@@ -506,19 +590,16 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     });
 
     const targetProduct = updated.find((p) => p.id === productId);
-
-    setDraftConfig((prev) => {
-      return syncTvColumnsFromStoreProducts({
-        ...prev,
-        storeProducts: updated,
-      });
+    const nextSynced = syncTvColumnsFromStoreProducts({
+      ...draftConfig,
+      storeProducts: updated,
     });
-    setHasUnsavedChanges(true);
 
-    showToast(
+    persistConfigToCloud(
+      nextSynced,
       language === 'ro'
-        ? `${targetProduct?.name.ro}: ${targetProduct?.showOnTv ? '📺 Afișat pe TV' : '🚫 Ascuns de pe TV'}`
-        : `${targetProduct?.name.ru}: ${targetProduct?.showOnTv ? '📺 Отображается на ТВ' : '🚫 Скрыт с экрана ТВ'}`
+        ? `☁️ ${targetProduct?.name.ro}: ${targetProduct?.showOnTv ? '📺 Afișat pe TV' : '🚫 Ascuns de pe TV'}`
+        : `☁️ ${targetProduct?.name.ru}: ${targetProduct?.showOnTv ? '📺 Отображается на ТВ' : '🚫 Скрыт с экрана ТВ'}`
     );
   };
 
@@ -571,35 +652,39 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
       storeProducts: fullList,
     });
 
-    setDraftConfig(synced);
-    saveTvConfigLocal(synced);
-    setHasUnsavedChanges(true);
+    persistConfigToCloud(synced);
   };
 
   const handleSaveStoreProduct = (product: Product, isNew: boolean) => {
+    const cleanedProduct: Product = {
+      ...product,
+      volume: product.volume ? product.volume.trim() : undefined,
+      secondVolume:
+        product.secondPrice && product.secondVolume && product.secondVolume.trim()
+          ? product.secondVolume.trim()
+          : undefined,
+    };
     const currentList = getStoreProducts();
     let updatedList: Product[];
 
     if (isNew) {
-      updatedList = [product, ...currentList];
+      updatedList = [cleanedProduct, ...currentList];
     } else {
-      updatedList = currentList.map((p) => (p.id === product.id ? product : p));
+      updatedList = currentList.map((p) => (p.id === cleanedProduct.id ? cleanedProduct : p));
     }
 
-    setDraftConfig((prev) => {
-      return syncTvColumnsFromStoreProducts({
-        ...prev,
-        storeProducts: updatedList,
-      });
+    const nextSynced = syncTvColumnsFromStoreProducts({
+      ...draftConfig,
+      storeProducts: updatedList,
     });
 
     setEditingProduct(null);
-    setHasUnsavedChanges(true);
 
-    showToast(
+    persistConfigToCloud(
+      nextSynced,
       language === 'ro'
-        ? `Produs salvat: ${product.name.ro}!`
-        : `Товар сохранен: ${product.name.ru}!`
+        ? `☁️ Produs salvat în cloud și pe TV: ${cleanedProduct.name.ro}!`
+        : `☁️ Товар сохранен в облаке и на ТВ: ${cleanedProduct.name.ru}!`
     );
   };
 
@@ -613,16 +698,16 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     if (!window.confirm(confirmText)) return;
 
     const updated = currentList.filter((p) => p.id !== productId);
-    setDraftConfig((prev) => {
-      return syncTvColumnsFromStoreProducts({
-        ...prev,
-        storeProducts: updated,
-      });
+    const nextSynced = syncTvColumnsFromStoreProducts({
+      ...draftConfig,
+      storeProducts: updated,
     });
-    setHasUnsavedChanges(true);
 
-    showToast(
-      language === 'ro' ? `Produs șters din vitrină` : `Товар удален из витрины`
+    persistConfigToCloud(
+      nextSynced,
+      language === 'ro'
+        ? '☁️ Produs șters și sincronizat în cloud'
+        : '☁️ Товар удален и синхронизирован с облаком'
     );
   };
 
@@ -668,25 +753,82 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
     }
   };
 
-  // Auto-fetch latest menu from Supabase cloud database on mount
+  // Auto-fetch latest menu from Supabase cloud database on mount, tab focus, and remote broadcasts
   useEffect(() => {
     let isMounted = true;
-    fetchMenuConfigFromSupabase()
-      .then((cloudCfg) => {
-        if (!isMounted || !cloudCfg) return;
-        setIsCloudConnected(true);
-        const local = loadTvConfig();
-        if (!local.updatedAt || cloudCfg.updatedAt >= local.updatedAt) {
-          const synced = syncTvColumnsFromStoreProducts(cloudCfg);
-          saveTvConfigLocal(synced);
-          setDraftConfig(synced);
+
+    const pullLatestFromCloud = (isInitial = false) => {
+      fetchMenuConfigFromSupabase()
+        .then((cloudCfg) => {
+          if (!isMounted || !cloudCfg) return;
+          setIsCloudConnected(true);
+          // Do not clobber active unsaved edits in Tab 2; conflict check handles save
+          if (!isInitial && hasUnsavedChangesRef.current) return;
+          if (
+            isInitial ||
+            !baseCloudUpdatedAtRef.current ||
+            cloudCfg.updatedAt > baseCloudUpdatedAtRef.current
+          ) {
+            const synced = syncTvColumnsFromStoreProducts(cloudCfg);
+            saveTvConfigLocal(synced, true);
+            baseCloudUpdatedAtRef.current = synced.updatedAt || 0;
+            setDraftConfig(synced);
+          }
+        })
+        .catch((err) => {
+          console.warn('Supabase fetch failed:', err);
+        });
+    };
+
+    pullLatestFromCloud(true);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        pullLatestFromCloud(false);
+      }
+    };
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('amika_tv_bus');
+      channel.onmessage = (ev) => {
+        if (
+          ev.data?.type === 'CONFIG_SYNC' ||
+          ev.data?.type === 'CONFIG_SUPABASE_SYNC'
+        ) {
+          pullLatestFromCloud(false);
         }
-      })
-      .catch((err) => {
-        console.warn('Initial Supabase fetch failed:', err);
+      };
+    } catch {}
+
+    let sse: EventSource | null = null;
+    try {
+      sse = new EventSource('https://ntfy.adminforge.de/amika_cricova_tv_control/sse');
+      sse.addEventListener('message', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.event === 'message' && payload.message) {
+            const cmd = JSON.parse(payload.message);
+            if (
+              cmd.type === 'CONFIG_SUPABASE_SYNC' ||
+              cmd.type === 'CONFIG_SYNC' ||
+              cmd.type === 'CONFIG_URL_SYNC'
+            ) {
+              pullLatestFromCloud(false);
+            }
+          }
+        } catch {}
       });
+    } catch {}
+
     return () => {
       isMounted = false;
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      channel?.close();
+      sse?.close();
     };
   }, []);
 
@@ -755,22 +897,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
 
   // Save & Push to TV ONLY on explicit button click
   const handleSaveAndSync = async () => {
-    setIsSaving(true);
-    try {
-      const synced = syncTvColumnsFromStoreProducts(draftConfig);
-      const stamped: TvBoardConfig = {
-        ...synced,
-        updatedAt: Date.now(),
-      };
-      setDraftConfig(stamped);
-      saveTvConfigLocal(stamped);
-      await publishTvConfigToCloud(stamped, (msg) => {
-        showToast(msg);
-      });
-      setHasUnsavedChanges(false);
-    } finally {
-      setIsSaving(false);
-    }
+    persistConfigToCloud(draftConfig);
   };
 
   // Export JSON backup

@@ -71,7 +71,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const applyRemoteConfig = (cfg: TvBoardConfig, sourceLabel = 'Админ') => {
     if (!cfg || !Array.isArray(cfg.coffeeItems) || !Array.isArray(cfg.slides)) return;
     setBoardConfig(cfg);
-    saveTvConfigLocal(cfg);
+    saveTvConfigLocal(cfg, true);
     setCurrentSlideIndex(0);
     triggerMelodicChime();
     setRemoteToast(`✨ ${sourceLabel}: Меню и фотогалерея обновлены!`);
@@ -90,7 +90,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
             applyRemoteConfig(cfg, 'Админ-панель');
           } else {
             setBoardConfig(cfg);
-            saveTvConfigLocal(cfg);
+            saveTvConfigLocal(cfg, true);
           }
         }
       }
@@ -234,11 +234,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     // Fetch latest config from Supabase cloud database on mount
     fetchMenuConfigFromSupabase().then((cloudCfg) => {
       if (cloudCfg) {
-        const local = loadTvConfig();
-        if (!local.updatedAt || cloudCfg.updatedAt >= local.updatedAt) {
-          setBoardConfig(cloudCfg);
-          saveTvConfigLocal(cloudCfg);
-        }
+        setBoardConfig(cloudCfg);
+        saveTvConfigLocal(cloudCfg, true);
       }
     }).catch(() => {});
 
@@ -490,74 +487,103 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         <section className="col-span-12 lg:col-span-7 flex flex-col gap-4 overflow-hidden">
           <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
             {/* COLUMN 1: SPECIALTY COFFEE */}
-            <div className="bg-stone-900/60 rounded-3xl border border-stone-800/80 p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm">
-              <div>
-                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800">
+            <div className="bg-stone-900/60 rounded-3xl border border-stone-800/80 p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm overflow-hidden">
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800 shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-400">
                       <Coffee className="w-4 h-4" />
                     </span>
                     <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {boardConfig.coffeeHeader[lang]}
+                      {(boardConfig.coffeeHeader?.[lang] || '').trim() ||
+                        (boardConfig.coffeeHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
                     </h2>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/20">
-                    {boardConfig.coffeeBadge}
-                  </span>
+                  {(boardConfig.coffeeBadge || '').trim() && (
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/20">
+                      {boardConfig.coffeeBadge.trim()}
+                    </span>
+                  )}
                 </div>
 
-                <div className="space-y-1.5 xl:space-y-2">
-                  {visibleCoffeeItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
-                    >
-                      <div className="pr-3 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-base xl:text-lg 2xl:text-xl text-white group-hover:text-amber-300 transition tracking-tight">
-                            {item.name[lang]}
-                          </span>
-                          {item.badge && (
-                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              {item.badge[lang]}
+                <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                  {visibleCoffeeItems.map((item) => {
+                    const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                    const itemBadgeText = item.badge
+                      ? (item.badge[lang] || '').trim() ||
+                        (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
+                      : '';
+                    const noteText = (item.notes?.[lang] || '').trim();
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-1.5 px-2 rounded-2xl hover:bg-stone-800/50 transition group"
+                      >
+                        <div className="pr-3 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`font-black ${
+                                visibleCoffeeItems.length >= 8
+                                  ? 'text-sm xl:text-base 2xl:text-lg'
+                                  : 'text-base xl:text-lg 2xl:text-xl'
+                              } text-white group-hover:text-amber-300 transition tracking-tight leading-tight`}
+                            >
+                              {(item.name?.[lang] || '').trim() ||
+                                (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
                             </span>
+                            {itemBadgeText && (
+                              <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                {itemBadgeText}
+                              </span>
+                            )}
+                            {cleanedVol && (
+                              <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
+                                {cleanedVol}
+                              </span>
+                            )}
+                          </div>
+                          {noteText && (
+                            <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
+                              {noteText}
+                            </p>
                           )}
-                          <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
-                            {item.volume}
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
+                            {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
+                            <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                           </span>
                         </div>
-                        <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
-                          {item.notes[lang]}
-                        </p>
                       </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
-                          {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
-                          <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium">
-                <span>{boardConfig.coffeeFooterNote[lang]}</span>
-                <span className="font-mono text-amber-400/90 font-bold">{boardConfig.coffeeFooterPrice}</span>
-              </div>
+              {((boardConfig.coffeeFooterNote?.[lang] || '').trim() ||
+                (boardConfig.coffeeFooterPrice || '').trim()) && (
+                <div className="pt-2 mt-1 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium shrink-0">
+                  <span>{(boardConfig.coffeeFooterNote?.[lang] || '').trim()}</span>
+                  {(boardConfig.coffeeFooterPrice || '').trim() && (
+                    <span className="font-mono text-amber-400/90 font-bold">
+                      {boardConfig.coffeeFooterPrice.trim()}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* COLUMN 2: FOODBERRY BAKERY & DESSERTS */}
             <div
-              className={`rounded-3xl border p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm transition-all duration-500 ${
+              className={`rounded-3xl border p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm transition-all duration-500 overflow-hidden ${
                 isFlashSaleActive
                   ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
                   : 'bg-stone-900/60 border-stone-800/80'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800">
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800 shrink-0">
                   <div className="flex items-center gap-2">
                     <span
                       className={`p-1.5 rounded-xl ${
@@ -567,7 +593,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                       <Sparkles className="w-4 h-4" />
                     </span>
                     <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {boardConfig.dessertHeader[lang]}
+                      {(boardConfig.dessertHeader?.[lang] || '').trim() ||
+                        (boardConfig.dessertHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
                     </h2>
                   </div>
 
@@ -575,70 +602,102 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-md">
                       -30% REDUCERE
                     </span>
-                  ) : (
+                  ) : (boardConfig.dessertBadge || '').trim() ? (
                     <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      {boardConfig.dessertBadge}
+                      {boardConfig.dessertBadge.trim()}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
-                <div className="space-y-1.5 xl:space-y-2">
-                  {visibleDessertItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-2 rounded-2xl hover:bg-stone-800/50 transition group"
-                    >
-                      <div className="pr-3 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-base xl:text-lg 2xl:text-xl text-white group-hover:text-amber-300 transition tracking-tight">
-                            {item.name[lang]}
-                          </span>
-                          {item.badge && !isFlashSaleActive && (
-                            <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                              {item.badge[lang]}
+                <div
+                  className={`flex-1 flex flex-col overflow-hidden ${
+                    visibleDessertItems.length >= 6 ? 'justify-between' : 'justify-start space-y-2.5'
+                  }`}
+                >
+                  {visibleDessertItems.map((item) => {
+                    const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                    const itemBadgeText = item.badge
+                      ? (item.badge[lang] || '').trim() ||
+                        (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
+                      : '';
+                    const descText = (item.desc?.[lang] || '').trim();
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-1.5 px-2 rounded-2xl hover:bg-stone-800/50 transition group"
+                      >
+                        <div className="pr-3 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`font-black ${
+                                visibleDessertItems.length >= 8
+                                  ? 'text-sm xl:text-base 2xl:text-lg'
+                                  : 'text-base xl:text-lg 2xl:text-xl'
+                              } text-white group-hover:text-amber-300 transition tracking-tight leading-tight`}
+                            >
+                              {(item.name?.[lang] || '').trim() ||
+                                (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
                             </span>
+                            {itemBadgeText && !isFlashSaleActive && (
+                              <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                {itemBadgeText}
+                              </span>
+                            )}
+                            {cleanedVol && (
+                              <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
+                                {cleanedVol}
+                              </span>
+                            )}
+                          </div>
+                          {descText && (
+                            <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
+                              {descText}
+                            </p>
                           )}
-                          {item.volume && (
-                            <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
-                              {item.volume}
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          {isFlashSaleActive ? (
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-sm xl:text-base text-stone-500 line-through font-mono">
+                                {item.price}
+                              </span>
+                              <span className="text-lg xl:text-2xl font-black text-rose-400 font-mono animate-bounce">
+                                {item.discountPrice}{' '}
+                                <span className="text-xs xl:text-sm font-bold text-rose-300">L</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
+                              {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
+                              <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
                             </span>
                           )}
                         </div>
-                        <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
-                          {item.desc[lang]}
-                        </p>
                       </div>
-
-                      <div className="text-right shrink-0">
-                        {isFlashSaleActive ? (
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-sm xl:text-base text-stone-500 line-through font-mono">
-                              {item.price}
-                            </span>
-                            <span className="text-lg xl:text-2xl font-black text-rose-400 font-mono animate-bounce">
-                              {item.discountPrice}{' '}
-                              <span className="text-xs xl:text-sm font-bold text-rose-300">L</span>
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
-                            {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
-                            <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium">
-                <span className="flex items-center gap-1 text-emerald-300">
-                  <Sparkles className="w-3 h-3 text-emerald-400" />
-                  <span>{boardConfig.dessertFooterNote[lang]}</span>
-                </span>
-                <span className="text-stone-400 font-semibold">{boardConfig.dessertFooterBrand}</span>
-              </div>
+              {((boardConfig.dessertFooterNote?.[lang] || '').trim() ||
+                (boardConfig.dessertFooterBrand || '').trim()) && (
+                <div className="pt-2 mt-1 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium shrink-0">
+                  {(boardConfig.dessertFooterNote?.[lang] || '').trim() ? (
+                    <span className="flex items-center gap-1 text-emerald-300">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      <span>{boardConfig.dessertFooterNote[lang].trim()}</span>
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  {(boardConfig.dessertFooterBrand || '').trim() && (
+                    <span className="text-emerald-400 font-bold">
+                      {boardConfig.dessertFooterBrand.trim()}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </section>

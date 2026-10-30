@@ -74,68 +74,72 @@ export async function publishTvConfigToCloud(
   config: TvBoardConfig,
   onToast?: (msg: string) => void
 ): Promise<boolean> {
-  const saved = saveTvConfigLocal(config);
+  const stamped: TvBoardConfig = {
+    ...config,
+    updatedAt: Date.now(),
+  };
   const cmdId = 'cfg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
-  // 1. Broadcast locally on same device
-  try {
-    const channel = new BroadcastChannel('amika_tv_bus');
-    channel.postMessage({ type: 'CONFIG_SYNC', config: saved, _cmdId: cmdId });
-    channel.close();
-  } catch {}
-
-  // 2. Primary long-term persistence: save to Supabase Cloud Database
+  // 1. Primary long-term persistence: save to Supabase Cloud Database FIRST
   let supabaseSuccess = false;
   try {
-    supabaseSuccess = await saveMenuConfigToSupabase(saved);
+    supabaseSuccess = await saveMenuConfigToSupabase(stamped);
   } catch (err) {
     console.warn('Supabase sync error:', err);
   }
 
+  // Only advance localStorage updatedAt when cloud persistence succeeded
+  // (prevents local timestamp from shadowing newer cloud saves after a failed upload)
+  const saved = supabaseSuccess
+    ? saveTvConfigLocal(stamped, true)
+    : saveTvConfigLocal({ ...config, updatedAt: config.updatedAt || 0 }, true);
+
+  // 2. Broadcast locally on same device
+  try {
+    const channel = new BroadcastChannel('amika_tv_bus');
+    channel.postMessage({ type: 'CONFIG_SYNC', config: stamped, _cmdId: cmdId });
+    channel.close();
+  } catch {}
+
   // 3. Signal TV immediately via real-time commands
   const serializedPayload = JSON.stringify({
     type: 'CONFIG_SYNC',
-    config: saved,
+    config: stamped,
     _cmdId: cmdId,
   });
-
-  let relaySuccess = false;
 
   // If small enough (< 3600 bytes), also send full config inline via POST
   if (serializedPayload.length < 3600) {
     try {
-      await sendTvCommand({ type: 'CONFIG_SYNC', config: saved });
-      relaySuccess = true;
+      await sendTvCommand({ type: 'CONFIG_SYNC', config: stamped });
     } catch {}
-  } else {
-    // If large (custom photos), notify TV to re-read latest from Supabase
+  } else if (supabaseSuccess) {
+    // If large (custom photos), notify TV & peer admin tabs to re-read latest from Supabase
     try {
       await sendTvCommand({
         type: 'CONFIG_SUPABASE_SYNC',
         updatedAt: saved.updatedAt,
       });
-      relaySuccess = true;
     } catch {}
   }
 
-  // 4. Also upload to ntfy attachment fallback as redundant delivery channel
+  // 4. Also upload to ntfy attachment fallback as redundant delivery channel for Smart TVs
   try {
     const putResp = await fetch(`https://ntfy.adminforge.de/${TV_SYNC_TOPIC}`, {
       method: 'PUT',
       headers: {
         Filename: 'amika_tv_config.json',
       },
-      body: JSON.stringify(saved),
+      body: JSON.stringify(stamped),
     });
 
     if (putResp.ok) {
-      relaySuccess = true;
       const putData = await putResp.json();
       if (putData?.attachment?.url) {
         await sendTvCommand({
           type: 'CONFIG_URL_SYNC',
           url: putData.attachment.url,
-          updatedAt: saved.updatedAt,
+          updatedAt: stamped.updatedAt,
         });
       }
     }
@@ -146,12 +150,12 @@ export async function publishTvConfigToCloud(
   if (onToast) {
     if (supabaseSuccess) {
       onToast('☁️ Меню сохранено в облаке Supabase и передано на телевизор!');
-    } else if (relaySuccess) {
-      onToast('✅ Меню передано на телевизор!');
     } else {
-      onToast('💾 Сохранено локально в браузере');
+      onToast(
+        '⚠️ Ошибка связи с облаком Supabase! Проверьте интернет и нажмите «Сохранить» ещё раз.'
+      );
     }
   }
 
-  return supabaseSuccess || relaySuccess;
+  return supabaseSuccess;
 }
