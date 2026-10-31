@@ -546,12 +546,12 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       {/* MAIN CONTENT AREA: 2 MENU COLUMNS + 9:16 INSTAGRAM VERTICAL SHOWCASE */}
       <main className="flex-1 flex gap-5 p-5 overflow-hidden min-h-0">
         {/* ================= LEFT SECTION: 2 DIGITAL MENU COLUMNS ================= */}
-        <section className="flex-1 flex gap-4 overflow-hidden min-w-0">
+        <section className="flex-1 flex gap-4 min-w-0">
           {/* COLUMN 1: SPECIALTY COFFEE WITH ILLY BADGE */}
           <div
-            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-xl transition-colors duration-500 overflow-hidden ${
+            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-md transition-colors duration-500 overflow-hidden ${
               isDay
-                ? 'bg-[#fbf1e0]/95 border-amber-900/20 text-stone-900 shadow-stone-900/5'
+                ? 'bg-[#f4d9c4]/97 border-amber-900/15 text-stone-900 shadow-stone-900/5'
                 : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
             }`}
           >
@@ -704,11 +704,11 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
 
           {/* COLUMN 2: TEA & WARM DRINKS / DESSERTS */}
           <div
-            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-xl transition-colors duration-500 overflow-hidden ${
+            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-md transition-colors duration-500 overflow-hidden ${
               isFlashSaleActive
                 ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
                 : isDay
-                ? 'bg-[#fbf1e0]/95 border-amber-900/20 text-stone-900 shadow-stone-900/5'
+                ? 'bg-[#f4d9c4]/97 border-amber-900/15 text-stone-900 shadow-stone-900/5'
                 : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
             }`}
           >
@@ -889,9 +889,9 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         <section
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
-          className={`w-[540px] shrink-0 flex flex-col rounded-3xl overflow-hidden border shadow-2xl relative group transition-colors duration-500 ${
+          className={`w-[540px] shrink-0 flex flex-col rounded-3xl overflow-hidden border shadow-md relative group transition-colors duration-500 ${
             isDay
-              ? 'bg-[#fbf1e0]/95 border-amber-900/20 shadow-stone-900/10'
+              ? 'bg-[#f4d9c4]/95 border-amber-900/20 shadow-stone-900/10'
               : 'bg-stone-900/85 border-stone-800 shadow-black/50'
           }`}
         >
