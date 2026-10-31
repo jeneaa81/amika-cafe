@@ -1418,8 +1418,13 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 onClick={() => {
                   const next = { ...draftConfig, themeMode: 'auto' as const };
                   updateDraft(next);
+                  persistConfigToCloud(
+                    next,
+                    language === 'ro'
+                      ? '🌅 Tema Auto salvată în cloud și pe TV'
+                      : '🌅 Авто-тема сохранена в облаке и на ТВ'
+                  );
                   sendTvCommand({ type: 'SET_THEME', theme: 'auto' });
-                  showToast(language === 'ro' ? '🌅 Tema Auto activată pe TV' : '🌅 Авто-тема активирована на ТВ');
                 }}
                 className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
                   (draftConfig.themeMode || 'auto') === 'auto'
@@ -1445,8 +1450,13 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 onClick={() => {
                   const next = { ...draftConfig, themeMode: 'day' as const };
                   updateDraft(next);
+                  persistConfigToCloud(
+                    next,
+                    language === 'ro'
+                      ? '☀️ Tema de Zi salvată în cloud și activată pe TV'
+                      : '☀️ Дневная тема сохранена в облаке и активирована на ТВ'
+                  );
                   sendTvCommand({ type: 'SET_THEME', theme: 'day' });
-                  showToast(language === 'ro' ? '☀️ Tema de Zi activată pe TV' : '☀️ Дневная тема активирована на ТВ');
                 }}
                 className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
                   draftConfig.themeMode === 'day'
@@ -1472,8 +1482,13 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 onClick={() => {
                   const next = { ...draftConfig, themeMode: 'night' as const };
                   updateDraft(next);
+                  persistConfigToCloud(
+                    next,
+                    language === 'ro'
+                      ? '🌙 Tema de Seară salvată în cloud și activată pe TV'
+                      : '🌙 Вечерняя тема сохранена в облаке и активирована на ТВ'
+                  );
                   sendTvCommand({ type: 'SET_THEME', theme: 'night' });
-                  showToast(language === 'ro' ? '🌙 Tema de Seară activată pe TV' : '🌙 Вечерняя тема активирована на ТВ');
                 }}
                 className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
                   draftConfig.themeMode === 'night'

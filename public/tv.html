@@ -64,9 +64,12 @@
       color: #78716c;
     }
     .app-root.theme-day .badge-specialty {
-      background: rgba(180, 100, 30, 0.12);
-      color: #9a3412;
-      border: 1px solid rgba(180, 100, 30, 0.35);
+      background: rgba(85, 107, 47, 0.14);
+      color: #556b2f;
+      border: 1px solid rgba(85, 107, 47, 0.35);
+    }
+    .app-root.theme-day .footer-note-icon {
+      color: #556b2f;
     }
     .app-root.theme-day .header-slogan {
       color: #78716c;
@@ -162,9 +165,12 @@
       color: #a8a29e;
     }
     .app-root.theme-night .badge-specialty {
-      background: rgba(245, 158, 11, 0.2);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.4);
+      background: rgba(155, 177, 85, 0.18);
+      color: #9bb155;
+      border: 1px solid rgba(155, 177, 85, 0.40);
+    }
+    .app-root.theme-night .footer-note-icon {
+      color: #9bb155;
     }
     .app-root.theme-night .header-slogan {
       color: #a8a29e;
@@ -981,8 +987,8 @@
 
       <div class="header-right">
         <div class="clock-pill">
-          <div class="clock-time" id="clockTime">20:00:00</div>
-          <div class="clock-date" id="clockDate">Sâmbătă, 31 octombrie</div>
+          <div class="clock-time" id="clockTime">--:--:--</div>
+          <div class="clock-date" id="clockDate">---</div>
         </div>
 
         <button class="btn-fullscreen" onclick="toggleFullscreen()" title="Полный экран [клавиша F]">
@@ -1013,7 +1019,7 @@
 
           <div class="card-footer-note" id="coffeeFooterRow">
             <span class="footer-note-left" id="milkNoteWrap">
-              <span class="footer-note-icon" style="color: #fbbf24;">
+              <span class="footer-note-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
                 </svg>
@@ -1045,7 +1051,7 @@
 
           <div class="card-footer-note" id="dessertFooterRow">
             <span class="footer-note-left" id="freshDeliveryWrap">
-              <span class="footer-note-icon" style="color: #34d399;">
+              <span class="footer-note-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
                   <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
@@ -1315,8 +1321,11 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
       } catch (e) {}
 
-      if (cfg.themeMode && cfg.themeMode !== currentThemeMode) {
+      if (cfg.themeMode) {
         currentThemeMode = cfg.themeMode;
+        try {
+          localStorage.setItem('amika_tv_theme_mode', cfg.themeMode);
+        } catch (e) {}
         applyTheme();
       }
 
@@ -1872,31 +1881,58 @@
       } catch (e) {}
     }
 
-    // CLOCK TICKER (Accounts for Moldova Winter Time / EET / UTC+2)
-    function updateClock() {
-      var d = new Date();
-      var h = d.getHours(); var m = d.getMinutes(); var s = d.getSeconds();
-      var timeStr = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-      document.getElementById('clockTime').innerText = timeStr;
-
-      var days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
-      var days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-      var months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
-      var months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-
-      var dateStr = currentLang === 'ro'
-        ? days_ro[d.getDay()] + ', ' + d.getDate() + ' ' + months_ro[d.getMonth()]
-        : days_ru[d.getDay()] + ', ' + d.getDate() + ' ' + months_ru[d.getMonth()];
-      document.getElementById('clockDate').innerText = dateStr;
-
-      // Update solar day/night check every minute if in auto mode
-      if (s === 0 && currentThemeMode === 'auto') {
-        applyTheme();
-      }
+    // Precise Moldova EET / UTC+2 (Winter) and EEST / UTC+3 (Summer)
+    function getMoldovaDate() {
+      var now = new Date();
+      var utcMs = now.getTime();
+      var offsetHours = getMoldovaOffsetHours(utcMs);
+      return new Date(utcMs + offsetHours * 3600000);
     }
 
+    // CLOCK TICKER (Calculates exact Moldova EET time)
+    function updateClock() {
+      try {
+        var clockEl = document.getElementById('clockTime');
+        var dateEl = document.getElementById('clockDate');
+
+        var md = getMoldovaDate();
+        var h = md.getUTCHours();
+        var m = md.getUTCMinutes();
+        var s = md.getUTCSeconds();
+        var timeStr = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+        if (clockEl) clockEl.innerText = timeStr;
+
+        if (dateEl) {
+          var dayIdx = md.getUTCDay();
+          var monthIdx = md.getUTCMonth();
+          var dateNum = md.getUTCDate();
+          var days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+          var days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+          var months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+          var months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+          var dateStr = currentLang === 'ro'
+            ? days_ro[dayIdx] + ', ' + dateNum + ' ' + months_ro[monthIdx]
+            : days_ru[dayIdx] + ', ' + dateNum + ' ' + months_ru[monthIdx];
+          dateEl.innerText = dateStr;
+        }
+
+        // Update solar day/night check every minute ONLY if in auto mode
+        if (s === 0 && currentThemeMode === 'auto') {
+          applyTheme();
+        }
+      } catch (err) {}
+    }
+
+    // Start clock ticker immediately so clock never stays frozen
+    updateClock();
+    setInterval(updateClock, 1000);
+
     // INIT LOOPS
-    window.onload = function() {
+    var tvInitialized = false;
+    function initTvApp() {
+      if (tvInitialized) return;
+      tvInitialized = true;
       loadSavedConfig();
       renderMenu();
       updateCloudIndicator();
@@ -1904,7 +1940,6 @@
       initCloudRelay();
       checkRecentCloudConfig();
       updateClock();
-      setInterval(updateClock, 1000);
 
       // Auto-advance slides every 7 seconds
       setInterval(function() {
@@ -1934,7 +1969,14 @@
           fetchSupabaseConfig(false);
         }
       });
-    };
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTvApp);
+    } else {
+      initTvApp();
+    }
+    window.addEventListener('load', initTvApp);
 
     // KEYBOARD SHORTCUTS
     window.addEventListener('keydown', function(e) {

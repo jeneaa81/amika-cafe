@@ -367,17 +367,21 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const slideDetails = (activeSlide.details?.[lang] || '').trim();
   const slideHasText = Boolean(slideTitle || slideSubtitle || slideDetails);
 
-  const formattedDate = currentTime.toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'ru-RU', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  const utcMs = currentTime.getTime();
+  const offset = getMoldovaOffsetHours(utcMs);
+  const moldovaDate = new Date(utcMs + offset * 3600000);
+  const h = String(moldovaDate.getUTCHours()).padStart(2, '0');
+  const m = String(moldovaDate.getUTCMinutes()).padStart(2, '0');
+  const s = String(moldovaDate.getUTCSeconds()).padStart(2, '0');
+  const formattedTime = `${h}:${m}:${s}`;
 
-  const formattedTime = currentTime.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  const days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+  const days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+  const months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+  const months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const dayName = (lang === 'ro' ? days_ro : days_ru)[moldovaDate.getUTCDay()];
+  const monthName = (lang === 'ro' ? months_ro : months_ru)[moldovaDate.getUTCMonth()];
+  const formattedDate = `${dayName}, ${moldovaDate.getUTCDate()} ${monthName}`;
 
   return (
     <div
@@ -434,8 +438,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               <span
                 className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
                   isDay
-                    ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    ? 'bg-[#556b2f]/14 text-[#556b2f] border border-[#556b2f]/35'
+                    : 'bg-[#9bb155]/20 text-[#9bb155] border border-[#9bb155]/40'
                 }`}
               >
                 Specialty Coffee
@@ -677,11 +681,18 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                   isDay ? 'border-amber-900/10 text-stone-600' : 'border-stone-800/60 text-stone-400'
                 }`}
               >
-                <span>{(boardConfig.coffeeFooterNote?.[lang] || '').trim()}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className={isDay ? 'text-[#556b2f]' : 'text-[#9bb155]'}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                    </svg>
+                  </span>
+                  <span>{(boardConfig.coffeeFooterNote?.[lang] || '').trim()}</span>
+                </span>
                 {(boardConfig.coffeeFooterPrice || '').trim() && (
                   <span
                     className={`font-mono font-bold ${
-                      isDay ? 'text-amber-800' : 'text-amber-400/90'
+                      isDay ? 'text-stone-900' : 'text-[#9bb155]'
                     }`}
                   >
                     {boardConfig.coffeeFooterPrice.trim()}

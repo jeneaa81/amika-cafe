@@ -32,6 +32,7 @@ import {
   getDefaultStoreProducts,
 } from '../utils/menuStore';
 import { BaristaLoyaltyScanner } from './BaristaLoyaltyScanner';
+import { fetchMenuConfigFromSupabase, saveMenuConfigToSupabase } from '../utils/supabaseClient';
 
 interface BaristaScreenProps {
   language: Language;
@@ -193,6 +194,24 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
         : `${target.name.ru}: ${nextVis ? '🟢 В наличии (доступен в боте)' : '🔴 Стоп-лист (скрыт в боте)'}`;
     setTvCommandToast(msg);
     setTimeout(() => setTvCommandToast(null), 3500);
+  };
+
+  const handleBaristaThemeChange = async (mode: 'day' | 'night' | 'auto') => {
+    sendTvCommand(
+      { type: 'SET_THEME', theme: mode },
+      setTvCommandToast,
+      mode === 'day'
+        ? (language === 'ro' ? '☀️ Tema de Zi activată pe TV' : '☀️ Дневная тема на ТВ')
+        : mode === 'night'
+        ? (language === 'ro' ? '🌙 Tema de Seară activată pe TV' : '🌙 Вечерняя тема на ТВ')
+        : (language === 'ro' ? '🌅 Tema Auto activată pe TV' : '🌅 Авто-тема на ТВ')
+    );
+    try {
+      const cur = await fetchMenuConfigFromSupabase();
+      if (cur) {
+        await saveMenuConfigToSupabase({ ...cur, themeMode: mode });
+      }
+    } catch {}
   };
 
   const [selectedDessertId, setSelectedDessertId] = useState<string>('fb-01');
@@ -914,13 +933,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
 
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   <button
-                    onClick={() =>
-                      sendTvCommand(
-                        { type: 'SET_THEME', theme: 'day' },
-                        setTvCommandToast,
-                        language === 'ro' ? '☀️ Tema de Zi activată pe TV' : '☀️ Дневная тема на ТВ'
-                      )
-                    }
+                    onClick={() => handleBaristaThemeChange('day')}
                     className="py-3 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-bold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Sun className="w-4 h-4" />
@@ -928,13 +941,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   </button>
 
                   <button
-                    onClick={() =>
-                      sendTvCommand(
-                        { type: 'SET_THEME', theme: 'night' },
-                        setTvCommandToast,
-                        language === 'ro' ? '🌙 Tema de Seară activată pe TV' : '🌙 Вечерняя тема на ТВ'
-                      )
-                    }
+                    onClick={() => handleBaristaThemeChange('night')}
                     className="py-3 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs sm:text-sm font-semibold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Moon className="w-4 h-4" />
@@ -942,13 +949,7 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                   </button>
 
                   <button
-                    onClick={() =>
-                      sendTvCommand(
-                        { type: 'SET_THEME', theme: 'auto' },
-                        setTvCommandToast,
-                        language === 'ro' ? '🌅 Tema Auto activată pe TV' : '🌅 Авто-тема на ТВ'
-                      )
-                    }
+                    onClick={() => handleBaristaThemeChange('auto')}
                     className="py-3 px-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-200 border border-amber-500/30 text-xs sm:text-sm font-bold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Sunrise className="w-4 h-4" />
