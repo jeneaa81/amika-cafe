@@ -5,7 +5,7 @@ import { PRODUCTS } from '../data/products';
 export interface TvCoffeeItem {
   id: string;
   name: { ro: string; ru: string };
-  volume: string;
+  volume?: string;
   notes: { ro: string; ru: string };
   price: number;
   secondPrice?: number;
@@ -421,14 +421,13 @@ export function syncTvColumnsFromStoreProducts(config: TvBoardConfig): TvBoardCo
 
   const formatItemVolume = (
     vol?: string,
-    secVol?: string,
-    defaultVol?: string
+    secVol?: string
   ): string | undefined => {
     const base = (vol || '').replace(/\s*\/\s*$/, '').trim();
     const second = (secVol || '').trim();
     if (base && second) return `${base} / ${second}`;
     if (base) return base;
-    return defaultVol;
+    return undefined;
   };
 
   const normalizeBadge = (
@@ -447,7 +446,7 @@ export function syncTvColumnsFromStoreProducts(config: TvBoardConfig): TvBoardCo
     .map((p) => ({
       id: p.id,
       name: p.name,
-      volume: formatItemVolume(p.volume, p.secondVolume, '250 ml') || '250 ml',
+      volume: formatItemVolume(p.volume, p.secondVolume),
       notes: p.description,
       price: p.price,
       secondPrice: p.secondPrice,

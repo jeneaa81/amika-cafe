@@ -81,15 +81,15 @@
       box-shadow: 0 4px 16px rgba(120, 80, 40, 0.08);
     }
     .app-root.theme-day .clock-time {
-      color: #9a3412;
+      color: #556b2f;
     }
     .app-root.theme-day .clock-date {
-      color: #78716c;
+      color: #6e7d4a;
     }
     .app-root.theme-day .menu-card {
-      background: rgba(255, 252, 246, 0.94);
-      border: 1px solid rgba(217, 180, 140, 0.55);
-      box-shadow: 0 16px 45px rgba(100, 70, 30, 0.14);
+      background: rgba(251, 241, 224, 0.96);
+      border: 1px solid rgba(210, 168, 120, 0.55);
+      box-shadow: 0 16px 45px rgba(90, 60, 20, 0.12);
     }
     .app-root.theme-day .card-header {
       border-bottom: 1px solid rgba(217, 180, 140, 0.45);
@@ -179,10 +179,10 @@
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
     .app-root.theme-night .clock-time {
-      color: #f59e0b;
+      color: #9bb155;
     }
     .app-root.theme-night .clock-date {
-      color: #a8a29e;
+      color: #82944b;
     }
     .app-root.theme-night .menu-card {
       background: rgba(24, 20, 18, 0.88);
@@ -196,9 +196,9 @@
       color: #ffffff;
     }
     .app-root.theme-night .card-tag {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(155, 177, 85, 0.18);
+      color: #b4cb68;
+      border-color: rgba(155, 177, 85, 0.35);
     }
     .app-root.theme-night .card-tag.emerald {
       background: rgba(16, 185, 129, 0.18);
@@ -212,9 +212,9 @@
       color: #ffffff;
     }
     .app-root.theme-night .item-badge {
-      background: rgba(245, 158, 11, 0.25);
-      color: #fcd34d;
-      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(155, 177, 85, 0.25);
+      color: #d1e28c;
+      border-color: rgba(155, 177, 85, 0.4);
     }
     .app-root.theme-night .item-badge.rose {
       background: rgba(244, 63, 94, 0.25);
@@ -228,10 +228,10 @@
       color: #d6d3d1;
     }
     .app-root.theme-night .item-price {
-      color: #fbbf24;
+      color: #9bb155;
     }
     .app-root.theme-night .item-price-mdl {
-      color: #fde68a;
+      color: #c5d88f;
     }
     .app-root.theme-night .card-footer-note {
       border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -861,10 +861,16 @@
     }
     .progress-fill {
       height: 100%;
-      background: #f59e0b;
+      background: #8fa34e;
       width: 0%;
       -webkit-transition: width 0.3s ease;
       transition: width 0.3s ease;
+    }
+    .app-root.theme-day .progress-fill {
+      background: #6e8438;
+    }
+    .app-root.theme-night .progress-fill {
+      background: #9bb155;
     }
 
     .slide-image-wrapper {
@@ -974,18 +980,6 @@
       </div>
 
       <div class="header-right">
-        <div class="cloud-pill" id="cloudPill" title="Связь с облаком">
-          <span class="cloud-dot" id="cloudDot"></span>
-          <span id="cloudStatusText">Облако</span>
-        </div>
-
-        <button class="theme-pill" id="themeToggleBtn" onclick="cycleThemeMode()" title="Режим темы [клавиша T]">
-          <span id="themeIcon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
-          </span>
-          <span id="themeLabel">Auto</span>
-        </button>
-
         <div class="clock-pill">
           <div class="clock-time" id="clockTime">20:00:00</div>
           <div class="clock-date" id="clockDate">Sâmbătă, 31 octombrie</div>
@@ -1120,6 +1114,7 @@
     }
 
     function cleanVolume(val) {
+      if (!val) return '';
       var s = stripUnsupportedEmojis(val);
       return s.replace(/\s*\/\s*$/, '').replace(/^\s+|\s+$/g, '');
     }
@@ -1564,7 +1559,26 @@
         var name = escapeHtml(pickLangText(ci.name, isRo, '', '', true));
         var desc = escapeHtml(pickLangText(ci.notes, isRo, '', '', false));
         var badge = ci.badge ? escapeHtml(pickLangText(ci.badge, isRo, '', '', true)) : '';
-        var vol = escapeHtml(cleanVolume(ci.volume));
+
+        var volRaw = ci.volume;
+        if (Array.isArray(boardConfig.storeProducts)) {
+          for (var spIdx = 0; spIdx < boardConfig.storeProducts.length; spIdx++) {
+            var sp = boardConfig.storeProducts[spIdx];
+            if (sp && sp.id === ci.id) {
+              var spBase = (sp.volume || '').replace(/^\s+|\s+$/g, '');
+              var spSec = (sp.secondVolume || '').replace(/^\s+|\s+$/g, '');
+              if (!spBase && !spSec) {
+                volRaw = '';
+              } else if (spBase && spSec) {
+                volRaw = spBase + ' / ' + spSec;
+              } else if (spBase) {
+                volRaw = spBase;
+              }
+              break;
+            }
+          }
+        }
+        var vol = escapeHtml(cleanVolume(volRaw));
 
         var coffeePriceText = ci.secondPrice ? (ci.price + ' / ' + ci.secondPrice) : ci.price;
         coffeeHtml += '<div class="item-row">' +
@@ -1602,7 +1616,26 @@
         var dName = escapeHtml(pickLangText(di.name, isRo, '', '', true));
         var dDesc = escapeHtml(pickLangText(di.desc, isRo, '', '', false));
         var dBadge = di.badge ? escapeHtml(pickLangText(di.badge, isRo, '', '', true)) : '';
-        var dVolClean = escapeHtml(cleanVolume(di.volume));
+
+        var dVolRaw = di.volume;
+        if (Array.isArray(boardConfig.storeProducts)) {
+          for (var dspIdx = 0; dspIdx < boardConfig.storeProducts.length; dspIdx++) {
+            var dsp = boardConfig.storeProducts[dspIdx];
+            if (dsp && dsp.id === di.id) {
+              var dspBase = (dsp.volume || '').replace(/^\s+|\s+$/g, '');
+              var dspSec = (dsp.secondVolume || '').replace(/^\s+|\s+$/g, '');
+              if (!dspBase && !dspSec) {
+                dVolRaw = '';
+              } else if (dspBase && dspSec) {
+                dVolRaw = dspBase + ' / ' + dspSec;
+              } else if (dspBase) {
+                dVolRaw = dspBase;
+              }
+              break;
+            }
+          }
+        }
+        var dVolClean = escapeHtml(cleanVolume(dVolRaw));
 
         var priceMarkup = '';
         if (isFlashSaleActive) {

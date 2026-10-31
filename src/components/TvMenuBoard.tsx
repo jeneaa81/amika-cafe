@@ -18,9 +18,6 @@ import {
   X,
   Volume2,
   VolumeX,
-  Sun,
-  Moon,
-  Sunrise,
 } from 'lucide-react';
 
 interface TvMenuBoardProps {
@@ -103,7 +100,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [remoteToast, setRemoteToast] = useState<string | null>(null);
-  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
+  const [_isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
   const visibleSlides = boardConfig.slides.filter((s) => s.visible !== false);
   const slides = visibleSlides.length > 0 ? visibleSlides : boardConfig.slides;
@@ -473,66 +470,24 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           )}
 
           <div
-            className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl border ${
-              isDay
-                ? 'bg-white/80 border-amber-900/15 text-stone-700'
-                : 'bg-stone-950/60 border-stone-800 text-stone-400'
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
-            />
-            <span>{isCloudConnected ? 'Облако: OK' : 'Подключение...'}</span>
-          </div>
-
-          <button
-            onClick={cycleTheme}
-            title="Переключить тему (День / Вечер / Авто) [Клавиша T]"
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border cursor-pointer ${
-              isDay
-                ? 'bg-amber-500/15 text-amber-900 border-amber-500/30 hover:bg-amber-500/25'
-                : 'bg-stone-800 text-stone-200 border-stone-700 hover:bg-stone-700'
-            }`}
-          >
-            {themeMode === 'day' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-600" />
-                <span>День</span>
-              </>
-            ) : themeMode === 'night' ? (
-              <>
-                <Moon className="w-3.5 h-3.5 text-amber-400" />
-                <span>Вечер</span>
-              </>
-            ) : (
-              <>
-                <Sunrise className="w-3.5 h-3.5 text-amber-500" />
-                <span>Авто ({isDay ? 'День' : 'Вечер'})</span>
-              </>
-            )}
-          </button>
-
-          <div
             className={`hidden lg:flex items-center gap-2 text-right px-3.5 py-1 rounded-xl border ${
               isDay
                 ? 'bg-white/80 border-amber-900/15 text-stone-800'
                 : 'bg-stone-950/60 border-stone-800 text-stone-300'
             }`}
           >
-            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+            <Clock className="w-4 h-4 text-[#74873f] shrink-0" />
             <div>
               <div
                 className={`text-xl font-black font-mono tracking-tight leading-none ${
-                  isDay ? 'text-amber-800' : 'text-amber-400'
+                  isDay ? 'text-[#556b2f]' : 'text-[#9bb155]'
                 }`}
               >
                 {formattedTime}
               </div>
               <div
                 className={`text-[10px] capitalize font-medium ${
-                  isDay ? 'text-stone-500' : 'text-stone-400'
+                  isDay ? 'text-[#6e7d4a]' : 'text-[#82944b]'
                 }`}
               >
                 {formattedDate}
@@ -592,7 +547,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           <div
             className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-xl transition-colors duration-500 overflow-hidden ${
               isDay
-                ? 'bg-[#fffdf9]/94 border-amber-900/15 text-stone-900 shadow-stone-900/5'
+                ? 'bg-[#fbf1e0]/95 border-amber-900/20 text-stone-900 shadow-stone-900/5'
                 : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
             }`}
           >
@@ -630,7 +585,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
 
               <div className="flex-1 flex flex-col justify-between overflow-hidden">
                 {visibleCoffeeItems.map((item) => {
-                  const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                  const matchingProd = boardConfig.storeProducts?.find((p) => p.id === item.id);
+                  const resolvedVol = matchingProd
+                    ? (matchingProd.volume && matchingProd.secondVolume
+                        ? `${matchingProd.volume} / ${matchingProd.secondVolume}`
+                        : matchingProd.volume || '')
+                    : (item.volume || '');
+                  const cleanedVol = resolvedVol.replace(/\s*\/\s*$/, '').trim();
                   const itemBadgeText = item.badge
                     ? (item.badge[lang] || '').trim() ||
                       (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
@@ -690,13 +651,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                       <div className="text-right shrink-0">
                         <span
                           className={`text-lg xl:text-2xl font-black font-mono tracking-tight whitespace-nowrap ${
-                            isDay ? 'text-stone-900' : 'text-amber-400'
+                            isDay ? 'text-stone-900' : 'text-[#9bb155]'
                           }`}
                         >
                           {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
                           <span
                             className={`text-xs xl:text-sm font-bold ${
-                              isDay ? 'text-stone-500' : 'text-amber-300/80'
+                              isDay ? 'text-stone-500' : 'text-[#c5d88f]'
                             }`}
                           >
                             MDL
@@ -736,7 +697,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               isFlashSaleActive
                 ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
                 : isDay
-                ? 'bg-[#fffdf9]/94 border-amber-900/15 text-stone-900 shadow-stone-900/5'
+                ? 'bg-[#fbf1e0]/95 border-amber-900/20 text-stone-900 shadow-stone-900/5'
                 : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
             }`}
           >
@@ -791,7 +752,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 }`}
               >
                 {visibleDessertItems.map((item) => {
-                  const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                  const matchingProd = boardConfig.storeProducts?.find((p) => p.id === item.id);
+                  const resolvedVol = matchingProd
+                    ? (matchingProd.volume && matchingProd.secondVolume
+                        ? `${matchingProd.volume} / ${matchingProd.secondVolume}`
+                        : matchingProd.volume || '')
+                    : (item.volume || '');
+                  const cleanedVol = resolvedVol.replace(/\s*\/\s*$/, '').trim();
                   const itemBadgeText = item.badge
                     ? (item.badge[lang] || '').trim() ||
                       (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
@@ -862,13 +829,13 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                         ) : (
                           <span
                             className={`text-lg xl:text-2xl font-black font-mono tracking-tight whitespace-nowrap ${
-                              isDay ? 'text-stone-900' : 'text-amber-400'
+                              isDay ? 'text-stone-900' : 'text-[#9bb155]'
                             }`}
                           >
                             {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
                             <span
                               className={`text-xs xl:text-sm font-bold ${
-                                isDay ? 'text-stone-500' : 'text-amber-300/80'
+                                isDay ? 'text-stone-500' : 'text-[#c5d88f]'
                               }`}
                             >
                               MDL
@@ -913,7 +880,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           onMouseLeave={() => setIsPaused(false)}
           className={`w-[540px] shrink-0 flex flex-col rounded-3xl overflow-hidden border shadow-2xl relative group transition-colors duration-500 ${
             isDay
-              ? 'bg-[#fffdf9]/94 border-amber-900/15 shadow-stone-900/10'
+              ? 'bg-[#fbf1e0]/95 border-amber-900/20 shadow-stone-900/10'
               : 'bg-stone-900/85 border-stone-800 shadow-black/50'
           }`}
         >
@@ -926,7 +893,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 onClick={() => setCurrentSlideIndex(i)}
               >
                 <div
-                  className={`h-full bg-amber-400 transition-all duration-300 ${
+                  className={`h-full ${isDay ? 'bg-[#6e8438]' : 'bg-[#9bb155]'} transition-all duration-300 ${
                     i <= safeSlideIdx ? 'w-full' : 'w-0'
                   }`}
                 />
