@@ -15,10 +15,12 @@ import {
   Minimize2,
   ChevronLeft,
   ChevronRight,
-  Coffee,
   X,
   Volume2,
   VolumeX,
+  Sun,
+  Moon,
+  Sunrise,
 } from 'lucide-react';
 
 interface TvMenuBoardProps {
@@ -26,6 +28,46 @@ interface TvMenuBoardProps {
   onLanguageChange: (lang: Language) => void;
   orders: Order[];
   onExitTvMode: () => void;
+}
+
+// Astronomical solar calculator for Cricova (47.139° N, 28.862° E)
+// Accounts for Moldova Winter Time (EET / UTC+2) and Summer Time (EEST / UTC+3)
+function getMoldovaOffsetHours(utcMs: number): number {
+  const d = new Date(utcMs);
+  const y = d.getUTCFullYear();
+  const marLastSun = 31 - new Date(Date.UTC(y, 2, 31)).getUTCDay();
+  const octLastSun = 31 - new Date(Date.UTC(y, 9, 31)).getUTCDay();
+  const dstStart = Date.UTC(y, 2, marLastSun, 1, 0, 0);
+  const dstEnd = Date.UTC(y, 9, octLastSun, 1, 0, 0);
+  return utcMs >= dstStart && utcMs < dstEnd ? 3 : 2;
+}
+
+function isDaytimeInCricova(nowDate: Date): boolean {
+  const utcMs = nowDate.getTime();
+  const offset = getMoldovaOffsetHours(utcMs);
+  const md = new Date(utcMs + offset * 3600000);
+  const y = md.getUTCFullYear();
+  const m = md.getUTCMonth();
+  const day = md.getUTCDate();
+  const startOfYear = Date.UTC(y, 0, 1);
+  const curDayUtc = Date.UTC(y, m, day);
+  const doy = Math.floor((curDayUtc - startOfYear) / 86400000) + 1;
+  const gamma = (2 * Math.PI / 365) * (doy - 1 + 0.5);
+  const eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
+  const decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma) - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma);
+  const lat = 47.139 * Math.PI / 180;
+  const lon = 28.862;
+  const zenith = 90.833 * Math.PI / 180;
+  let cosHA = (Math.cos(zenith) / (Math.cos(lat) * Math.cos(decl))) - Math.tan(lat) * Math.tan(decl);
+  cosHA = Math.max(-1, Math.min(1, cosHA));
+  const haDeg = Math.acos(cosHA) * 180 / Math.PI;
+  const sunriseUtcMin = 720 - 4 * (lon + haDeg) - eqTime;
+  const sunsetUtcMin = 720 - 4 * (lon - haDeg) - eqTime;
+  const sunriseLocalMin = Math.round(sunriseUtcMin + offset * 60);
+  const sunsetLocalMin = Math.round(sunsetUtcMin + offset * 60);
+  const nowLocalMin = md.getUTCHours() * 60 + md.getUTCMinutes();
+  // Transition to evening lounge theme 15 minutes before sunset
+  return nowLocalMin >= sunriseLocalMin && nowLocalMin < (sunsetLocalMin - 15);
 }
 
 export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
@@ -37,9 +79,17 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   // Dynamic Menu & Carousel Configuration (editable from Admin Cabinet)
   const [boardConfig, setBoardConfig] = useState<TvBoardConfig>(() => loadTvConfig());
 
-  // Language state (can auto-alternate or be manually set)
-  const [lang, setLang] = useState<Language>(initialLanguage);
-  const [autoRotateLang, setAutoRotateLang] = useState<boolean>(false);
+  // Language state (default RO)
+  const [lang] = useState<Language>(initialLanguage);
+
+  // Theme mode: 'auto' | 'day' | 'night'
+  const [themeMode, setThemeMode] = useState<'auto' | 'day' | 'night'>(() => {
+    try {
+      return (localStorage.getItem('amika_tv_theme_mode') as 'auto' | 'day' | 'night') || boardConfig.themeMode || 'auto';
+    } catch {
+      return boardConfig.themeMode || 'auto';
+    }
+  });
 
   // Time & Date
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -60,6 +110,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const visibleCoffeeItems = boardConfig.coffeeItems.filter((c) => c.visible !== false);
   const visibleDessertItems = boardConfig.dessertItems.filter((d) => d.visible !== false);
 
+  const isDay = themeMode === 'day' ? true : themeMode === 'night' ? false : isDaytimeInCricova(currentTime);
+
   const triggerMelodicChime = () => {
     if (!soundEnabled) return;
     playMelodicChime();
@@ -72,6 +124,9 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     if (!cfg || !Array.isArray(cfg.coffeeItems) || !Array.isArray(cfg.slides)) return;
     setBoardConfig(cfg);
     saveTvConfigLocal(cfg, true);
+    if (cfg.themeMode && cfg.themeMode !== themeMode) {
+      setThemeMode(cfg.themeMode);
+    }
     setCurrentSlideIndex(0);
     triggerMelodicChime();
     setRemoteToast(`✨ ${sourceLabel}: Меню и фотогалерея обновлены!`);
@@ -117,7 +172,17 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       }
     }
 
-    if (msg.type === 'CONFIG_SUPABASE_SYNC') {
+    if (msg.type === 'SET_THEME' && typeof msg.theme === 'string') {
+      const mode = msg.theme as 'auto' | 'day' | 'night';
+      setThemeMode(mode);
+      try {
+        localStorage.setItem('amika_tv_theme_mode', mode);
+      } catch {}
+      setRemoteToast(
+        mode === 'day' ? '☀️ Дневная тема' : mode === 'night' ? '🌙 Вечерняя тема' : '🌅 Авто-тема (по солнцу)'
+      );
+      return;
+    } else if (msg.type === 'CONFIG_SUPABASE_SYNC') {
       fetchMenuConfigFromSupabase().then((cfg) => {
         if (cfg) applyRemoteConfig(cfg, source);
       });
@@ -140,19 +205,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       setIsPaused(true);
       setTimeout(() => setIsPaused(false), 20000);
       setRemoteToast(`📸 ${source}: Слайд №${msg.index + 1}`);
-    } else if (msg.type === 'SET_LANG_MODE' && typeof msg.mode === 'string') {
-      if (msg.mode === 'auto') {
-        setAutoRotateLang(true);
-        setRemoteToast(`🔄 ${source}: Авто-ротация языка (RO ⇄ RU каждые 15 сек)`);
-      } else {
-        setAutoRotateLang(false);
-        setLang(msg.mode as Language);
-        setRemoteToast(`🌐 ${source}: Язык ${msg.mode.toUpperCase()}`);
-      }
-    } else if (msg.type === 'SET_LANG' && typeof msg.lang === 'string') {
-      setAutoRotateLang(false);
-      setLang(msg.lang as Language);
-      setRemoteToast(`🌐 ${source}: Язык ${msg.lang.toUpperCase()}`);
     } else if (msg.type === 'CHIME') {
       triggerMelodicChime();
       setRemoteToast(`🔔 ${source}: Мелодичный гонг`);
@@ -161,7 +213,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     setTimeout(() => setRemoteToast(null), 3500);
   };
 
-  // Clock ticker
+  // Clock ticker (Accounts for Moldova Winter Time / EET / UTC+2)
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -236,6 +288,9 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       if (cloudCfg) {
         setBoardConfig(cloudCfg);
         saveTvConfigLocal(cloudCfg, true);
+        if (cloudCfg.themeMode) {
+          setThemeMode(cloudCfg.themeMode);
+        }
       }
     }).catch(() => {});
 
@@ -249,15 +304,6 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const isFlashSaleActive =
     flashSaleMode === 'active' ||
     (flashSaleMode === 'auto' && currentTime.getHours() >= 20);
-
-  // Auto-switch language every 15s if enabled
-  useEffect(() => {
-    if (!autoRotateLang) return;
-    const interval = setInterval(() => {
-      setLang((prev) => (prev === 'ro' ? 'ru' : 'ro'));
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [autoRotateLang]);
 
   // Auto-advance showcase slides every 7 seconds
   useEffect(() => {
@@ -276,16 +322,30 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     }
   };
 
+  const cycleTheme = () => {
+    setThemeMode((prev) => {
+      const next = prev === 'auto' ? 'day' : prev === 'day' ? 'night' : 'auto';
+      try {
+        localStorage.setItem('amika_tv_theme_mode', next);
+      } catch {}
+      setRemoteToast(
+        next === 'day' ? '☀️ Дневная тема (светлая)' : next === 'night' ? '🌙 Вечерняя тема (тёмная)' : '🌅 Авто-тема (по солнцу)'
+      );
+      setTimeout(() => setRemoteToast(null), 3000);
+      return next;
+    });
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'f' || e.key === 'F') {
         handleToggleFullscreen();
+      } else if (e.key === 't' || e.key === 'T') {
+        cycleTheme();
       } else if (e.key === 'ArrowRight' && slides.length > 0) {
         setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
       } else if (e.key === 'ArrowLeft' && slides.length > 0) {
         setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
-      } else if (e.key === 'l' || e.key === 'L') {
-        setLang((prev) => (prev === 'ro' ? 'ru' : 'ro'));
       } else if (e.key === 's' || e.key === 'S') {
         setFlashSaleMode((prev) => (prev === 'active' ? 'inactive' : 'active'));
       } else if (e.key === 'Escape') {
@@ -305,6 +365,11 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
       ? activeSlide.image
       : `${baseUrl}${activeSlide.image}`;
 
+  const slideTitle = (activeSlide.title?.[lang] || '').trim();
+  const slideSubtitle = (activeSlide.subtitle?.[lang] || '').trim();
+  const slideDetails = (activeSlide.details?.[lang] || '').trim();
+  const slideHasText = Boolean(slideTitle || slideSubtitle || slideDetails);
+
   const formattedDate = currentTime.toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'ru-RU', {
     weekday: 'long',
     day: 'numeric',
@@ -318,12 +383,19 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-950 text-stone-100 flex flex-col overflow-hidden select-none font-sans">
+    <div
+      className={`fixed inset-0 z-50 flex flex-col overflow-hidden select-none font-sans transition-colors duration-500 bg-cover bg-center ${
+        isDay ? 'text-stone-900 bg-[#f7f2ea]' : 'text-stone-100 bg-[#120f0d]'
+      }`}
+      style={{
+        backgroundImage: `url(${baseUrl}${isDay ? 'tv_bg_day.jpg' : 'tv_bg_night.jpg'})`,
+      }}
+    >
       {/* FLASH SALE TOP MARQUEE */}
       {isFlashSaleActive && (
-        <div className="bg-gradient-to-r from-rose-700 via-amber-600 to-rose-700 text-white px-6 py-2.5 flex items-center justify-between shadow-2xl animate-pulse">
+        <div className="bg-gradient-to-r from-rose-700 via-amber-600 to-rose-700 text-white px-6 py-2 flex items-center justify-between shadow-2xl animate-pulse shrink-0">
           <div className="flex items-center gap-3">
-            <span className="p-1.5 rounded-lg bg-black/30">
+            <span className="p-1 rounded-lg bg-black/30">
               <Flame className="w-5 h-5 text-amber-300 animate-bounce" />
             </span>
             <span className="font-black text-sm md:text-base tracking-wider uppercase font-serif">
@@ -332,148 +404,179 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
                 : '🔥 ВЕЧЕРНЯЯ FLASH-РАСПРОДАЖА: -30% НА ВСЮ ВИТРИНУ ДЕСЕРТОВ FOODBERRY ДО ЗАКРЫТИЯ!'}
             </span>
           </div>
-          <div className="flex items-center gap-2 font-mono font-bold text-xs md:text-sm bg-black/40 px-3 py-1 rounded-full border border-amber-300/40">
+          <div className="flex items-center gap-2 font-mono font-bold text-xs bg-black/40 px-3 py-1 rounded-full border border-amber-300/40">
             <span>{lang === 'ro' ? 'Închidere la 21:00' : 'До закрытия в 21:00'}</span>
           </div>
         </div>
       )}
 
       {/* TOP HEADER BAR */}
-      <header className="bg-stone-900/90 border-b border-stone-800/80 px-6 py-3 flex items-center justify-between backdrop-blur-md shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <img
-              src={`${baseUrl}amika_logo_round.png`}
-              alt="Amika Café"
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-amber-500/60 shadow-lg shadow-amber-950/60"
-            />
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-stone-900 flex items-center justify-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-            </span>
-          </div>
-
+      <header
+        className={`px-6 py-2.5 flex items-center justify-between shrink-0 transition-colors duration-500 border-b ${
+          isDay
+            ? 'bg-[#fffdf9]/75 border-amber-900/10 backdrop-blur-md'
+            : 'bg-stone-900/85 border-stone-800/80 backdrop-blur-md'
+        }`}
+      >
+        {/* Brand Block */}
+        <div className="flex items-center gap-3">
+          <img
+            src={`${baseUrl}amika_logo_round.png`}
+            alt="Amika Logo"
+            className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-500/60 shadow-md shadow-amber-950/20"
+          />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-white font-serif tracking-tight">
-                Amika Café
+              <h1
+                className={`text-2xl font-black font-serif tracking-tight ${
+                  isDay ? 'text-stone-900' : 'text-white'
+                }`}
+              >
+                Amika CAFÈ
               </h1>
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                  isDay
+                    ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                }`}
+              >
                 Specialty Coffee
               </span>
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                <span>Foodberry Partner</span>
-              </span>
             </div>
-            <p className="text-xs text-stone-400 font-medium">
-              or. Cricova • str. Drumul Viilor 10 • Prăjire proaspătă Briksa
+            <p
+              className={`text-[11px] font-semibold tracking-wide ${
+                isDay ? 'text-stone-600' : 'text-stone-400'
+              }`}
+            >
+              or. Cricova • str. Drumul Viilor 10
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {remoteToast ? (
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/90 text-indigo-200 border border-indigo-400 text-xs font-bold shadow-lg shadow-indigo-950/50 animate-in fade-in zoom-in-95">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-              <span>{remoteToast}</span>
-            </div>
-          ) : (
-            <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-xl bg-stone-950/60 border border-stone-800 text-stone-400">
-              <span className={`w-2 h-2 rounded-full ${isCloudConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
-              <span>{isCloudConnected ? 'Облако: Админ подключен' : 'Автономный режим'}</span>
-            </div>
-          )}
+        {/* Center Slogan */}
+        <div
+          className={`hidden md:block font-serif text-xs lg:text-sm font-bold tracking-[0.18em] uppercase ${
+            isDay ? 'text-stone-600' : 'text-stone-400'
+          }`}
+        >
+          GOOD COFFEE • GOOD MOOD • AMIKA CAFÉ ♡
         </div>
 
-        <div className="hidden lg:flex items-center gap-6">
-          <div className="flex items-center gap-2.5 text-right bg-stone-950/60 px-4 py-1.5 rounded-2xl border border-stone-800">
-            <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+        {/* Header Right Controls */}
+        <div className="flex items-center gap-2.5">
+          {remoteToast && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-900/90 text-indigo-200 border border-indigo-400 text-xs font-bold shadow-lg">
+              <Sparkles className="w-3 h-3 text-indigo-400 animate-spin" />
+              <span>{remoteToast}</span>
+            </div>
+          )}
+
+          <div
+            className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl border ${
+              isDay
+                ? 'bg-white/80 border-amber-900/15 text-stone-700'
+                : 'bg-stone-950/60 border-stone-800 text-stone-400'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isCloudConnected ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            />
+            <span>{isCloudConnected ? 'Облако: OK' : 'Подключение...'}</span>
+          </div>
+
+          <button
+            onClick={cycleTheme}
+            title="Переключить тему (День / Вечер / Авто) [Клавиша T]"
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border cursor-pointer ${
+              isDay
+                ? 'bg-amber-500/15 text-amber-900 border-amber-500/30 hover:bg-amber-500/25'
+                : 'bg-stone-800 text-stone-200 border-stone-700 hover:bg-stone-700'
+            }`}
+          >
+            {themeMode === 'day' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-600" />
+                <span>День</span>
+              </>
+            ) : themeMode === 'night' ? (
+              <>
+                <Moon className="w-3.5 h-3.5 text-amber-400" />
+                <span>Вечер</span>
+              </>
+            ) : (
+              <>
+                <Sunrise className="w-3.5 h-3.5 text-amber-500" />
+                <span>Авто ({isDay ? 'День' : 'Вечер'})</span>
+              </>
+            )}
+          </button>
+
+          <div
+            className={`hidden lg:flex items-center gap-2 text-right px-3.5 py-1 rounded-xl border ${
+              isDay
+                ? 'bg-white/80 border-amber-900/15 text-stone-800'
+                : 'bg-stone-950/60 border-stone-800 text-stone-300'
+            }`}
+          >
+            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
             <div>
-              <div className="text-2xl font-black text-amber-400 font-mono tracking-tight leading-none">
+              <div
+                className={`text-xl font-black font-mono tracking-tight leading-none ${
+                  isDay ? 'text-amber-800' : 'text-amber-400'
+                }`}
+              >
                 {formattedTime}
               </div>
-              <div className="text-[11px] text-stone-400 capitalize font-medium mt-0.5">
+              <div
+                className={`text-[10px] capitalize font-medium ${
+                  isDay ? 'text-stone-500' : 'text-stone-400'
+                }`}
+              >
                 {formattedDate}
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() =>
-              setFlashSaleMode((prev) =>
-                prev === 'inactive' ? 'active' : prev === 'active' ? 'auto' : 'inactive'
-              )
-            }
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border ${
-              isFlashSaleActive
-                ? 'bg-rose-600 text-white border-rose-400 shadow-lg shadow-rose-950/60 animate-pulse'
-                : flashSaleMode === 'auto'
-                ? 'bg-amber-900/40 text-amber-300 border-amber-600/40'
-                : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span>
-              {flashSaleMode === 'active'
-                ? '🔥 Flash -30% (ON)'
-                : flashSaleMode === 'auto'
-                ? '⏰ Flash (Auto 20:00)'
-                : 'Flash Sale (OFF)'}
-            </span>
-          </button>
-
-          <div className="flex bg-stone-800 rounded-xl p-0.5 border border-stone-700 text-xs font-bold">
-            <button
-              onClick={() => {
-                setLang('ro');
-                setAutoRotateLang(false);
-              }}
-              className={`px-2 py-1 rounded-lg transition ${
-                lang === 'ro' && !autoRotateLang ? 'bg-amber-600 text-white' : 'text-stone-400'
-              }`}
-            >
-              RO
-            </button>
-            <button
-              onClick={() => {
-                setLang('ru');
-                setAutoRotateLang(false);
-              }}
-              className={`px-2 py-1 rounded-lg transition ${
-                lang === 'ru' && !autoRotateLang ? 'bg-amber-600 text-white' : 'text-stone-400'
-              }`}
-            >
-              RU
-            </button>
-            <button
-              onClick={() => setAutoRotateLang(!autoRotateLang)}
-              className={`px-2 py-1 rounded-lg transition text-[10px] ${
-                autoRotateLang ? 'bg-amber-500/20 text-amber-300 font-extrabold' : 'text-stone-500'
-              }`}
-            >
-              RO⇄RU
-            </button>
-          </div>
 
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2 rounded-xl bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700 transition"
+            className={`p-2 rounded-xl border transition cursor-pointer ${
+              isDay
+                ? 'bg-white/80 border-amber-900/15 text-stone-600 hover:text-stone-900'
+                : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'
+            }`}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4" />}
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4 text-amber-500" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
           </button>
 
           <button
             onClick={handleToggleFullscreen}
-            className="p-2 rounded-xl bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700 transition"
+            className={`p-2 rounded-xl border transition cursor-pointer ${
+              isDay
+                ? 'bg-white/80 border-amber-900/15 text-stone-600 hover:text-stone-900'
+                : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'
+            }`}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4 text-amber-400" />}
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4 text-amber-500" />
+            )}
           </button>
 
           <button
             onClick={onExitTvMode}
-            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-600/40 text-stone-300 border border-stone-700 text-xs font-semibold flex items-center gap-1 transition"
+            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+              isDay
+                ? 'bg-white/80 border-amber-900/15 text-stone-700 hover:bg-rose-50 hover:text-rose-700'
+                : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-rose-950/60 hover:text-rose-300'
+            }`}
           >
             <X className="w-4 h-4" />
             <span className="hidden sm:inline">{lang === 'ro' ? 'Ieșire' : 'Назад'}</span>
@@ -481,239 +584,345 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA: 2 SECTIONS (MENU BOARD + ROTATING SHOWCASE) */}
-      <main className="flex-1 grid grid-cols-12 gap-5 p-5 overflow-hidden">
-        {/* ================= LEFT 7 COLS: DIGITAL MENU BOARD ================= */}
-        <section className="col-span-12 lg:col-span-7 flex flex-col gap-4 overflow-hidden">
-          <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
-            {/* COLUMN 1: SPECIALTY COFFEE */}
-            <div className="bg-stone-900/60 rounded-3xl border border-stone-800/80 p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm overflow-hidden">
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-400">
-                      <Coffee className="w-4 h-4" />
-                    </span>
-                    <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {(boardConfig.coffeeHeader?.[lang] || '').trim() ||
-                        (boardConfig.coffeeHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
-                    </h2>
-                  </div>
-                  {(boardConfig.coffeeBadge || '').trim() && (
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/20">
-                      {boardConfig.coffeeBadge.trim()}
-                    </span>
-                  )}
+      {/* MAIN CONTENT AREA: 2 MENU COLUMNS + 9:16 INSTAGRAM VERTICAL SHOWCASE */}
+      <main className="flex-1 flex gap-5 p-5 overflow-hidden min-h-0">
+        {/* ================= LEFT SECTION: 2 DIGITAL MENU COLUMNS ================= */}
+        <section className="flex-1 flex gap-4 overflow-hidden min-w-0">
+          {/* COLUMN 1: SPECIALTY COFFEE WITH ILLY BADGE */}
+          <div
+            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-xl transition-colors duration-500 overflow-hidden ${
+              isDay
+                ? 'bg-[#fffdf9]/94 border-amber-900/15 text-stone-900 shadow-stone-900/5'
+                : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
+            }`}
+          >
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div
+                className={`flex items-center justify-between pb-3 mb-2 border-b shrink-0 ${
+                  isDay ? 'border-amber-900/10' : 'border-stone-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-serif font-black italic text-xs tracking-tight shadow">
+                    illy
+                  </span>
+                  <h2
+                    className={`font-extrabold text-base tracking-wide uppercase font-serif ${
+                      isDay ? 'text-stone-900' : 'text-white'
+                    }`}
+                  >
+                    {(boardConfig.coffeeHeader?.[lang] || '').trim() ||
+                      (boardConfig.coffeeHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
+                  </h2>
                 </div>
-
-                <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                  {visibleCoffeeItems.map((item) => {
-                    const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
-                    const itemBadgeText = item.badge
-                      ? (item.badge[lang] || '').trim() ||
-                        (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
-                      : '';
-                    const noteText = (item.notes?.[lang] || '').trim();
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-2xl hover:bg-stone-800/50 transition group"
-                      >
-                        <div className="pr-3 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className={`font-black ${
-                                visibleCoffeeItems.length >= 8
-                                  ? 'text-sm xl:text-base 2xl:text-lg'
-                                  : 'text-base xl:text-lg 2xl:text-xl'
-                              } text-white group-hover:text-amber-300 transition tracking-tight leading-tight`}
-                            >
-                              {(item.name?.[lang] || '').trim() ||
-                                (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
-                            </span>
-                            {itemBadgeText && (
-                              <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                {itemBadgeText}
-                              </span>
-                            )}
-                            {cleanedVol && (
-                              <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
-                                {cleanedVol}
-                              </span>
-                            )}
-                          </div>
-                          {noteText && (
-                            <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
-                              {noteText}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
-                            {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
-                            <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {(boardConfig.coffeeBadge || '').trim() && (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      isDay
+                        ? 'text-amber-800 bg-amber-500/15 border-amber-500/30'
+                        : 'text-amber-400 bg-amber-950/60 border-amber-500/20'
+                    }`}
+                  >
+                    {boardConfig.coffeeBadge.trim()}
+                  </span>
+                )}
               </div>
 
-              {((boardConfig.coffeeFooterNote?.[lang] || '').trim() ||
-                (boardConfig.coffeeFooterPrice || '').trim()) && (
-                <div className="pt-2 mt-1 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium shrink-0">
-                  <span>{(boardConfig.coffeeFooterNote?.[lang] || '').trim()}</span>
-                  {(boardConfig.coffeeFooterPrice || '').trim() && (
-                    <span className="font-mono text-amber-400/90 font-bold">
-                      {boardConfig.coffeeFooterPrice.trim()}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* COLUMN 2: FOODBERRY BAKERY & DESSERTS */}
-            <div
-              className={`rounded-3xl border p-4 flex flex-col justify-between shadow-xl backdrop-blur-sm transition-all duration-500 overflow-hidden ${
-                isFlashSaleActive
-                  ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
-                  : 'bg-stone-900/60 border-stone-800/80'
-              }`}
-            >
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-800 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`p-1.5 rounded-xl ${
-                        isFlashSaleActive ? 'bg-rose-500/30 text-rose-300' : 'bg-emerald-500/20 text-emerald-400'
+              <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                {visibleCoffeeItems.map((item) => {
+                  const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                  const itemBadgeText = item.badge
+                    ? (item.badge[lang] || '').trim() ||
+                      (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
+                    : '';
+                  const noteText = (item.notes?.[lang] || '').trim();
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between py-1.5 px-2 rounded-2xl transition group ${
+                        isDay ? 'hover:bg-amber-50/60' : 'hover:bg-stone-800/50'
                       }`}
                     >
-                      <Sparkles className="w-4 h-4" />
-                    </span>
-                    <h2 className="font-extrabold text-white text-base tracking-wide uppercase font-serif">
-                      {(boardConfig.dessertHeader?.[lang] || '').trim() ||
-                        (boardConfig.dessertHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
-                    </h2>
-                  </div>
-
-                  {isFlashSaleActive ? (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-md">
-                      -30% REDUCERE
-                    </span>
-                  ) : (boardConfig.dessertBadge || '').trim() ? (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      {boardConfig.dessertBadge.trim()}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div
-                  className={`flex-1 flex flex-col overflow-hidden ${
-                    visibleDessertItems.length >= 6 ? 'justify-between' : 'justify-start space-y-2.5'
-                  }`}
-                >
-                  {visibleDessertItems.map((item) => {
-                    const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
-                    const itemBadgeText = item.badge
-                      ? (item.badge[lang] || '').trim() ||
-                        (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
-                      : '';
-                    const descText = (item.desc?.[lang] || '').trim();
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-2xl hover:bg-stone-800/50 transition group"
-                      >
-                        <div className="pr-3 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                      <div className="pr-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`font-black tracking-tight leading-tight transition ${
+                              visibleCoffeeItems.length >= 8
+                                ? 'text-sm xl:text-base 2xl:text-lg'
+                                : 'text-base xl:text-lg 2xl:text-xl'
+                            } ${isDay ? 'text-stone-900 group-hover:text-amber-800' : 'text-white group-hover:text-amber-300'}`}
+                          >
+                            {(item.name?.[lang] || '').trim() ||
+                              (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
+                          </span>
+                          {itemBadgeText && (
                             <span
-                              className={`font-black ${
-                                visibleDessertItems.length >= 8
-                                  ? 'text-sm xl:text-base 2xl:text-lg'
-                                  : 'text-base xl:text-lg 2xl:text-xl'
-                              } text-white group-hover:text-amber-300 transition tracking-tight leading-tight`}
+                              className={`text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md border ${
+                                isDay
+                                  ? 'bg-amber-500/15 text-amber-800 border-amber-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              }`}
                             >
-                              {(item.name?.[lang] || '').trim() ||
-                                (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
+                              {itemBadgeText}
                             </span>
-                            {itemBadgeText && !isFlashSaleActive && (
-                              <span className="text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                {itemBadgeText}
-                              </span>
-                            )}
-                            {cleanedVol && (
-                              <span className="text-xs xl:text-sm text-stone-400 font-mono font-semibold">
-                                {cleanedVol}
-                              </span>
-                            )}
-                          </div>
-                          {descText && (
-                            <p className="text-xs xl:text-sm text-stone-300/90 font-medium line-clamp-1 mt-0.5">
-                              {descText}
-                            </p>
                           )}
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          {isFlashSaleActive ? (
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-sm xl:text-base text-stone-500 line-through font-mono">
-                                {item.price}
-                              </span>
-                              <span className="text-lg xl:text-2xl font-black text-rose-400 font-mono animate-bounce">
-                                {item.discountPrice}{' '}
-                                <span className="text-xs xl:text-sm font-bold text-rose-300">L</span>
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-lg xl:text-2xl font-black text-amber-400 font-mono tracking-tight whitespace-nowrap">
-                              {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
-                              <span className="text-xs xl:text-sm font-bold text-amber-300/80">MDL</span>
+                          {cleanedVol && (
+                            <span
+                              className={`text-xs xl:text-sm font-mono font-semibold ${
+                                isDay ? 'text-stone-500' : 'text-stone-400'
+                              }`}
+                            >
+                              {cleanedVol}
                             </span>
                           )}
                         </div>
+                        {noteText && (
+                          <p
+                            className={`text-xs xl:text-sm font-medium line-clamp-1 mt-0.5 ${
+                              isDay ? 'text-stone-600' : 'text-stone-300/90'
+                            }`}
+                          >
+                            {noteText}
+                          </p>
+                        )}
                       </div>
-                    );
-                  })}
+
+                      <div className="text-right shrink-0">
+                        <span
+                          className={`text-lg xl:text-2xl font-black font-mono tracking-tight whitespace-nowrap ${
+                            isDay ? 'text-stone-900' : 'text-amber-400'
+                          }`}
+                        >
+                          {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
+                          <span
+                            className={`text-xs xl:text-sm font-bold ${
+                              isDay ? 'text-stone-500' : 'text-amber-300/80'
+                            }`}
+                          >
+                            MDL
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {((boardConfig.coffeeFooterNote?.[lang] || '').trim() ||
+              (boardConfig.coffeeFooterPrice || '').trim()) && (
+              <div
+                className={`pt-2 mt-1 border-t flex items-center justify-between text-[11px] font-medium shrink-0 ${
+                  isDay ? 'border-amber-900/10 text-stone-600' : 'border-stone-800/60 text-stone-400'
+                }`}
+              >
+                <span>{(boardConfig.coffeeFooterNote?.[lang] || '').trim()}</span>
+                {(boardConfig.coffeeFooterPrice || '').trim() && (
+                  <span
+                    className={`font-mono font-bold ${
+                      isDay ? 'text-amber-800' : 'text-amber-400/90'
+                    }`}
+                  >
+                    {boardConfig.coffeeFooterPrice.trim()}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* COLUMN 2: TEA & WARM DRINKS / DESSERTS */}
+          <div
+            className={`flex-1 rounded-3xl border p-4 flex flex-col justify-between shadow-xl transition-colors duration-500 overflow-hidden ${
+              isFlashSaleActive
+                ? 'bg-gradient-to-br from-rose-950/40 via-stone-900/80 to-amber-950/40 border-rose-500/50 shadow-rose-950/40 ring-1 ring-rose-500/40'
+                : isDay
+                ? 'bg-[#fffdf9]/94 border-amber-900/15 text-stone-900 shadow-stone-900/5'
+                : 'bg-stone-900/85 border-stone-800/80 text-stone-100 shadow-black/40'
+            }`}
+          >
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div
+                className={`flex items-center justify-between pb-3 mb-2 border-b shrink-0 ${
+                  isDay ? 'border-amber-900/10' : 'border-stone-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`p-1.5 rounded-xl ${
+                      isFlashSaleActive
+                        ? 'bg-rose-500/30 text-rose-300'
+                        : isDay
+                        ? 'bg-emerald-500/15 text-emerald-800'
+                        : 'bg-emerald-500/20 text-emerald-400'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </span>
+                  <h2
+                    className={`font-extrabold text-base tracking-wide uppercase font-serif ${
+                      isDay ? 'text-stone-900' : 'text-white'
+                    }`}
+                  >
+                    {(boardConfig.dessertHeader?.[lang] || '').trim() ||
+                      (boardConfig.dessertHeader?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
+                  </h2>
                 </div>
+
+                {isFlashSaleActive ? (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-md">
+                    -30% REDUCERE
+                  </span>
+                ) : (boardConfig.dessertBadge || '').trim() ? (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      isDay
+                        ? 'text-emerald-800 bg-emerald-500/15 border-emerald-500/30'
+                        : 'text-emerald-400 bg-emerald-950/60 border-emerald-500/20'
+                    }`}
+                  >
+                    {boardConfig.dessertBadge.trim()}
+                  </span>
+                ) : null}
               </div>
 
-              {((boardConfig.dessertFooterNote?.[lang] || '').trim() ||
-                (boardConfig.dessertFooterBrand || '').trim()) && (
-                <div className="pt-2 mt-1 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400 font-medium shrink-0">
-                  {(boardConfig.dessertFooterNote?.[lang] || '').trim() ? (
-                    <span className="flex items-center gap-1 text-emerald-300">
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
-                      <span>{boardConfig.dessertFooterNote[lang].trim()}</span>
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  {(boardConfig.dessertFooterBrand || '').trim() && (
-                    <span className="text-emerald-400 font-bold">
-                      {boardConfig.dessertFooterBrand.trim()}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div
+                className={`flex-1 flex flex-col overflow-hidden ${
+                  visibleDessertItems.length >= 6 ? 'justify-between' : 'justify-start space-y-3'
+                }`}
+              >
+                {visibleDessertItems.map((item) => {
+                  const cleanedVol = (item.volume || '').replace(/\s*\/\s*$/, '').trim();
+                  const itemBadgeText = item.badge
+                    ? (item.badge[lang] || '').trim() ||
+                      (item.badge[lang === 'ro' ? 'ru' : 'ro'] || '').trim()
+                    : '';
+                  const descText = (item.desc?.[lang] || '').trim();
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between py-1.5 px-2 rounded-2xl transition group ${
+                        isDay ? 'hover:bg-amber-50/60' : 'hover:bg-stone-800/50'
+                      }`}
+                    >
+                      <div className="pr-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`font-black tracking-tight leading-tight transition ${
+                              visibleDessertItems.length >= 8
+                                ? 'text-sm xl:text-base 2xl:text-lg'
+                                : 'text-base xl:text-lg 2xl:text-xl'
+                            } ${isDay ? 'text-stone-900 group-hover:text-amber-800' : 'text-white group-hover:text-amber-300'}`}
+                          >
+                            {(item.name?.[lang] || '').trim() ||
+                              (item.name?.[lang === 'ro' ? 'ru' : 'ro'] || '').trim()}
+                          </span>
+                          {itemBadgeText && !isFlashSaleActive && (
+                            <span
+                              className={`text-[10px] xl:text-xs font-black px-2 py-0.5 rounded-md border ${
+                                isDay
+                                  ? 'bg-emerald-500/15 text-emerald-800 border-emerald-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                              }`}
+                            >
+                              {itemBadgeText}
+                            </span>
+                          )}
+                          {cleanedVol && (
+                            <span
+                              className={`text-xs xl:text-sm font-mono font-semibold ${
+                                isDay ? 'text-stone-500' : 'text-stone-400'
+                              }`}
+                            >
+                              {cleanedVol}
+                            </span>
+                          )}
+                        </div>
+                        {descText && (
+                          <p
+                            className={`text-xs xl:text-sm font-medium line-clamp-1 mt-0.5 ${
+                              isDay ? 'text-stone-600' : 'text-stone-300/90'
+                            }`}
+                          >
+                            {descText}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        {isFlashSaleActive ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm xl:text-base text-stone-500 line-through font-mono">
+                              {item.price}
+                            </span>
+                            <span className="text-lg xl:text-2xl font-black text-rose-500 font-mono animate-bounce">
+                              {item.discountPrice}{' '}
+                              <span className="text-xs xl:text-sm font-bold text-rose-400">L</span>
+                            </span>
+                          </div>
+                        ) : (
+                          <span
+                            className={`text-lg xl:text-2xl font-black font-mono tracking-tight whitespace-nowrap ${
+                              isDay ? 'text-stone-900' : 'text-amber-400'
+                            }`}
+                          >
+                            {item.secondPrice ? `${item.price} / ${item.secondPrice}` : item.price}{' '}
+                            <span
+                              className={`text-xs xl:text-sm font-bold ${
+                                isDay ? 'text-stone-500' : 'text-amber-300/80'
+                              }`}
+                            >
+                              MDL
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
+            {((boardConfig.dessertFooterNote?.[lang] || '').trim() ||
+              (boardConfig.dessertFooterBrand || '').trim()) && (
+              <div
+                className={`pt-2 mt-1 border-t flex items-center justify-between text-[11px] font-medium shrink-0 ${
+                  isDay ? 'border-amber-900/10 text-stone-600' : 'border-stone-800/60 text-stone-400'
+                }`}
+              >
+                {(boardConfig.dessertFooterNote?.[lang] || '').trim() ? (
+                  <span className={`flex items-center gap-1 ${isDay ? 'text-emerald-800' : 'text-emerald-300'}`}>
+                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                    <span>{boardConfig.dessertFooterNote[lang].trim()}</span>
+                  </span>
+                ) : (
+                  <span />
+                )}
+                {(boardConfig.dessertFooterBrand || '').trim() && (
+                  <span className={`font-bold ${isDay ? 'text-stone-800' : 'text-emerald-400'}`}>
+                    {boardConfig.dessertFooterBrand.trim()}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* ================= RIGHT 5 COLS: DYNAMIC SHOWCASE SLIDER ================= */}
+        {/* ================= RIGHT SECTION: 9:16 INSTAGRAM VERTICAL SHOWCASE ================= */}
         <section
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
-          className="col-span-12 lg:col-span-5 flex flex-col rounded-3xl overflow-hidden bg-stone-900/80 border border-stone-800 shadow-2xl relative group"
+          className={`w-[540px] shrink-0 flex flex-col rounded-3xl overflow-hidden border shadow-2xl relative group transition-colors duration-500 ${
+            isDay
+              ? 'bg-[#fffdf9]/94 border-amber-900/15 shadow-stone-900/10'
+              : 'bg-stone-900/85 border-stone-800 shadow-black/50'
+          }`}
         >
-          {/* Progress bar at top of slider (supports arbitrary number of slides) */}
-          <div className="flex gap-1.5 p-3 absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-stone-950/80 to-transparent">
+          {/* Progress bar at top of slider */}
+          <div className="flex gap-1.5 p-3 absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-black/60 to-transparent">
             {slides.map((_, i) => (
               <div
                 key={i}
-                className="flex-1 h-1 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm cursor-pointer"
+                className="flex-1 h-1 rounded-full overflow-hidden bg-white/30 backdrop-blur-sm cursor-pointer"
                 onClick={() => setCurrentSlideIndex(i)}
               >
                 <div
@@ -725,130 +934,73 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
             ))}
           </div>
 
-          <div className="relative flex-1 overflow-hidden bg-stone-950">
+          <div className="relative flex-1 overflow-hidden bg-black">
             <img
               src={activeSlideImgSrc}
-              alt={activeSlide.title[lang]}
-              className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-1000 ease-out"
+              alt={activeSlide.title[lang] || 'Amika Showcase'}
+              className="w-full h-full object-cover object-center transform scale-100 transition-transform duration-1000 ease-out"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
+            {/* Only show dark gradient and text overlay when there is actual text to display */}
+            {slideHasText && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
-            <div className="absolute top-10 left-4 z-10 flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-stone-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{activeSlide.badge[lang]}</span>
-              </span>
+                {(activeSlide.badge?.[lang] || '').trim() && (
+                  <div className="absolute top-10 left-4 z-10 flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-stone-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{activeSlide.badge[lang]}</span>
+                    </span>
 
-              {activeSlide.priceTag && (
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-600/90 text-white shadow-lg backdrop-blur-md">
-                  {activeSlide.priceTag[lang]}
-                </span>
-              )}
-            </div>
+                    {activeSlide.priceTag && (
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-600/90 text-white shadow-lg backdrop-blur-md">
+                        {activeSlide.priceTag[lang]}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="absolute bottom-0 inset-x-0 p-6 z-10 space-y-2 pointer-events-none">
+                  {slideTitle && (
+                    <h3 className="text-2xl font-black text-white font-serif leading-tight drop-shadow-md">
+                      {slideTitle}
+                    </h3>
+                  )}
+                  {slideSubtitle && (
+                    <p className="text-sm font-semibold text-amber-200/95 leading-snug drop-shadow">
+                      {slideSubtitle}
+                    </p>
+                  )}
+                  {slideDetails && (
+                    <p className="text-xs text-stone-200/90 leading-relaxed drop-shadow line-clamp-2">
+                      {slideDetails}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
             <button
               onClick={() =>
                 setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length)
               }
-              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-950/60 text-white/70 hover:text-white hover:bg-stone-900 border border-white/10 transition backdrop-blur-sm opacity-0 group-hover:opacity-100 active:scale-95 z-20"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-950/60 text-white/70 hover:text-white hover:bg-stone-900 border border-white/10 transition backdrop-blur-sm opacity-0 group-hover:opacity-100 active:scale-95 z-20 cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <button
               onClick={() => setCurrentSlideIndex((prev) => (prev + 1) % slides.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-950/60 text-white/70 hover:text-white hover:bg-stone-900 border border-white/10 transition backdrop-blur-sm opacity-0 group-hover:opacity-100 active:scale-95 z-20"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-950/60 text-white/70 hover:text-white hover:bg-stone-900 border border-white/10 transition backdrop-blur-sm opacity-0 group-hover:opacity-100 active:scale-95 z-20 cursor-pointer"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-
-            <div className="absolute bottom-0 inset-x-0 p-6 z-10 space-y-2">
-              <h3 className="text-2xl font-black text-white font-serif leading-tight drop-shadow-md">
-                {activeSlide.title[lang]}
-              </h3>
-              <p className="text-sm font-semibold text-amber-200/95 leading-snug drop-shadow">
-                {activeSlide.subtitle[lang]}
-              </p>
-              <p className="text-xs text-stone-300/90 leading-relaxed drop-shadow line-clamp-2">
-                {activeSlide.details[lang]}
-              </p>
-            </div>
           </div>
         </section>
       </main>
-
-      {/* ================= BOTTOM BAR: GIANT QR CODE + HOSPITALITY HIGHLIGHTS ================= */}
-      <footer className="bg-stone-900/95 border-t border-stone-800 px-6 py-3 flex items-center justify-between gap-6 shrink-0 backdrop-blur-md">
-        <div className="flex items-center gap-4 shrink-0 bg-stone-950/80 p-2.5 rounded-2xl border border-amber-500/30 shadow-lg">
-          <div className="w-14 h-14 bg-white p-1 rounded-xl shrink-0 shadow-md flex items-center justify-center">
-            <img
-              src={`${baseUrl}amika_qr.svg`}
-              alt="Scan QR"
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-1.5 text-amber-400 font-extrabold text-xs uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{lang === 'ro' ? 'Card de Fidelitate Digital & Precomandă' : 'Электронная Карта Гостя и Предзаказ'}</span>
-            </div>
-            <div className="text-sm font-black text-white">
-              {lang === 'ro' ? 'A 6-a cafea este CADOU! ☕' : '6-я чашка кофе в ПОДАРОК! ☕'}
-            </div>
-            <p className="text-[11px] text-stone-400">
-              {lang === 'ro'
-                ? 'Scanează camera telefonului • Comandă rapidă fără coadă'
-                : 'Наведи камеру телефона • Заказ с собой без очередей'}
-            </p>
-          </div>
-        </div>
-
-        {/* Center: Cafe Hospitality & Freshness Guarantees */}
-        <div className="flex-1 bg-stone-950/60 rounded-2xl border border-stone-800/80 p-3 px-6 hidden lg:flex items-center justify-around gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 font-black text-xs">
-              100% ARABICA
-            </span>
-            <span className="text-xs font-bold text-stone-200">
-              {lang === 'ro' ? 'Prăjire proaspătă artizanală Briksa' : 'Свежая крафтовая обжарка Briksa'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-400 font-black text-xs">
-              FOODBERRY
-            </span>
-            <span className="text-xs font-bold text-stone-200">
-              {lang === 'ro' ? 'Deserturi naturale fără conservanți' : 'Натуральные десерты без консервантов'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-black text-xs">
-              08:00 – 21:00
-            </span>
-            <span className="text-xs font-bold text-stone-200">
-              {lang === 'ro' ? 'Vă așteptăm zilnic cu drag!' : 'Ждем вас каждый день с любовью!'}
-            </span>
-          </div>
-        </div>
-
-        <div className="hidden md:flex flex-col items-end text-right shrink-0">
-          <div className="text-[10px] text-stone-400 uppercase tracking-wider font-bold flex items-center gap-1">
-            <span>Amika Digital Menu</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          </div>
-          <div className="text-xs font-bold text-stone-300 font-serif">
-            Cricova • Moldova
-          </div>
-          <div className="text-[10px] text-amber-400/80 font-mono">
-            Full HD 1080p
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
+
 export default TvMenuBoard;

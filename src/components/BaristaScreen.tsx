@@ -9,6 +9,9 @@ import {
   Tv,
   Flame,
   Bell,
+  Sun,
+  Moon,
+  Sunrise,
   Volume2,
   ExternalLink,
   Sparkles,
@@ -899,6 +902,58 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                       <span className="text-xs text-amber-400 font-mono shrink-0 font-bold">#{idx + 1}</span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Theme Day / Night / Auto Controls */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-stone-900/80 border border-stone-800 space-y-3 sm:space-y-4 shadow-lg">
+                <span className="text-xs sm:text-sm font-extrabold text-stone-300 uppercase tracking-wider flex items-center gap-2">
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                  <span>{language === 'ro' ? 'Tema TV (Zi / Seară)' : 'Тема экрана ТВ (День / Вечер)'}</span>
+                </span>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <button
+                    onClick={() =>
+                      sendTvCommand(
+                        { type: 'SET_THEME', theme: 'day' },
+                        setTvCommandToast,
+                        language === 'ro' ? '☀️ Tema de Zi activată pe TV' : '☀️ Дневная тема на ТВ'
+                      )
+                    }
+                    className="py-3 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-bold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Sun className="w-4 h-4" />
+                    <span>{language === 'ro' ? 'Zi (Crem)' : 'День'}</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      sendTvCommand(
+                        { type: 'SET_THEME', theme: 'night' },
+                        setTvCommandToast,
+                        language === 'ro' ? '🌙 Tema de Seară activată pe TV' : '🌙 Вечерняя тема на ТВ'
+                      )
+                    }
+                    className="py-3 px-2 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 border border-stone-700 text-xs sm:text-sm font-semibold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Moon className="w-4 h-4" />
+                    <span>{language === 'ro' ? 'Seară' : 'Вечер'}</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      sendTvCommand(
+                        { type: 'SET_THEME', theme: 'auto' },
+                        setTvCommandToast,
+                        language === 'ro' ? '🌅 Tema Auto activată pe TV' : '🌅 Авто-тема на ТВ'
+                      )
+                    }
+                    className="py-3 px-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-200 border border-amber-500/30 text-xs sm:text-sm font-bold transition active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Sunrise className="w-4 h-4" />
+                    <span>{language === 'ro' ? 'Auto' : 'Авто'}</span>
+                  </button>
                 </div>
               </div>
 

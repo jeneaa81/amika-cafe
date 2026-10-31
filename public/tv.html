@@ -40,6 +40,207 @@
       height: 100vh;
       overflow: hidden;
       position: relative;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      -webkit-transition: background-image 0.5s ease;
+      transition: background-image 0.5s ease;
+    }
+
+    /* ================= DAY THEME (LIGHT / BOTANICAL / CREAM) ================= */
+    .app-root.theme-day {
+      background-color: #f7f2ea;
+      background-image: url('tv_bg_day.jpg');
+      color: #1c1917;
+    }
+    .app-root.theme-day .tv-header {
+      background-color: rgba(255, 252, 246, 0.75);
+      border-bottom: 1px solid rgba(217, 180, 140, 0.45);
+    }
+    .app-root.theme-day .brand-title {
+      color: #1c1917;
+    }
+    .app-root.theme-day .brand-address {
+      color: #78716c;
+    }
+    .app-root.theme-day .badge-specialty {
+      background: rgba(180, 100, 30, 0.12);
+      color: #9a3412;
+      border: 1px solid rgba(180, 100, 30, 0.35);
+    }
+    .app-root.theme-day .header-slogan {
+      color: #78716c;
+    }
+    .app-root.theme-day .cloud-pill,
+    .app-root.theme-day .theme-pill,
+    .app-root.theme-day .clock-pill,
+    .app-root.theme-day .btn-fullscreen {
+      background: rgba(255, 252, 246, 0.90);
+      border: 1px solid rgba(217, 180, 140, 0.55);
+      color: #1c1917;
+      box-shadow: 0 4px 16px rgba(120, 80, 40, 0.08);
+    }
+    .app-root.theme-day .clock-time {
+      color: #9a3412;
+    }
+    .app-root.theme-day .clock-date {
+      color: #78716c;
+    }
+    .app-root.theme-day .menu-card {
+      background: rgba(255, 252, 246, 0.94);
+      border: 1px solid rgba(217, 180, 140, 0.55);
+      box-shadow: 0 16px 45px rgba(100, 70, 30, 0.14);
+    }
+    .app-root.theme-day .card-header {
+      border-bottom: 1px solid rgba(217, 180, 140, 0.45);
+    }
+    .app-root.theme-day .card-title {
+      color: #1c1917;
+    }
+    .app-root.theme-day .card-tag {
+      background: rgba(245, 158, 11, 0.18);
+      color: #92400e;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .app-root.theme-day .card-tag.emerald {
+      background: rgba(34, 197, 94, 0.18);
+      color: #166534;
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .app-root.theme-day .item-row {
+      border-bottom: 1px solid rgba(217, 180, 140, 0.35);
+    }
+    .app-root.theme-day .item-name {
+      color: #1c1917;
+    }
+    .app-root.theme-day .item-badge {
+      background: rgba(245, 158, 11, 0.18);
+      color: #92400e;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .app-root.theme-day .item-badge.rose {
+      background: rgba(244, 63, 94, 0.18);
+      color: #9f1239;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+    .app-root.theme-day .item-volume {
+      color: #78716c;
+    }
+    .app-root.theme-day .item-desc {
+      color: #57534e;
+    }
+    .app-root.theme-day .item-price {
+      color: #1c1917;
+    }
+    .app-root.theme-day .item-price-mdl {
+      color: #78716c;
+    }
+    .app-root.theme-day .card-footer-note {
+      border-top: 1px solid rgba(217, 180, 140, 0.45);
+      color: #57534e;
+    }
+    .app-root.theme-day .slider-section {
+      background: rgba(255, 252, 246, 0.94);
+      border: 1px solid rgba(217, 180, 140, 0.55);
+      box-shadow: 0 16px 45px rgba(100, 70, 30, 0.14);
+    }
+
+    /* ================= NIGHT THEME (DEEP ESPRESSO / LOUNGE) ================= */
+    .app-root.theme-night {
+      background-color: #120f0d;
+      background-image: url('tv_bg_night.jpg');
+      color: #f5f5f4;
+    }
+    .app-root.theme-night .tv-header {
+      background-color: rgba(24, 20, 18, 0.88);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .app-root.theme-night .brand-title {
+      color: #ffffff;
+    }
+    .app-root.theme-night .brand-address {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .badge-specialty {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .app-root.theme-night .header-slogan {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .cloud-pill,
+    .app-root.theme-night .theme-pill,
+    .app-root.theme-night .clock-pill,
+    .app-root.theme-night .btn-fullscreen {
+      background: rgba(24, 20, 18, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f5f5f4;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    .app-root.theme-night .clock-time {
+      color: #f59e0b;
+    }
+    .app-root.theme-night .clock-date {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .menu-card {
+      background: rgba(24, 20, 18, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75);
+    }
+    .app-root.theme-night .card-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .app-root.theme-night .card-title {
+      color: #ffffff;
+    }
+    .app-root.theme-night .card-tag {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .app-root.theme-night .card-tag.emerald {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    .app-root.theme-night .item-row {
+      border-bottom: 1px solid rgba(41, 37, 36, 0.45);
+    }
+    .app-root.theme-night .item-name {
+      color: #ffffff;
+    }
+    .app-root.theme-night .item-badge {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .app-root.theme-night .item-badge.rose {
+      background: rgba(244, 63, 94, 0.25);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .app-root.theme-night .item-volume {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .item-desc {
+      color: #d6d3d1;
+    }
+    .app-root.theme-night .item-price {
+      color: #fbbf24;
+    }
+    .app-root.theme-night .item-price-mdl {
+      color: #fde68a;
+    }
+    .app-root.theme-night .card-footer-note {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a8a29e;
+    }
+    .app-root.theme-night .slider-section {
+      background: rgba(24, 20, 18, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75);
     }
 
     /* TOP FLASH SALE MARQUEE */
@@ -97,10 +298,8 @@
       display: block;
     }
 
-    /* HEADER */
+    /* ================= HEADER ================= */
     .tv-header {
-      background-color: rgba(28, 25, 23, 0.95);
-      border-bottom: 1px solid #292524;
       padding: 10px 24px;
       display: -webkit-box;
       display: -webkit-flex;
@@ -114,8 +313,9 @@
       -webkit-align-items: center;
       -ms-flex-align: center;
       align-items: center;
-      height: 70px;
+      height: 72px;
       flex-shrink: 0;
+      z-index: 30;
     }
     .brand-block {
       display: -webkit-box;
@@ -128,20 +328,20 @@
       align-items: center;
     }
     .brand-logo {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: 2px solid #f59e0b;
       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-      margin-right: 14px;
+      margin-right: 12px;
       flex-shrink: 0;
     }
     .brand-title {
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 24px;
       font-weight: 900;
-      color: #ffffff;
       line-height: 1.1;
+      letter-spacing: -0.01em;
     }
     .badge-specialty {
       font-size: 10px;
@@ -149,31 +349,28 @@
       text-transform: uppercase;
       padding: 2px 7px;
       border-radius: 6px;
-      background: rgba(245, 158, 11, 0.2);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.4);
       margin-left: 8px;
-    }
-    .badge-foodberry {
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 6px;
-      background: rgba(244, 63, 94, 0.2);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.4);
-      margin-left: 6px;
     }
     .brand-address {
       font-size: 11px;
-      color: #a8a29e;
       margin-top: 2px;
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: 0.02em;
     }
 
-    /* CENTER CLOCK & CLOUD STATUS */
-    .header-center {
+    /* HEADER SLOGAN (ELEGANT BOTANICAL ACCENT) */
+    .header-slogan {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* HEADER RIGHT CONTROLS */
+    .header-right {
       display: -webkit-box;
       display: -webkit-flex;
       display: -ms-flexbox;
@@ -192,14 +389,11 @@
       -webkit-align-items: center;
       -ms-flex-align: center;
       align-items: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: 14px;
-      background: rgba(12, 10, 9, 0.8);
-      border: 1px solid #292524;
-      color: #a8a29e;
-      margin-right: 18px;
+      margin-right: 12px;
     }
     .cloud-dot {
       width: 8px;
@@ -207,8 +401,30 @@
       border-radius: 50%;
       background: #f59e0b;
       box-shadow: 0 0 10px #f59e0b;
-      margin-right: 8px;
+      margin-right: 7px;
       flex-shrink: 0;
+    }
+    .theme-pill {
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: -ms-inline-flexbox;
+      display: inline-flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 14px;
+      margin-right: 12px;
+      cursor: pointer;
+    }
+    .theme-pill span {
+      margin-right: 4px;
+    }
+    .theme-pill span:last-child {
+      margin-right: 0;
     }
     .clock-pill {
       display: -webkit-box;
@@ -219,65 +435,38 @@
       -webkit-align-items: center;
       -ms-flex-align: center;
       align-items: center;
-      background: rgba(12, 10, 9, 0.8);
-      border: 1px solid #292524;
-      padding: 6px 16px;
+      padding: 6px 14px;
       border-radius: 16px;
+      margin-right: 10px;
     }
     .clock-time {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       font-family: monospace;
-      color: #f59e0b;
       line-height: 1;
-      margin-right: 10px;
+      margin-right: 8px;
     }
     .clock-date {
       font-size: 11px;
-      color: #a8a29e;
       text-transform: capitalize;
       font-weight: 600;
     }
-
-    /* CONTROLS RIGHT */
-    .header-controls {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
+    .btn-fullscreen {
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: inline-flex;
       -webkit-box-align: center;
       -webkit-align-items: center;
-      -ms-flex-align: center;
       align-items: center;
-    }
-    .btn-toggle {
-      background: #292524;
-      border: 1px solid #44403c;
-      color: #d6d3d1;
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-left: 8px;
-      display: inline-flex;
-      align-items: center;
-    }
-    .btn-toggle:first-child {
-      margin-left: 0;
-    }
-    .btn-toggle.active {
-      background: #d97706;
-      color: #ffffff;
-      border-color: #f59e0b;
-    }
-    .btn-toggle.flash-active {
-      background: #e11d48;
-      color: #ffffff;
-      border-color: #f43f5e;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
     }
 
-    /* MAIN CONTAINER: 2 COLUMNS (FLEXBOX - NO CSS GAP FOR LG WEBOS 3.0+) */
+    /* ================= MAIN CONTAINER ================= */
     .main-content {
       -webkit-box-flex: 1;
       -webkit-flex: 1;
@@ -287,22 +476,22 @@
       display: -webkit-flex;
       display: -ms-flexbox;
       display: flex;
-      padding: 14px 20px;
+      padding: 12px 20px 16px 20px;
       overflow: hidden;
       min-height: 0;
     }
 
-    /* LEFT 58% : DIGITAL MENU BOARD (2 SUB-COLUMNS) */
+    /* LEFT : DIGITAL MENU BOARD (2 SUB-COLUMNS) */
     .menu-section {
-      -webkit-box-flex: 58;
-      -webkit-flex: 58;
-      -ms-flex: 58;
-      flex: 58;
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
       display: -webkit-box;
       display: -webkit-flex;
       display: -ms-flexbox;
       display: flex;
-      margin-right: 18px;
+      margin-right: 22px;
       overflow: hidden;
       min-width: 0;
       min-height: 0;
@@ -312,10 +501,8 @@
       -webkit-flex: 1;
       -ms-flex: 1;
       flex: 1;
-      background: rgba(28, 25, 23, 0.78);
-      border: 1px solid #292524;
-      border-radius: 24px;
-      padding: 14px 18px;
+      border-radius: 26px;
+      padding: 16px 22px;
       display: -webkit-box;
       display: -webkit-flex;
       display: -ms-flexbox;
@@ -329,13 +516,12 @@
       -webkit-justify-content: space-between;
       -ms-flex-pack: justify;
       justify-content: space-between;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       overflow: hidden;
       min-width: 0;
       min-height: 0;
     }
     .menu-section .menu-card:first-child {
-      margin-right: 16px;
+      margin-right: 18px;
     }
     .menu-card.flash-card {
       border-color: rgba(244, 63, 94, 0.45);
@@ -356,18 +542,16 @@
       -webkit-align-items: center;
       -ms-flex-align: center;
       align-items: center;
-      border-bottom: 1px solid #292524;
       padding-bottom: 9px;
       margin-bottom: 6px;
       flex-shrink: 0;
     }
     .card-title {
       font-family: 'Playfair Display', Georgia, serif;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #ffffff;
       display: -webkit-box;
       display: -webkit-flex;
       display: -ms-flexbox;
@@ -378,10 +562,31 @@
       align-items: center;
       min-width: 0;
     }
+
+    /* RED ILLY BRAND BADGE */
+    .illy-badge {
+      display: inline-block;
+      background: -webkit-linear-gradient(top, #e11d48, #be123c);
+      background: linear-gradient(180deg, #e11d48, #be123c);
+      color: #ffffff;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1;
+      padding: 3px 7px 4px 7px;
+      border-radius: 4px;
+      letter-spacing: -0.02em;
+      margin-right: 9px;
+      vertical-align: middle;
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+      flex-shrink: 0;
+    }
+
     .card-icon-box {
-      width: 28px;
-      height: 28px;
-      border-radius: 9px;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
       display: -webkit-inline-box;
       display: -webkit-inline-flex;
       display: inline-flex;
@@ -394,37 +599,30 @@
       margin-right: 9px;
       flex-shrink: 0;
     }
-    .card-icon-amber {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
+    .card-icon-leaf {
+      background: rgba(34, 197, 94, 0.16);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.35);
     }
-    .card-icon-emerald {
+    .app-root.theme-night .card-icon-leaf {
       background: rgba(16, 185, 129, 0.18);
       color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.35);
     }
+
     .card-tag {
       font-size: 11px;
       font-weight: 800;
       padding: 3px 10px;
       border-radius: 20px;
-      background: rgba(245, 158, 11, 0.15);
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.3);
       white-space: nowrap;
       margin-left: 8px;
       flex-shrink: 0;
     }
-    .card-tag.emerald {
-      color: #34d399;
-      background: rgba(16, 185, 129, 0.15);
-      border-color: rgba(16, 185, 129, 0.3);
-    }
     .card-tag.rose {
       background: rgba(244, 63, 94, 0.22);
       color: #fda4af;
-      border-color: rgba(244, 63, 94, 0.45);
+      border: 1px solid rgba(244, 63, 94, 0.45);
     }
 
     /* MENU ITEMS LIST */
@@ -456,8 +654,8 @@
       justify-content: flex-start;
     }
     .items-container.sparse .item-row {
-      margin-bottom: 10px;
-      padding: 8px 6px;
+      margin-bottom: 12px;
+      padding: 10px 6px;
     }
     .item-row {
       display: -webkit-box;
@@ -473,8 +671,6 @@
       -ms-flex-align: center;
       align-items: center;
       padding: 5px 6px;
-      border-radius: 10px;
-      border-bottom: 1px solid rgba(41, 37, 36, 0.35);
       flex-shrink: 1;
       overflow: hidden;
     }
@@ -482,7 +678,7 @@
       padding: 3px 4px;
     }
     .item-row:last-child {
-      border-bottom: none;
+      border-bottom: none !important;
     }
     .item-left {
       -webkit-box-flex: 1;
@@ -507,9 +703,8 @@
       line-height: 1.2;
     }
     .item-name {
-      font-size: 18px;
+      font-size: 18.5px;
       font-weight: 800;
-      color: #ffffff;
       letter-spacing: -0.01em;
       line-height: 1.18;
       margin-right: 8px;
@@ -523,27 +718,17 @@
       font-weight: 900;
       padding: 1px 6px;
       border-radius: 6px;
-      background: rgba(245, 158, 11, 0.25);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.4);
       margin-right: 8px;
       white-space: nowrap;
     }
-    .item-badge.rose {
-      background: rgba(244, 63, 94, 0.25);
-      color: #fda4af;
-      border-color: rgba(244, 63, 94, 0.4);
-    }
     .item-volume {
-      font-size: 12px;
-      color: #a8a29e;
+      font-size: 12.5px;
       font-family: monospace;
       font-weight: 600;
       white-space: nowrap;
     }
     .item-desc {
       font-size: 12px;
-      color: #d6d3d1;
       font-weight: 500;
       margin-top: 2px;
       line-height: 1.25;
@@ -565,7 +750,6 @@
       font-size: 21px;
       font-weight: 900;
       font-family: monospace;
-      color: #fbbf24;
       line-height: 1;
       white-space: nowrap;
     }
@@ -575,7 +759,6 @@
     .item-price-mdl {
       font-size: 11px;
       font-weight: 700;
-      color: #fde68a;
       margin-left: 3px;
     }
     .item-price-old {
@@ -586,15 +769,13 @@
       font-family: monospace;
     }
     .item-price.discounted {
-      color: #f43f5e;
+      color: #f43f5e !important;
     }
 
     .card-footer-note {
-      border-top: 1px solid rgba(41, 37, 36, 0.6);
-      padding-top: 8px;
+      padding-top: 9px;
       margin-top: 6px;
-      font-size: 11px;
-      color: #a8a29e;
+      font-size: 11.5px;
       display: -webkit-box;
       display: -webkit-flex;
       display: -ms-flexbox;
@@ -628,15 +809,15 @@
       display: inline-flex;
     }
 
-    /* RIGHT 42% : DYNAMIC SHOWCASE SLIDER */
+    /* ================= RIGHT: 9:16 INSTAGRAM VERTICAL SHOWCASE SLIDER ================= */
     .slider-section {
-      -webkit-box-flex: 42;
-      -webkit-flex: 42;
-      -ms-flex: 42;
-      flex: 42;
-      background: #1c1917;
-      border: 1px solid #292524;
-      border-radius: 24px;
+      width: 550px;
+      -webkit-box-flex: 0;
+      -webkit-flex: 0 0 550px;
+      -ms-flex: 0 0 550px;
+      flex: 0 0 550px;
+      height: 100%;
+      border-radius: 26px;
       overflow: hidden;
       position: relative;
       display: -webkit-box;
@@ -648,7 +829,6 @@
       -webkit-flex-direction: column;
       -ms-flex-direction: column;
       flex-direction: column;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
       min-width: 0;
     }
     .slider-progress {
@@ -661,8 +841,8 @@
       display: -ms-flexbox;
       display: flex;
       padding: 12px 16px;
-      background: -webkit-linear-gradient(top, rgba(0,0,0,0.8), transparent);
-      background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+      background: -webkit-linear-gradient(top, rgba(0,0,0,0.7), transparent);
+      background: linear-gradient(180deg, rgba(0,0,0,0.7), transparent);
       z-index: 20;
     }
     .progress-bar {
@@ -671,7 +851,7 @@
       -ms-flex: 1;
       flex: 1;
       height: 4px;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.3);
       border-radius: 2px;
       overflow: hidden;
       margin-right: 6px;
@@ -695,6 +875,7 @@
       flex: 1;
       overflow: hidden;
       background: #000000;
+      border-radius: 26px;
     }
     .slide-image {
       width: 100%;
@@ -714,7 +895,7 @@
 
     .slide-badge-pill {
       position: absolute;
-      top: 34px;
+      top: 30px;
       left: 16px;
       z-index: 10;
       padding: 6px 14px;
@@ -736,150 +917,30 @@
     }
     .slide-title {
       font-family: 'Playfair Display', Georgia, serif;
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
       color: #ffffff;
       line-height: 1.15;
       margin-bottom: 6px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
     }
     .slide-subtitle {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       color: #fde68a;
       margin-bottom: 6px;
-      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
     }
     .slide-details {
-      font-size: 13px;
+      font-size: 12.5px;
       color: #d6d3d1;
       line-height: 1.4;
-      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
-    }
-
-    /* BOTTOM FOOTER: QR LOYALTY CARD & CAFE HOSPITALITY INFO */
-    .tv-footer {
-      background: rgba(28, 25, 23, 0.95);
-      border-top: 1px solid #292524;
-      padding: 8px 24px;
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-pack: justify;
-      -webkit-justify-content: space-between;
-      -ms-flex-pack: justify;
-      justify-content: space-between;
-      -webkit-box-align: center;
-      -webkit-align-items: center;
-      -ms-flex-align: center;
-      align-items: center;
-      height: 74px;
-      flex-shrink: 0;
-    }
-    .qr-block {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-align: center;
-      -webkit-align-items: center;
-      -ms-flex-align: center;
-      align-items: center;
-      background: rgba(12, 10, 9, 0.85);
-      padding: 6px 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      margin-right: 20px;
-      flex-shrink: 0;
-    }
-    .qr-img {
-      width: 50px;
-      height: 50px;
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 2px;
-      margin-right: 12px;
-      flex-shrink: 0;
-    }
-    .qr-title {
-      font-size: 13px;
-      font-weight: 900;
-      color: #ffffff;
-    }
-    .qr-sub {
-      font-size: 12px;
-      color: #fbbf24;
-      font-weight: 800;
-    }
-    .qr-desc {
-      font-size: 10px;
-      color: #a8a29e;
-    }
-
-    .hospitality-banner {
-      -webkit-box-flex: 1;
-      -webkit-flex: 1;
-      -ms-flex: 1;
-      flex: 1;
-      background: rgba(12, 10, 9, 0.65);
-      border: 1px solid #292524;
-      border-radius: 16px;
-      padding: 10px 20px;
-      margin-right: 20px;
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-align: center;
-      -webkit-align-items: center;
-      -ms-flex-align: center;
-      align-items: center;
-      -webkit-box-pack: space-around;
-      -webkit-justify-content: space-around;
-      -ms-flex-pack: distribute;
-      justify-content: space-around;
-    }
-    .hosp-item {
-      display: -webkit-box;
-      display: -webkit-flex;
-      display: -ms-flexbox;
-      display: flex;
-      -webkit-box-align: center;
-      -webkit-align-items: center;
-      -ms-flex-align: center;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 700;
-      color: #e7e5e4;
-      margin-right: 12px;
-    }
-    .hosp-item:last-child {
-      margin-right: 0;
-    }
-    .hosp-badge {
-      padding: 4px 10px;
-      border-radius: 10px;
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      font-weight: 900;
-      font-size: 12px;
-      margin-right: 10px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .footer-right-info {
-      text-align: right;
-      font-size: 11px;
-      color: #a8a29e;
-      font-weight: 600;
-      flex-shrink: 0;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
     }
   </style>
 </head>
 <body>
-  <div class="app-root">
+  <div class="app-root theme-day" id="appRoot">
 
     <!-- FLASH SALE MARQUEE -->
     <div id="flashSaleMarquee">
@@ -900,32 +961,37 @@
         <img src="amika_logo_round.png" alt="Amika Logo" class="brand-logo">
         <div>
           <div style="display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;">
-            <span class="brand-title">Amika Café</span>
+            <span class="brand-title">Amika CAFÈ</span>
             <span class="badge-specialty">Specialty Coffee</span>
-            <span class="badge-foodberry">Foodberry Partner</span>
           </div>
-          <div class="brand-address">or. Cricova • str. Drumul Viilor 10 • Prăjire proaspătă Briksa</div>
+          <div class="brand-address">or. Cricova • str. Drumul Viilor 10</div>
         </div>
       </div>
 
-      <div class="header-center">
-        <div class="cloud-pill">
+      <div class="header-slogan">
+        <span>GOOD COFFEE • GOOD MOOD • AMIKA CAFÉ</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      </div>
+
+      <div class="header-right">
+        <div class="cloud-pill" id="cloudPill" title="Связь с облаком">
           <span class="cloud-dot" id="cloudDot"></span>
-          <span id="cloudStatusText">Подключение к облаку...</span>
+          <span id="cloudStatusText">Облако</span>
         </div>
+
+        <button class="theme-pill" id="themeToggleBtn" onclick="cycleThemeMode()" title="Режим темы [клавиша T]">
+          <span id="themeIcon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+          </span>
+          <span id="themeLabel">Auto</span>
+        </button>
 
         <div class="clock-pill">
           <div class="clock-time" id="clockTime">20:00:00</div>
-          <div class="clock-date" id="clockDate">Marți, 20 octombrie</div>
+          <div class="clock-date" id="clockDate">Sâmbătă, 31 octombrie</div>
         </div>
-      </div>
 
-      <div class="header-controls">
-        <button class="btn-toggle" id="btnFlashSale" onclick="toggleFlashSale()">Flash -30%</button>
-        <button class="btn-toggle active" id="btnLangRo" onclick="setLangMode('ro')">RO</button>
-        <button class="btn-toggle" id="btnLangRu" onclick="setLangMode('ru')">RU</button>
-        <button class="btn-toggle" id="btnLangAuto" onclick="setLangMode('auto')">RO / RU</button>
-        <button class="btn-toggle" id="btnFullscreen" onclick="toggleFullscreen()" title="Fullscreen">
+        <button class="btn-fullscreen" onclick="toggleFullscreen()" title="Полный экран [клавиша F]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
           </svg>
@@ -935,21 +1001,13 @@
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
-      <!-- LEFT 58%: DIGITAL MENU (COFFEE + FOODBERRY) -->
+      <!-- LEFT: DIGITAL MENU (COFFEE + DESSERTS/TEA) -->
       <section class="menu-section">
         <!-- COFFEE COLUMN -->
-        <div class="menu-card">
+        <div class="menu-card" id="coffeeCard">
           <div class="card-header">
             <div class="card-title">
-              <span class="card-icon-box card-icon-amber">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 8h1a4 4 0 1 1 0 8h-1"></path>
-                  <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"></path>
-                  <line x1="6" y1="2" x2="6" y2="4"></line>
-                  <line x1="10" y1="2" x2="10" y2="4"></line>
-                  <line x1="14" y1="2" x2="14" y2="4"></line>
-                </svg>
-              </span>
+              <span class="illy-badge">illy</span>
               <span id="coffeeHeaderTitle">Cafea & Băuturi</span>
             </div>
             <span class="card-tag" id="coffeeHeaderBadge">100% Arabica</span>
@@ -968,7 +1026,7 @@
               </span>
               <span id="milkNoteText">Lapte alternativ: Oatly ovăz / migdale / fără lactoză</span>
             </span>
-            <span style="color: #fbbf24; font-family: monospace; font-weight: 800; white-space: nowrap;" id="milkNotePrice">+10 / 12 L</span>
+            <span style="font-family: monospace; font-weight: 800; white-space: nowrap;" id="milkNotePrice">+10 / 12 L</span>
           </div>
         </div>
 
@@ -976,13 +1034,13 @@
         <div class="menu-card" id="dessertCard">
           <div class="card-header">
             <div class="card-title">
-              <span class="card-icon-box card-icon-emerald">
+              <span class="card-icon-box card-icon-leaf">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
                   <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
                 </svg>
               </span>
-              <span id="dessertHeaderTitle">Ceaiuri & Specialități</span>
+              <span id="dessertHeaderTitle">Ceaiuri & Băuturi Calde</span>
             </div>
             <span class="card-tag emerald" id="dessertHeaderBadge">Natural & Bio</span>
           </div>
@@ -995,17 +1053,18 @@
             <span class="footer-note-left" id="freshDeliveryWrap">
               <span class="footer-note-icon" style="color: #34d399;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
                 </svg>
               </span>
               <span id="freshDeliveryText">Livrări proaspete zilnic</span>
             </span>
-            <span style="color: #34d399; font-weight: 800; white-space: nowrap;" id="freshDeliveryBrand">100% Natural</span>
+            <span style="font-weight: 800; white-space: nowrap;" id="freshDeliveryBrand">DaVinci / Manufactura / Matcha Organic</span>
           </div>
         </div>
       </section>
 
-      <!-- RIGHT 42%: SHOWCASE ROTATING SLIDER -->
+      <!-- RIGHT: 9:16 INSTAGRAM VERTICAL SHOWCASE SLIDER -->
       <section class="slider-section">
         <div class="slider-progress" id="sliderProgressBar">
           <!-- Dynamically generated progress bars for arbitrary number of slides -->
@@ -1013,51 +1072,17 @@
 
         <div class="slide-image-wrapper">
           <img src="insta_hd/hd_6_720x1280.jpg" alt="Showcase" class="slide-image" id="slideImg">
-          <div class="slide-gradient"></div>
+          <div class="slide-gradient" id="slideGradient"></div>
           <div class="slide-badge-pill" id="slideBadge">Partener Oficial Foodberry</div>
 
-          <div class="slide-info">
+          <div class="slide-info" id="slideInfo">
             <div class="slide-title" id="slideTitle">Deserturi Artizanale Proaspete</div>
             <div class="slide-subtitle" id="slideSubtitle">Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană</div>
-            <div class="slide-details" id="slideDetails">Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.</div>
+            <div class="slide-details" id="slideDetails">Livrări proaspete zilnic direct în vitrina Amika Café.</div>
           </div>
         </div>
       </section>
     </main>
-
-    <!-- BOTTOM FOOTER -->
-    <footer class="tv-footer">
-      <div class="qr-block">
-        <img src="amika_qr.svg" alt="QR" class="qr-img">
-        <div>
-          <div class="qr-title" id="qrTitleText">Card de Fidelitate Digital & Precomandă</div>
-          <div class="qr-sub" id="qrSubText">A 6-a cafea este CADOU!</div>
-          <div class="qr-desc" id="qrDescText">Scanează cu camera telefonului • Comandă fără coadă</div>
-        </div>
-      </div>
-
-      <!-- HOSPITALITY HIGHLIGHTS -->
-      <div class="hospitality-banner">
-        <div class="hosp-item">
-          <span class="hosp-badge">100% ARABICA</span>
-          <span id="hospText1">Prăjire proaspătă artizanală Briksa</span>
-        </div>
-        <div class="hosp-item">
-          <span class="hosp-badge" style="color: #fda4af; background: rgba(244,63,94,0.15);">FOODBERRY</span>
-          <span id="hospText2">Deserturi naturale fără conservanți</span>
-        </div>
-        <div class="hosp-item">
-          <span class="hosp-badge" style="color: #34d399; background: rgba(16,185,129,0.15);">08:00 – 21:00</span>
-          <span id="hospText3">Vă așteptăm zilnic cu drag!</span>
-        </div>
-      </div>
-
-      <div class="footer-right-info">
-        <div style="color: #34d399; font-weight: 800;">Amika Digital Menu ●</div>
-        <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 13px; color: #ffffff;">Cricova • Moldova</div>
-        <div style="color: #f59e0b; font-family: monospace;">Full HD 1080p</div>
-      </div>
-    </footer>
 
   </div>
 
@@ -1065,12 +1090,12 @@
   <script>
     var STORAGE_KEY = 'amika_tv_custom_config_v1';
     var currentLang = 'ro';
-    var isAutoRotateLang = false;
     var isFlashSaleActive = false;
     var currentSlideIdx = 0;
     var soundEnabled = true;
     var hasSyncedFromCloud = false;
     var sseActiveCount = 0;
+    var currentThemeMode = 'auto'; // 'auto' | 'day' | 'night'
 
     function trimStr(val) {
       if (val === null || val === undefined) return '';
@@ -1118,17 +1143,116 @@
       if (hasSyncedFromCloud || sseActiveCount > 0) {
         dot.style.background = '#10b981';
         dot.style.boxShadow = '0 0 10px #10b981';
-        text.innerText = 'Облако: Админ подключен';
+        text.innerText = 'Облако: OK';
       } else {
         dot.style.background = '#f59e0b';
         dot.style.boxShadow = '0 0 10px #f59e0b';
-        text.innerText = 'Подключение к облаку...';
+        text.innerText = 'Подключение...';
       }
+    }
+
+    /* ================= ASTRONOMICAL SOLAR CALCULATOR FOR CRICOVA ================= */
+    // Cricova coordinates: 47.139° N, 28.862° E
+    // Accounts for Moldova Standard Time (winter UTC+2 from last Sun of Oct to last Sun of Mar, UTC+3 in summer)
+    function getMoldovaOffsetHours(utcMs) {
+      var d = new Date(utcMs);
+      var y = d.getUTCFullYear();
+      var marLastSun = 31 - new Date(Date.UTC(y, 2, 31)).getUTCDay();
+      var octLastSun = 31 - new Date(Date.UTC(y, 9, 31)).getUTCDay();
+      var dstStart = Date.UTC(y, 2, marLastSun, 1, 0, 0);
+      var dstEnd = Date.UTC(y, 9, octLastSun, 1, 0, 0);
+      return (utcMs >= dstStart && utcMs < dstEnd) ? 3 : 2;
+    }
+
+    function isDaytimeInCricova(nowDate) {
+      var utcMs = nowDate.getTime();
+      var offset = getMoldovaOffsetHours(utcMs);
+      var md = new Date(utcMs + offset * 3600000);
+      var y = md.getUTCFullYear();
+      var m = md.getUTCMonth();
+      var day = md.getUTCDate();
+      var startOfYear = Date.UTC(y, 0, 1);
+      var curDayUtc = Date.UTC(y, m, day);
+      var doy = Math.floor((curDayUtc - startOfYear) / 86400000) + 1;
+      var gamma = (2 * Math.PI / 365) * (doy - 1 + 0.5);
+      var eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
+      var decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma) - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma);
+      var lat = 47.139 * Math.PI / 180;
+      var lon = 28.862;
+      var zenith = 90.833 * Math.PI / 180;
+      var cosHA = (Math.cos(zenith) / (Math.cos(lat) * Math.cos(decl))) - Math.tan(lat) * Math.tan(decl);
+      cosHA = Math.max(-1, Math.min(1, cosHA));
+      var haDeg = Math.acos(cosHA) * 180 / Math.PI;
+      var sunriseUtcMin = 720 - 4 * (lon + haDeg) - eqTime;
+      var sunsetUtcMin = 720 - 4 * (lon - haDeg) - eqTime;
+      var sunriseLocalMin = Math.round(sunriseUtcMin + offset * 60);
+      var sunsetLocalMin = Math.round(sunsetUtcMin + offset * 60);
+      var nowLocalMin = md.getUTCHours() * 60 + md.getUTCMinutes();
+      // Transition to evening lounge theme 15 minutes before sunset
+      return nowLocalMin >= sunriseLocalMin && nowLocalMin < (sunsetLocalMin - 15);
+    }
+
+    function applyTheme() {
+      var appRoot = document.getElementById('appRoot');
+      if (!appRoot) return;
+      var effectiveTheme = 'day';
+      if (currentThemeMode === 'day') {
+        effectiveTheme = 'day';
+      } else if (currentThemeMode === 'night') {
+        effectiveTheme = 'night';
+      } else {
+        effectiveTheme = isDaytimeInCricova(new Date()) ? 'day' : 'night';
+      }
+
+      appRoot.className = 'app-root ' + (effectiveTheme === 'day' ? 'theme-day' : 'theme-night');
+
+      var iconEl = document.getElementById('themeIcon');
+      var labelEl = document.getElementById('themeLabel');
+      if (iconEl && labelEl) {
+        if (currentThemeMode === 'day') {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+          labelEl.innerText = 'Zi (Crem)';
+        } else if (currentThemeMode === 'night') {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+          labelEl.innerText = 'Seara (Lounge)';
+        } else {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>';
+          labelEl.innerText = 'Auto (' + (effectiveTheme === 'day' ? 'Zi' : 'Seara') + ')';
+        }
+      }
+    }
+
+    function setThemeMode(mode, showToast) {
+      if (mode !== 'day' && mode !== 'night' && mode !== 'auto') mode = 'auto';
+      currentThemeMode = mode;
+      try {
+        localStorage.setItem('amika_tv_theme_mode', mode);
+      } catch (e) {}
+      applyTheme();
+      if (showToast) {
+        var toastEl = document.getElementById('syncToast');
+        if (toastEl) {
+          toastEl.innerText = mode === 'day'
+            ? 'Tema de Zi (luminoasa) activata'
+            : mode === 'night'
+            ? 'Tema de Seara (lounge) activata'
+            : 'Tema Auto: sincronizata cu apusul soarelui in Cricova';
+          toastEl.className = 'active';
+          setTimeout(function() { toastEl.className = ''; }, 3500);
+        }
+      }
+    }
+
+    function cycleThemeMode() {
+      if (currentThemeMode === 'auto') setThemeMode('day', true);
+      else if (currentThemeMode === 'day') setThemeMode('night', true);
+      else setThemeMode('auto', true);
     }
 
     // Default Configuration (fallback only before first cloud sync)
     var boardConfig = {
       updatedAt: 0,
+      themeMode: 'auto',
       coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },
       coffeeBadge: '100% Arabica',
       coffeeFooterNote: {
@@ -1156,7 +1280,7 @@
       ],
       slides: [
         { image: 'insta_hd/hd_6_720x1280.jpg', badge: { ro: 'Partener Oficial Foodberry', ru: 'Официальный партнер Foodberry' }, title: { ro: 'Deserturi Artizanale Proaspete', ru: 'Крафтовые десерты Foodberry' }, subtitle: { ro: 'Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană', ru: 'Французское масло 82%, сицилийская фисташка и бельгийский шоколад' }, details: { ro: 'Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.', ru: 'Свежая утренняя доставка напрямую из крафтовой кондитерской SweetMe.' }, visible: true },
-        { image: 'insta_hd/hd_17_720x1280.jpg', badge: { ro: 'Originea Săptămânii • Specialty', ru: 'Зерно недели • Specialty' }, title: { ro: '100% Arabica Ethiopia Guji', ru: '100% Arabica Ethiopia Guji' }, subtitle: { ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci', ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса' }, details: { ro: 'Prăjire proaspătă artizanală de la partenerul nostru Briksa.', ru: 'Свежая местная обжарка от партнера Briksa. Шелковистая пенка.' }, visible: true },
+        { image: 'insta_hd/hd_17_720x1280.jpg', badge: { ro: 'Originea Săptămânii • Specialty', ru: 'Зерно недели • Specialty' }, title: { ro: '100% Arabica Ethiopia Guji', ru: '100% Arabica Ethiopia Guji' }, subtitle: { ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci', ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса' }, details: { ro: 'Cafea de specialitate 100% Arabica, preparată cu pasiune la Amika Café.', ru: 'Спешелти кофе 100% арабика, приготовленный с любовью в Amika Café.' }, visible: true },
         { image: 'insta_hd/hd_8_720x1280.jpg', badge: { ro: 'Amika Café • Familie & Pasiune', ru: 'Amika Café • Семья и уют' }, title: { ro: 'Ospitalitate Caldă din Cricova', ru: 'Тепло и забота в каждой чашке' }, subtitle: { ro: '„Ajutorul meu” — cafea pregătită și servită din suflet', ru: '«Мой главный помощник» — кофе, приготовленный с любовью' }, details: { ro: 'Locul unde fiecare oaspete este întâmpinat ca un prieten drag. Str. Drumul Viilor 10.', ru: 'Локальная кофейня, где ценят каждого гостя. Крикова, str. Drumul Viilor 10.' }, visible: true },
         { image: 'insta_hd/hd_2_720x1280.jpg', badge: { ro: 'Design & Atmosferă', ru: 'Интерьер & Атмосфера' }, title: { ro: 'Barul Amika & Terasa la Apus', ru: 'Барная стойка Amika & Закаты' }, subtitle: { ro: 'Vedere panoramică spre viile Cricovei și leagăn la asfințit', ru: 'Панорамный вид на виноградники Крикова и качели на закате' }, details: { ro: 'Vino să te bucuri de un latte fin sau un matcha într-o atmosferă luminoasă.', ru: 'Идеальное место для неспешного утра или вечера со спешелти кофе.' }, visible: true },
         { image: 'insta_hd/hd_3_720x1280.jpg', badge: { ro: 'Băuturi Speciale Amika', ru: 'Авторские напитки Amika' }, title: { ro: 'Matcha Uji & Cold Brew Tonic', ru: 'Церемониальная Матча & Колд Брю' }, subtitle: { ro: 'Ceai matcha ceremonial bătut cu tel de bambus și lapte Oatly', ru: 'Оригинальная матча из Японии, взбитая венчиком на овсяном молоке' }, details: { ro: 'Sau încearcă deserturile trifles în pahar cu mascarpone și fructe.', ru: 'А также муссовые десерты в стаканчиках с лесными ягодами.' }, visible: true }
@@ -1174,6 +1298,16 @@
           }
         }
       } catch (e) {}
+
+      if (boardConfig.themeMode) {
+        currentThemeMode = boardConfig.themeMode;
+      } else {
+        try {
+          var savedTheme = localStorage.getItem('amika_tv_theme_mode');
+          if (savedTheme) currentThemeMode = savedTheme;
+        } catch (e) {}
+      }
+      applyTheme();
     }
 
     function applyNewConfig(cfg, showNotification) {
@@ -1185,6 +1319,12 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
       } catch (e) {}
+
+      if (cfg.themeMode && cfg.themeMode !== currentThemeMode) {
+        currentThemeMode = cfg.themeMode;
+        applyTheme();
+      }
+
       if (changed) {
         currentSlideIdx = 0;
       }
@@ -1220,8 +1360,6 @@
     }
 
     // SUPABASE CLOUD DATABASE CONFIG
-    // Uses CORS Simple GET (?apikey= query param, zero custom headers -> no OPTIONS preflight on LG webOS)
-    // with automatic header-based fallback if needed.
     var SUPABASE_URL = 'https://ildagazsbdtgjlzlkfaq.supabase.co';
     var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZGFnYXpzYmR0Z2psemxrZmFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NzA3NDgsImV4cCI6MjEwODE0Njc0OH0.BSGfGWuXT7HNfsCjmUbeisbcGzXs0FJvUHMz5lC-FeQ';
 
@@ -1398,17 +1536,15 @@
       freshBrandEl.style.display = freshBrandText ? 'inline-block' : 'none';
       document.getElementById('dessertFooterRow').style.display = (freshNoteText || freshBrandText) ? 'flex' : 'none';
 
-      // Static bottom bar texts (emoji-free for LG webOS)
-      document.getElementById('qrTitleText').innerText = isRo ? 'Card de Fidelitate Digital & Precomandă' : 'Электронная Карта Гостя и Предзаказ';
-      document.getElementById('qrSubText').innerText = isRo ? 'A 6-a cafea este CADOU!' : '6-я чашка кофе в ПОДАРОК!';
-      document.getElementById('qrDescText').innerText = isRo ? 'Scanează cu camera telefonului • Comandă fără coadă' : 'Наведи камеру телефона • Заказ без очереди';
-      document.getElementById('hospText1').innerText = isRo ? 'Prăjire proaspătă artizanală Briksa' : 'Свежая крафтовая обжарка Briksa';
-      document.getElementById('hospText2').innerText = isRo ? 'Deserturi naturale fără conservanți' : 'Натуральные десерты без консервантов';
-      document.getElementById('hospText3').innerText = isRo ? 'Vă așteptăm zilnic cu drag!' : 'Ждем вас каждый день с любовью!';
-      document.getElementById('marqueeCloseHour').innerText = isRo ? 'Închidere la 21:00' : 'До закрытия в 21:00';
-      document.getElementById('marqueeText').innerText = isRo
-        ? 'FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!'
-        : 'ВЕЧЕРНЯЯ FLASH-РАСПРОДАЖА: -30% НА ВСЮ ВИТРИНУ ДЕСЕРТОВ FOODBERRY ДО ЗАКРЫТИЯ!';
+      // Flash sale marquee texts
+      var marqueeCloseEl = document.getElementById('marqueeCloseHour');
+      if (marqueeCloseEl) marqueeCloseEl.innerText = isRo ? 'Închidere la 21:00' : 'До закрытия в 21:00';
+      var marqueeTextEl = document.getElementById('marqueeText');
+      if (marqueeTextEl) {
+        marqueeTextEl.innerText = isRo
+          ? 'FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!'
+          : 'ВЕЧЕРНЯЯ FLASH-РАСПРОДАЖА: -30% НА ВСЮ ВИТРИНУ ДЕСЕРТОВ FOODBERRY ДО ЗАКРЫТИЯ!';
+      }
 
       // Coffee list (Column 1)
       var coffeeHtml = '';
@@ -1512,9 +1648,21 @@
       var slideBadgeEl = document.getElementById('slideBadge');
       slideBadgeEl.innerText = badgeText;
       slideBadgeEl.style.display = badgeText ? 'inline-block' : 'none';
-      document.getElementById('slideTitle').innerText = pickLangText(sl.title, isRo, '', '', true);
-      document.getElementById('slideSubtitle').innerText = pickLangText(sl.subtitle, isRo, '', '', false);
-      document.getElementById('slideDetails').innerText = pickLangText(sl.details, isRo, '', '', false);
+
+      var titleText = pickLangText(sl.title, isRo, '', '', true);
+      var subText = pickLangText(sl.subtitle, isRo, '', '', false);
+      var detText = pickLangText(sl.details, isRo, '', '', false);
+
+      document.getElementById('slideTitle').innerText = titleText;
+      document.getElementById('slideSubtitle').innerText = subText;
+      document.getElementById('slideDetails').innerText = detText;
+
+      // Clean Instagram view: when slide has no text, hide bottom dark shadow & info box
+      var hasAnyText = (titleText || subText || detText);
+      var gradEl = document.getElementById('slideGradient');
+      if (gradEl) gradEl.style.display = hasAnyText ? 'block' : 'none';
+      var infoEl = document.getElementById('slideInfo');
+      if (infoEl) infoEl.style.display = hasAnyText ? 'block' : 'none';
 
       // Dynamically build progress bar for visSlides.length
       var progContainer = document.getElementById('sliderProgressBar');
@@ -1538,35 +1686,15 @@
 
       var marquee = document.getElementById('flashSaleMarquee');
       var card = document.getElementById('dessertCard');
-      var btn = document.getElementById('btnFlashSale');
 
       if (isFlashSaleActive) {
         marquee.className = 'active';
         card.className = 'menu-card flash-card';
-        btn.className = 'btn-toggle flash-active';
       } else {
         marquee.className = '';
         card.className = 'menu-card';
-        btn.className = 'btn-toggle';
       }
       renderMenu();
-    }
-
-    // LANGUAGE MODE
-    function setLangMode(mode) {
-      if (mode === 'auto') {
-        isAutoRotateLang = true;
-        document.getElementById('btnLangAuto').className = 'btn-toggle active';
-        document.getElementById('btnLangRo').className = 'btn-toggle';
-        document.getElementById('btnLangRu').className = 'btn-toggle';
-      } else {
-        isAutoRotateLang = false;
-        currentLang = mode;
-        document.getElementById('btnLangAuto').className = 'btn-toggle';
-        document.getElementById('btnLangRo').className = mode === 'ro' ? 'btn-toggle active' : 'btn-toggle';
-        document.getElementById('btnLangRu').className = mode === 'ru' ? 'btn-toggle active' : 'btn-toggle';
-        renderMenu();
-      }
     }
 
     // FULLSCREEN
@@ -1591,6 +1719,8 @@
 
       if (cmd.type === 'CHIME') {
         playMelodicChime();
+      } else if (cmd.type === 'SET_THEME' && cmd.theme) {
+        setThemeMode(cmd.theme, true);
       } else if (cmd.type === 'CONFIG_SUPABASE_SYNC') {
         fetchSupabaseConfig(true);
       } else if (cmd.type === 'CONFIG_SYNC' && cmd.config) {
@@ -1603,10 +1733,6 @@
         var vis = getVisibleSlides();
         currentSlideIdx = cmd.index % vis.length;
         renderSlide();
-      } else if (cmd.type === 'SET_LANG_MODE') {
-        setLangMode(cmd.mode);
-      } else if (cmd.type === 'SET_LANG' && cmd.lang) {
-        setLangMode(cmd.lang);
       }
     }
 
@@ -1713,7 +1839,7 @@
       } catch (e) {}
     }
 
-    // CLOCK TICKER
+    // CLOCK TICKER (Accounts for Moldova Winter Time / EET / UTC+2)
     function updateClock() {
       var d = new Date();
       var h = d.getHours(); var m = d.getMinutes(); var s = d.getSeconds();
@@ -1729,6 +1855,11 @@
         ? days_ro[d.getDay()] + ', ' + d.getDate() + ' ' + months_ro[d.getMonth()]
         : days_ru[d.getDay()] + ', ' + d.getDate() + ' ' + months_ru[d.getMonth()];
       document.getElementById('clockDate').innerText = dateStr;
+
+      // Update solar day/night check every minute if in auto mode
+      if (s === 0 && currentThemeMode === 'auto') {
+        applyTheme();
+      }
     }
 
     // INIT LOOPS
@@ -1750,14 +1881,6 @@
           renderSlide();
         }
       }, 7000);
-
-      // Auto-rotate language every 15 seconds if active
-      setInterval(function() {
-        if (isAutoRotateLang) {
-          currentLang = currentLang === 'ro' ? 'ru' : 'ro';
-          renderMenu();
-        }
-      }, 15000);
 
       // Fast retry (every 15s) while Wi-Fi / TV is still booting; gentle 60s sync once connected
       var tickCounter = 0;
@@ -1784,7 +1907,7 @@
     window.addEventListener('keydown', function(e) {
       var vis = getVisibleSlides();
       if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-      if (e.key === 'l' || e.key === 'L') setLangMode(currentLang === 'ro' ? 'ru' : 'ro');
+      if (e.key === 't' || e.key === 'T') cycleThemeMode();
       if (e.key === 's' || e.key === 'S') toggleFlashSale();
       if (e.key === 'ArrowRight' && vis.length > 0) {
         currentSlideIdx = (currentSlideIdx + 1) % vis.length;

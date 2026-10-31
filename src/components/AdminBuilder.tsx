@@ -11,7 +11,7 @@ import {
   saveTvConfigLocal,
   compressImageFile,
 } from '../utils/menuStore';
-import { publishTvConfigToCloud } from '../utils/tvSync';
+import { publishTvConfigToCloud, sendTvCommand } from '../utils/tvSync';
 import {
   fetchMenuConfigFromSupabase,
   fetchAllLoyaltyCardsFromSupabase,
@@ -19,6 +19,9 @@ import {
 } from '../utils/supabaseClient';
 import {
   Coffee,
+  Sun,
+  Moon,
+  Sunrise,
   Plus,
   Trash2,
   ArrowUp,
@@ -1377,6 +1380,119 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 <Tv className="w-4 h-4" />
                 <span>{language === 'ro' ? 'Deschide TV (Ecran Complet)' : 'Открыть ТВ (Полный экран)'}</span>
               </a>
+            </div>
+          </div>
+
+          {/* TV Theme Mode (Day / Night / Auto) */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-amber-500/30 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                  <Sun className="w-5 h-5" />
+                </span>
+                <div>
+                  <h4 className="text-base font-bold text-white font-serif">
+                    {language === 'ro' ? 'Tema Ecranului TV (Zi / Seară / Auto)' : 'Тема оформления экрана ТВ (День / Вечер / Авто)'}
+                  </h4>
+                  <p className="text-xs text-stone-400">
+                    {language === 'ro'
+                      ? 'Ziua fundal crem botanic fără reflexii, seara temă întunecată de lounge (automat după apusul soarelui în Cricova).'
+                      : 'Днём светлый кремово-ботанический фон против бликов, вечером — тёмная лаунж-тема (автоматически по закату в Крикова).'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs font-mono font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-stone-950 border border-stone-800">
+                {language === 'ro' ? 'Mod activ: ' : 'Текущий режим: '}
+                {(draftConfig.themeMode || 'auto') === 'day'
+                  ? (language === 'ro' ? '☀️ Zi' : '☀️ Дневная')
+                  : (draftConfig.themeMode || 'auto') === 'night'
+                  ? (language === 'ro' ? '🌙 Seară' : '🌙 Вечерняя')
+                  : (language === 'ro' ? '🌅 Auto (Soare Cricova)' : '🌅 Авто (по солнцу в Крикова)')}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = { ...draftConfig, themeMode: 'auto' as const };
+                  updateDraft(next);
+                  sendTvCommand({ type: 'SET_THEME', theme: 'auto' });
+                  showToast(language === 'ro' ? '🌅 Tema Auto activată pe TV' : '🌅 Авто-тема активирована на ТВ');
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                  (draftConfig.themeMode || 'auto') === 'auto'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-2 ring-amber-400/40 shadow-lg'
+                    : 'bg-stone-950 hover:bg-stone-800 border-stone-800 text-stone-300'
+                }`}
+              >
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                  <Sunrise className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-white">
+                    {language === 'ro' ? '🌅 Automat (Apus Cricova)' : '🌅 Авто (Закат Крикова)'}
+                  </div>
+                  <div className="text-[11px] text-stone-400">
+                    {language === 'ro' ? 'Comută automat după soare' : 'Переключает по времени заката'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = { ...draftConfig, themeMode: 'day' as const };
+                  updateDraft(next);
+                  sendTvCommand({ type: 'SET_THEME', theme: 'day' });
+                  showToast(language === 'ro' ? '☀️ Tema de Zi activată pe TV' : '☀️ Дневная тема активирована на ТВ');
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                  draftConfig.themeMode === 'day'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-2 ring-amber-400/40 shadow-lg'
+                    : 'bg-stone-950 hover:bg-stone-800 border-stone-800 text-stone-300'
+                }`}
+              >
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                  <Sun className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-white">
+                    {language === 'ro' ? '☀️ Temă de Zi (Crem)' : '☀️ Дневная тема (Светлая)'}
+                  </div>
+                  <div className="text-[11px] text-stone-400">
+                    {language === 'ro' ? 'Fundal crem botanic fără reflexii' : 'Светлый фон без бликов'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = { ...draftConfig, themeMode: 'night' as const };
+                  updateDraft(next);
+                  sendTvCommand({ type: 'SET_THEME', theme: 'night' });
+                  showToast(language === 'ro' ? '🌙 Tema de Seară activată pe TV' : '🌙 Вечерняя тема активирована на ТВ');
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                  draftConfig.themeMode === 'night'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-2 ring-amber-400/40 shadow-lg'
+                    : 'bg-stone-950 hover:bg-stone-800 border-stone-800 text-stone-300'
+                }`}
+              >
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                  <Moon className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-white">
+                    {language === 'ro' ? '🌙 Temă de Seară (Lounge)' : '🌙 Вечерняя тема (Тёмная)'}
+                  </div>
+                  <div className="text-[11px] text-stone-400">
+                    {language === 'ro' ? 'Design întunecat de seară' : 'Тёмный лаунж-дизайн'}
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

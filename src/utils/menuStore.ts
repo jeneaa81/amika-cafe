@@ -38,6 +38,7 @@ export interface TvSlideItem {
 
 export interface TvBoardConfig {
   updatedAt: number;
+  themeMode?: 'auto' | 'day' | 'night';
   coffeeHeader: { ro: string; ru: string };
   coffeeBadge: string;
   coffeeFooterNote: { ro: string; ru: string };
@@ -56,6 +57,7 @@ export const STORAGE_KEY_TV_CONFIG = 'amika_tv_custom_config_v1';
 
 export const DEFAULT_TV_CONFIG: TvBoardConfig = {
   updatedAt: 0,
+  themeMode: 'auto',
   coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },
   coffeeBadge: '100% Arabica',
   coffeeFooterNote: {
@@ -238,10 +240,10 @@ export const DEFAULT_TV_CONFIG: TvBoardConfig = {
         ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса',
       },
       details: {
-        ro: 'Prăjire proaspătă artizanală de la partenerul nostru Briksa.',
-        ru: 'Свежая местная обжарка от партнера Briksa. Шелковистая пенка.',
+        ro: 'Cafea de specialitate 100% Arabica, preparată cu pasiune la Amika Café.',
+        ru: 'Спешелти кофе 100% арабика, приготовленный с любовью в Amika Café.',
       },
-      priceTag: { ro: 'Specialty Briksa', ru: 'Обжарка Briksa' },
+      priceTag: { ro: 'Specialty Coffee', ru: 'Спешелти кофе' },
       visible: true,
     },
     {
