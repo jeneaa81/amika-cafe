@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Amika Café • Live TV Menu Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0c0a09;
+      color: #f5f5f4;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .app-root {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      -webkit-transition: background-image 0.5s ease;
+      transition: background-image 0.5s ease;
+    }
+
+    /* ================= DAY THEME (LIGHT / BOTANICAL / CREAM) ================= */
+    .app-root.theme-day {
+      background-color: #f7f2ea;
+      background-image: url('tv_bg_day.jpg');
+      color: #1c1917;
+    }
+    .app-root.theme-day .tv-header {
+      background-color: rgba(255, 252, 246, 0.75);
+      border-bottom: 1px solid rgba(217, 180, 140, 0.45);
+    }
+    .app-root.theme-day .brand-title {
+      color: #1c1917;
+    }
+    .app-root.theme-day .brand-address {
+      color: #78716c;
+    }
+    .app-root.theme-day .badge-specialty {
+      background: rgba(85, 107, 47, 0.14);
+      color: #556b2f;
+      border: 1px solid rgba(85, 107, 47, 0.35);
+    }
+    .app-root.theme-day .footer-note-icon {
+      color: #556b2f;
+    }
+    .app-root.theme-day .header-slogan {
+      color: #78716c;
+    }
+    .app-root.theme-day .cloud-pill,
+    .app-root.theme-day .theme-pill,
+    .app-root.theme-day .clock-pill,
+    .app-root.theme-day .btn-fullscreen {
+      background: rgba(255, 252, 246, 0.90);
+      border: 1px solid rgba(217, 180, 140, 0.55);
+      color: #1c1917;
+      box-shadow: 0 4px 16px rgba(120, 80, 40, 0.08);
+    }
+    .app-root.theme-day .clock-time {
+      color: #556b2f;
+    }
+    .app-root.theme-day .clock-date {
+      color: #6e7d4a;
+    }
+    .app-root.theme-day .menu-card {
+      background: rgba(244, 217, 196, 0.97);
+      border: 1px solid rgba(210, 168, 120, 0.45);
+      box-shadow: 0 4px 18px rgba(80, 50, 20, 0.08);
+    }
+    .app-root.theme-day .card-header {
+      border-bottom: 1px solid rgba(190, 150, 110, 0.35);
+    }
+    .app-root.theme-day .card-title {
+      color: #1c1917;
+    }
+    .app-root.theme-day .card-tag {
+      background: rgba(245, 158, 11, 0.18);
+      color: #92400e;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .app-root.theme-day .card-tag.emerald {
+      background: rgba(34, 197, 94, 0.18);
+      color: #166534;
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .app-root.theme-day .item-row {
+      border-bottom: 1px solid rgba(190, 150, 110, 0.25);
+    }
+    .app-root.theme-day .item-name {
+      color: #1c1917;
+    }
+    .app-root.theme-day .item-badge {
+      background: rgba(245, 158, 11, 0.18);
+      color: #92400e;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .app-root.theme-day .item-badge.rose {
+      background: rgba(244, 63, 94, 0.18);
+      color: #9f1239;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+    .app-root.theme-day .item-volume {
+      color: #78716c;
+    }
+    .app-root.theme-day .item-desc {
+      color: #57534e;
+    }
+    .app-root.theme-day .item-price {
+      color: #1c1917;
+    }
+    .app-root.theme-day .item-price-mdl {
+      color: #78716c;
+    }
+    .app-root.theme-day .card-footer-note {
+      border-top: 1px solid rgba(190, 150, 110, 0.35);
+      color: #57534e;
+    }
+    .app-root.theme-day .slider-section {
+      background: rgba(255, 252, 246, 0.94);
+      border: 1px solid rgba(217, 180, 140, 0.55);
+      box-shadow: 0 4px 18px rgba(80, 50, 20, 0.08);
+    }
+
+    /* ================= NIGHT THEME (DEEP ESPRESSO / LOUNGE) ================= */
+    .app-root.theme-night {
+      background-color: #120f0d;
+      background-image: url('tv_bg_night.jpg');
+      color: #f5f5f4;
+    }
+    .app-root.theme-night .tv-header {
+      background-color: rgba(24, 20, 18, 0.88);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .app-root.theme-night .brand-title {
+      color: #ffffff;
+    }
+    .app-root.theme-night .brand-address {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .badge-specialty {
+      background: rgba(155, 177, 85, 0.18);
+      color: #9bb155;
+      border: 1px solid rgba(155, 177, 85, 0.40);
+    }
+    .app-root.theme-night .footer-note-icon {
+      color: #9bb155;
+    }
+    .app-root.theme-night .header-slogan {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .cloud-pill,
+    .app-root.theme-night .theme-pill,
+    .app-root.theme-night .clock-pill,
+    .app-root.theme-night .btn-fullscreen {
+      background: rgba(24, 20, 18, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f5f5f4;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    .app-root.theme-night .clock-time {
+      color: #9bb155;
+    }
+    .app-root.theme-night .clock-date {
+      color: #82944b;
+    }
+    .app-root.theme-night .menu-card {
+      background: rgba(24, 20, 18, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+    .app-root.theme-night .card-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .app-root.theme-night .card-title {
+      color: #ffffff;
+    }
+    .app-root.theme-night .card-tag {
+      background: rgba(155, 177, 85, 0.18);
+      color: #b4cb68;
+      border-color: rgba(155, 177, 85, 0.35);
+    }
+    .app-root.theme-night .card-tag.emerald {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    .app-root.theme-night .item-row {
+      border-bottom: 1px solid rgba(41, 37, 36, 0.45);
+    }
+    .app-root.theme-night .item-name {
+      color: #ffffff;
+    }
+    .app-root.theme-night .item-badge {
+      background: rgba(155, 177, 85, 0.25);
+      color: #d1e28c;
+      border-color: rgba(155, 177, 85, 0.4);
+    }
+    .app-root.theme-night .item-badge.rose {
+      background: rgba(244, 63, 94, 0.25);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .app-root.theme-night .item-volume {
+      color: #a8a29e;
+    }
+    .app-root.theme-night .item-desc {
+      color: #d6d3d1;
+    }
+    .app-root.theme-night .item-price {
+      color: #9bb155;
+    }
+    .app-root.theme-night .item-price-mdl {
+      color: #c5d88f;
+    }
+    .app-root.theme-night .card-footer-note {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a8a29e;
+    }
+    .app-root.theme-night .slider-section {
+      background: rgba(24, 20, 18, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    /* TOP FLASH SALE MARQUEE */
+    #flashSaleMarquee {
+      display: none;
+      background: -webkit-linear-gradient(left, #b91c1c, #d97706, #b91c1c);
+      background: linear-gradient(90deg, #b91c1c, #d97706, #b91c1c);
+      color: #ffffff;
+      padding: 8px 24px;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(185, 28, 28, 0.5);
+      z-index: 60;
+    }
+    #flashSaleMarquee.active {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+    }
+    .marquee-text {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    /* ADMIN UPDATE TOAST */
+    #syncToast {
+      display: none;
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      background: rgba(6, 78, 59, 0.95);
+      border: 2px solid #34d399;
+      color: #ecfdf5;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 800;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+    #syncToast.active {
+      display: block;
+    }
+
+    /* ================= HEADER ================= */
+    .tv-header {
+      padding: 10px 24px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      height: 72px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+    .brand-block {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+    .brand-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .brand-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+    .badge-specialty {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin-left: 8px;
+    }
+    .brand-address {
+      font-size: 11px;
+      margin-top: 2px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    /* HEADER SLOGAN (ELEGANT BOTANICAL ACCENT) */
+    .header-slogan {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* HEADER RIGHT CONTROLS */
+    .header-right {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+    .cloud-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 14px;
+      margin-right: 12px;
+    }
+    .cloud-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 10px #f59e0b;
+      margin-right: 7px;
+      flex-shrink: 0;
+    }
+    .theme-pill {
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: -ms-inline-flexbox;
+      display: inline-flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 14px;
+      margin-right: 12px;
+      cursor: pointer;
+    }
+    .theme-pill span {
+      margin-right: 4px;
+    }
+    .theme-pill span:last-child {
+      margin-right: 0;
+    }
+    .clock-pill {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      padding: 6px 14px;
+      border-radius: 16px;
+      margin-right: 10px;
+    }
+    .clock-time {
+      font-size: 22px;
+      font-weight: 900;
+      font-family: monospace;
+      line-height: 1;
+      margin-right: 8px;
+    }
+    .clock-date {
+      font-size: 11px;
+      text-transform: capitalize;
+      font-weight: 600;
+    }
+    .btn-fullscreen {
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: inline-flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    }
+
+    /* ================= MAIN CONTAINER ================= */
+    .main-content {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      padding: 12px 20px 16px 20px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* LEFT : DIGITAL MENU BOARD (2 SUB-COLUMNS) */
+    .menu-section {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      margin-right: 22px;
+      overflow: visible;
+      min-width: 0;
+      min-height: 0;
+    }
+    .menu-card {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      -webkit-border-radius: 26px;
+      -moz-border-radius: 26px;
+      border-radius: 26px;
+      -webkit-mask-image: -webkit-radial-gradient(white, black);
+      -webkit-background-clip: padding-box;
+      background-clip: padding-box;
+      padding: 16px 22px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+    .menu-section .menu-card:first-child {
+      margin-right: 18px;
+    }
+    .menu-card.flash-card {
+      border-color: rgba(244, 63, 94, 0.45);
+      background: -webkit-linear-gradient(top left, rgba(68, 10, 20, 0.35), rgba(28, 25, 23, 0.85));
+      background: linear-gradient(135deg, rgba(68, 10, 20, 0.35), rgba(28, 25, 23, 0.85));
+    }
+
+    .card-header {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      padding-bottom: 9px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 19px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      min-width: 0;
+    }
+
+    /* RED ILLY BRAND BADGE */
+    .illy-badge {
+      display: inline-block;
+      background: -webkit-linear-gradient(top, #e11d48, #be123c);
+      background: linear-gradient(180deg, #e11d48, #be123c);
+      color: #ffffff;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1;
+      padding: 3px 7px 4px 7px;
+      border-radius: 4px;
+      letter-spacing: -0.02em;
+      margin-right: 9px;
+      vertical-align: middle;
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+      flex-shrink: 0;
+    }
+
+    .card-icon-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: inline-flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      margin-right: 9px;
+      flex-shrink: 0;
+    }
+    .card-icon-leaf {
+      background: rgba(34, 197, 94, 0.16);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+    .app-root.theme-night .card-icon-leaf {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .card-tag {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .card-tag.rose {
+      background: rgba(244, 63, 94, 0.22);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.45);
+    }
+
+    /* MENU ITEMS LIST */
+    .items-container {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .items-container.sparse {
+      -webkit-box-pack: start;
+      -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+      justify-content: flex-start;
+    }
+    .items-container.sparse .item-row {
+      margin-bottom: 12px;
+      padding: 10px 6px;
+    }
+    .item-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      padding: 5px 6px;
+      flex-shrink: 1;
+      overflow: hidden;
+    }
+    .items-container.dense .item-row {
+      padding: 3px 4px;
+    }
+    .item-row:last-child {
+      border-bottom: none !important;
+    }
+    .item-left {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      padding-right: 10px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .item-name-line {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: baseline;
+      -webkit-align-items: baseline;
+      -ms-flex-align: baseline;
+      align-items: baseline;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+    .item-name {
+      font-size: 18.5px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      line-height: 1.18;
+      margin-right: 8px;
+    }
+    .items-container.dense .item-name {
+      font-size: 16.5px;
+      line-height: 1.14;
+    }
+    .item-badge {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 6px;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+    .item-volume {
+      font-size: 12.5px;
+      font-family: monospace;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .item-desc {
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 2px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .items-container.dense .item-desc {
+      font-size: 11.5px;
+      margin-top: 1px;
+      line-height: 1.2;
+    }
+    .item-price-block {
+      text-align: right;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+    .item-price {
+      font-size: 21px;
+      font-weight: 900;
+      font-family: monospace;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .items-container.dense .item-price {
+      font-size: 19.5px;
+    }
+    .item-price-mdl {
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 3px;
+    }
+    .item-price-old {
+      font-size: 14px;
+      color: #78716c;
+      text-decoration: line-through;
+      margin-right: 6px;
+      font-family: monospace;
+    }
+    .item-price.discounted {
+      color: #f43f5e !important;
+    }
+
+    .card-footer-note {
+      padding-top: 9px;
+      margin-top: 6px;
+      font-size: 11.5px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .footer-note-left {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      min-width: 0;
+      padding-right: 8px;
+    }
+    .footer-note-icon {
+      margin-right: 6px;
+      flex-shrink: 0;
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: inline-flex;
+    }
+
+    /* ================= RIGHT: 9:16 INSTAGRAM VERTICAL SHOWCASE SLIDER ================= */
+    .slider-section {
+      width: 550px;
+      -webkit-box-flex: 0;
+      -webkit-flex: 0 0 550px;
+      -ms-flex: 0 0 550px;
+      flex: 0 0 550px;
+      height: 100%;
+      -webkit-border-radius: 26px;
+      -moz-border-radius: 26px;
+      border-radius: 26px;
+      -webkit-mask-image: -webkit-radial-gradient(white, black);
+      -webkit-background-clip: padding-box;
+      background-clip: padding-box;
+      overflow: hidden;
+      position: relative;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .slider-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      padding: 12px 16px;
+      background: -webkit-linear-gradient(top, rgba(0,0,0,0.7), transparent);
+      background: linear-gradient(180deg, rgba(0,0,0,0.7), transparent);
+      z-index: 20;
+    }
+    .progress-bar {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-right: 6px;
+    }
+    .progress-bar:last-child {
+      margin-right: 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #8fa34e;
+      width: 0%;
+      -webkit-transition: width 0.3s ease;
+      transition: width 0.3s ease;
+    }
+    .app-root.theme-day .progress-fill {
+      background: #6e8438;
+    }
+    .app-root.theme-night .progress-fill {
+      background: #9bb155;
+    }
+
+    .slide-image-wrapper {
+      position: relative;
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      overflow: hidden;
+      background: #000000;
+      border-radius: 26px;
+    }
+    .slide-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .slide-gradient {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: -webkit-linear-gradient(bottom, #0c0a09 0%, rgba(12, 10, 9, 0.55) 48%, transparent 100%);
+      background: linear-gradient(0deg, #0c0a09 0%, rgba(12, 10, 9, 0.55) 48%, transparent 100%);
+    }
+
+    .slide-badge-pill {
+      position: absolute;
+      top: 30px;
+      left: 16px;
+      z-index: 10;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(12, 10, 9, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fcd34d;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .slide-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px;
+      z-index: 10;
+    }
+    .slide-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+    }
+    .slide-subtitle {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #fde68a;
+      margin-bottom: 6px;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+    }
+    .slide-details {
+      font-size: 12.5px;
+      color: #d6d3d1;
+      line-height: 1.4;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root theme-day" id="appRoot">
+
+    <!-- FLASH SALE MARQUEE -->
+    <div id="flashSaleMarquee">
+      <div class="marquee-text" id="marqueeText">
+        FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!
+      </div>
+      <div style="font-family: monospace; font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 12px;">
+        <span id="marqueeCloseHour">Închidere la 21:00</span>
+      </div>
+    </div>
+
+    <!-- SYNC NOTIFICATION TOAST -->
+    <div id="syncToast">Меню и фотогалерея обновлены администратором!</div>
+
+    <!-- HEADER -->
+    <header class="tv-header">
+      <div class="brand-block">
+        <img src="amika_logo_round.png" alt="Amika Logo" class="brand-logo">
+        <div>
+          <div style="display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;">
+            <span class="brand-title">Amika CAFÈ</span>
+            <span class="badge-specialty">Specialty Coffee</span>
+          </div>
+          <div class="brand-address">or. Cricova • str. Drumul Viilor 10</div>
+        </div>
+      </div>
+
+      <div class="header-slogan">
+        <span>GOOD COFFEE • GOOD MOOD • AMIKA CAFÉ</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      </div>
+
+      <div class="header-right">
+        <div class="clock-pill">
+          <div class="clock-time" id="clockTime">--:--:--</div>
+          <div class="clock-date" id="clockDate">---</div>
+        </div>
+
+        <button class="btn-fullscreen" onclick="toggleFullscreen()" title="Полный экран [клавиша F]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- LEFT: DIGITAL MENU (COFFEE + DESSERTS/TEA) -->
+      <section class="menu-section">
+        <!-- COFFEE COLUMN -->
+        <div class="menu-card" id="coffeeCard">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="illy-badge">illy</span>
+              <span id="coffeeHeaderTitle">Cafea & Băuturi</span>
+            </div>
+            <span class="card-tag" id="coffeeHeaderBadge">100% Arabica</span>
+          </div>
+
+          <div class="items-container" id="coffeeList">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="card-footer-note" id="coffeeFooterRow">
+            <span class="footer-note-left" id="milkNoteWrap">
+              <span class="footer-note-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+              </span>
+              <span id="milkNoteText">Lapte alternativ: Oatly ovăz / migdale / fără lactoză</span>
+            </span>
+            <span style="font-family: monospace; font-weight: 800; white-space: nowrap;" id="milkNotePrice">+10 / 12 L</span>
+          </div>
+        </div>
+
+        <!-- DESSERTS / COLUMN 2 -->
+        <div class="menu-card" id="dessertCard">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon-box card-icon-leaf">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                </svg>
+              </span>
+              <span id="dessertHeaderTitle">Ceaiuri & Băuturi Calde</span>
+            </div>
+            <span class="card-tag emerald" id="dessertHeaderBadge">Natural & Bio</span>
+          </div>
+
+          <div class="items-container" id="dessertList">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="card-footer-note" id="dessertFooterRow">
+            <span class="footer-note-left" id="freshDeliveryWrap">
+              <span class="footer-note-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                </svg>
+              </span>
+              <span id="freshDeliveryText">Livrări proaspete zilnic</span>
+            </span>
+            <span style="font-weight: 800; white-space: nowrap;" id="freshDeliveryBrand">DaVinci / Manufactura / Matcha Organic</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: 9:16 INSTAGRAM VERTICAL SHOWCASE SLIDER -->
+      <section class="slider-section">
+        <div class="slider-progress" id="sliderProgressBar">
+          <!-- Dynamically generated progress bars for arbitrary number of slides -->
+        </div>
+
+        <div class="slide-image-wrapper">
+          <img src="insta_hd/hd_6_720x1280.jpg" alt="Showcase" class="slide-image" id="slideImg">
+          <div class="slide-gradient" id="slideGradient"></div>
+          <div class="slide-badge-pill" id="slideBadge">Partener Oficial Foodberry</div>
+
+          <div class="slide-info" id="slideInfo">
+            <div class="slide-title" id="slideTitle">Deserturi Artizanale Proaspete</div>
+            <div class="slide-subtitle" id="slideSubtitle">Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană</div>
+            <div class="slide-details" id="slideDetails">Livrări proaspete zilnic direct în vitrina Amika Café.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- PURE ES5 SCRIPT FOR UNIVERSAL SMART TV COMPATIBILITY (LG webOS 3.0+, Samsung Tizen, Android TV) -->
+  <script>
+    var STORAGE_KEY = 'amika_tv_custom_config_v1';
+    var currentLang = 'ro';
+    var isFlashSaleActive = false;
+    var currentSlideIdx = 0;
+    var soundEnabled = true;
+    var hasSyncedFromCloud = false;
+    var sseActiveCount = 0;
+    var currentThemeMode = 'auto'; // 'auto' | 'day' | 'night'
+
+    function trimStr(val) {
+      if (val === null || val === undefined) return '';
+      return String(val).replace(/^\s+|\s+$/g, '');
+    }
+
+    // Strip Unicode emojis/dingbats that render as missing-glyph rectangles on LG webOS TVs
+    function stripUnsupportedEmojis(val) {
+      var s = trimStr(val);
+      if (!s) return '';
+      s = s.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '');
+      s = s.replace(/[\u2600-\u27BF\uFE0F]/g, '');
+      return s.replace(/^\s+|\s+$/g, '');
+    }
+
+    function escapeHtml(val) {
+      return String(val || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function cleanVolume(val) {
+      if (!val) return '';
+      var s = stripUnsupportedEmojis(val);
+      return s.replace(/\s*\/\s*$/, '').replace(/^\s+|\s+$/g, '');
+    }
+
+    function pickLangText(obj, isRo, fallbackRo, fallbackRu, allowCrossLangFallback) {
+      if (obj && typeof obj === 'object') {
+        var primary = stripUnsupportedEmojis(isRo ? obj.ro : obj.ru);
+        if (primary) return primary;
+        if (allowCrossLangFallback) {
+          var secondary = stripUnsupportedEmojis(isRo ? obj.ru : obj.ro);
+          if (secondary) return secondary;
+        }
+      }
+      return isRo ? (fallbackRo || '') : (fallbackRu || '');
+    }
+
+    function updateCloudIndicator() {
+      var dot = document.getElementById('cloudDot');
+      var text = document.getElementById('cloudStatusText');
+      if (!dot || !text) return;
+      if (hasSyncedFromCloud || sseActiveCount > 0) {
+        dot.style.background = '#10b981';
+        dot.style.boxShadow = '0 0 10px #10b981';
+        text.innerText = 'Облако: OK';
+      } else {
+        dot.style.background = '#f59e0b';
+        dot.style.boxShadow = '0 0 10px #f59e0b';
+        text.innerText = 'Подключение...';
+      }
+    }
+
+    /* ================= ASTRONOMICAL SOLAR CALCULATOR FOR CRICOVA ================= */
+    // Cricova coordinates: 47.139° N, 28.862° E
+    // Accounts for Moldova Standard Time (winter UTC+2 from last Sun of Oct to last Sun of Mar, UTC+3 in summer)
+    function getMoldovaOffsetHours(utcMs) {
+      var d = new Date(utcMs);
+      var y = d.getUTCFullYear();
+      var marLastSun = 31 - new Date(Date.UTC(y, 2, 31)).getUTCDay();
+      var octLastSun = 31 - new Date(Date.UTC(y, 9, 31)).getUTCDay();
+      var dstStart = Date.UTC(y, 2, marLastSun, 1, 0, 0);
+      var dstEnd = Date.UTC(y, 9, octLastSun, 1, 0, 0);
+      return (utcMs >= dstStart && utcMs < dstEnd) ? 3 : 2;
+    }
+
+    function isDaytimeInCricova(nowDate) {
+      var utcMs = nowDate.getTime();
+      var offset = getMoldovaOffsetHours(utcMs);
+      var md = new Date(utcMs + offset * 3600000);
+      var y = md.getUTCFullYear();
+      var m = md.getUTCMonth();
+      var day = md.getUTCDate();
+      var startOfYear = Date.UTC(y, 0, 1);
+      var curDayUtc = Date.UTC(y, m, day);
+      var doy = Math.floor((curDayUtc - startOfYear) / 86400000) + 1;
+      var gamma = (2 * Math.PI / 365) * (doy - 1 + 0.5);
+      var eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
+      var decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma) - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma);
+      var lat = 47.139 * Math.PI / 180;
+      var lon = 28.862;
+      var zenith = 90.833 * Math.PI / 180;
+      var cosHA = (Math.cos(zenith) / (Math.cos(lat) * Math.cos(decl))) - Math.tan(lat) * Math.tan(decl);
+      cosHA = Math.max(-1, Math.min(1, cosHA));
+      var haDeg = Math.acos(cosHA) * 180 / Math.PI;
+      var sunriseUtcMin = 720 - 4 * (lon + haDeg) - eqTime;
+      var sunsetUtcMin = 720 - 4 * (lon - haDeg) - eqTime;
+      var sunriseLocalMin = Math.round(sunriseUtcMin + offset * 60);
+      var sunsetLocalMin = Math.round(sunsetUtcMin + offset * 60);
+      var nowLocalMin = md.getUTCHours() * 60 + md.getUTCMinutes();
+      // Transition to evening lounge theme 15 minutes before sunset
+      return nowLocalMin >= sunriseLocalMin && nowLocalMin < (sunsetLocalMin - 15);
+    }
+
+    function applyTheme() {
+      var appRoot = document.getElementById('appRoot');
+      if (!appRoot) return;
+      var effectiveTheme = 'day';
+      if (currentThemeMode === 'day') {
+        effectiveTheme = 'day';
+      } else if (currentThemeMode === 'night') {
+        effectiveTheme = 'night';
+      } else {
+        effectiveTheme = isDaytimeInCricova(new Date()) ? 'day' : 'night';
+      }
+
+      appRoot.className = 'app-root ' + (effectiveTheme === 'day' ? 'theme-day' : 'theme-night');
+
+      var iconEl = document.getElementById('themeIcon');
+      var labelEl = document.getElementById('themeLabel');
+      if (iconEl && labelEl) {
+        if (currentThemeMode === 'day') {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+          labelEl.innerText = 'Zi (Crem)';
+        } else if (currentThemeMode === 'night') {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+          labelEl.innerText = 'Seara (Lounge)';
+        } else {
+          iconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>';
+          labelEl.innerText = 'Auto (' + (effectiveTheme === 'day' ? 'Zi' : 'Seara') + ')';
+        }
+      }
+    }
+
+    function setThemeMode(mode, showToast) {
+      if (mode !== 'day' && mode !== 'night' && mode !== 'auto') mode = 'auto';
+      currentThemeMode = mode;
+      try {
+        localStorage.setItem('amika_tv_theme_mode', mode);
+      } catch (e) {}
+      applyTheme();
+      if (showToast) {
+        var toastEl = document.getElementById('syncToast');
+        if (toastEl) {
+          toastEl.innerText = mode === 'day'
+            ? 'Tema de Zi (luminoasa) activata'
+            : mode === 'night'
+            ? 'Tema de Seara (lounge) activata'
+            : 'Tema Auto: sincronizata cu apusul soarelui in Cricova';
+          toastEl.className = 'active';
+          setTimeout(function() { toastEl.className = ''; }, 3500);
+        }
+      }
+    }
+
+    function cycleThemeMode() {
+      if (currentThemeMode === 'auto') setThemeMode('day', true);
+      else if (currentThemeMode === 'day') setThemeMode('night', true);
+      else setThemeMode('auto', true);
+    }
+
+    // Default Configuration (fallback only before first cloud sync)
+    var boardConfig = {
+      updatedAt: 0,
+      themeMode: 'auto',
+      coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },
+      coffeeBadge: '100% Arabica',
+      coffeeFooterNote: {
+        ro: 'Lapte alternativ: Ovăz / Cocos / fără lactoză',
+        ru: 'Альтернативное молоко: овсяное / кокос / безлактозное'
+      },
+      coffeeFooterPrice: '',
+      coffeeItems: [
+        { name: { ro: 'Espresso (milk) / Dublu', ru: 'Эспрессо (milk) / Двойной' }, volume: '30 ml / 60 ml', notes: { ro: '100% Arabica', ru: '' }, price: 28, secondPrice: 35, badge: null, visible: true },
+        { name: { ro: 'Americano (milk) / Dublu', ru: 'Американо (Milk) / Двойной' }, volume: '150 ml / 250 ml', notes: { ro: 'Cafea Americano aromată', ru: '' }, price: 28, secondPrice: 35, badge: null, visible: true },
+        { name: { ro: 'Cappuccino / Vegan', ru: 'Капучино / Веган' }, volume: '250 ml / 350 ml', notes: { ro: 'Espresso dublu, micro-spumă cremoasă', ru: '' }, price: 35, secondPrice: 40, badge: { ro: 'TOP', ru: 'ХИТ' }, visible: true },
+        { name: { ro: 'Flat White / Vegan', ru: 'Флэт Уайт / Веган' }, volume: '200 ml / 300 ml', notes: { ro: 'Dublu espresso', ru: '' }, price: 50, secondPrice: 55, badge: { ro: 'BARISTA', ru: 'ВЫБОР' }, visible: true },
+        { name: { ro: 'Latte / Latte Mare', ru: 'Латте / Веган' }, volume: '300 ml / 450 ml', notes: { ro: 'Vegan - 45 Lei', ru: '' }, price: 39, secondPrice: 45, badge: null, visible: true },
+        { name: { ro: 'Raf Scortisoara & Lavandă', ru: 'Раф Корица + Лаванда' }, volume: '300 ml', notes: { ro: '(sau alt sirop la alegere)', ru: '' }, price: 55, badge: { ro: 'SPECIALITATE', ru: 'ФИРМЕННЫЙ' }, visible: true }
+      ],
+      dessertHeader: { ro: 'Ceaiuri si bauturi calde', ru: 'Чаи и горячие напитки' },
+      dessertBadge: '',
+      dessertFooterNote: {
+        ro: 'Livrări proaspete zilnic',
+        ru: 'Свежая поставка каждый день'
+      },
+      dessertFooterBrand: 'SweetMe Bakery and FoodBerry',
+      dessertItems: [
+        { name: { ro: 'Hot Ciokolate / Vegan', ru: 'Горячий Шоколад / Веган' }, volume: '', desc: { ro: 'Ciocolată caldă cremoasă / vegan', ru: '' }, price: 45, secondPrice: 50, discountPrice: 31, badge: null, visible: true }
+      ],
+      slides: [
+        { image: 'insta_hd/hd_6_720x1280.jpg', badge: { ro: 'Partener Oficial Foodberry', ru: 'Официальный партнер Foodberry' }, title: { ro: 'Deserturi Artizanale Proaspete', ru: 'Крафтовые десерты Foodberry' }, subtitle: { ro: 'Unt francez 82%, fistic pur de Sicilia & ciocolată belgiană', ru: 'Французское масло 82%, сицилийская фисташка и бельгийский шоколад' }, details: { ro: 'Livrări proaspete zilnic din laboratorul SweetMe direct în vitrina Amika Café.', ru: 'Свежая утренняя доставка напрямую из крафтовой кондитерской SweetMe.' }, visible: true },
+        { image: 'insta_hd/hd_17_720x1280.jpg', badge: { ro: 'Originea Săptămânii • Specialty', ru: 'Зерно недели • Specialty' }, title: { ro: '100% Arabica Ethiopia Guji', ru: '100% Arabica Ethiopia Guji' }, subtitle: { ro: 'Note de iasomie, bergamotă, piersici zemoase și caise dulci', ru: 'Ноты жасмина, бергамота, спелого персика и сладкого абрикоса' }, details: { ro: 'Cafea de specialitate 100% Arabica, preparată cu pasiune la Amika Café.', ru: 'Спешелти кофе 100% арабика, приготовленный с любовью в Amika Café.' }, visible: true },
+        { image: 'insta_hd/hd_8_720x1280.jpg', badge: { ro: 'Amika Café • Familie & Pasiune', ru: 'Amika Café • Семья и уют' }, title: { ro: 'Ospitalitate Caldă din Cricova', ru: 'Тепло и забота в каждой чашке' }, subtitle: { ro: '„Ajutorul meu” — cafea pregătită și servită din suflet', ru: '«Мой главный помощник» — кофе, приготовленный с любовью' }, details: { ro: 'Locul unde fiecare oaspete este întâmpinat ca un prieten drag. Str. Drumul Viilor 10.', ru: 'Локальная кофейня, где ценят каждого гостя. Крикова, str. Drumul Viilor 10.' }, visible: true },
+        { image: 'insta_hd/hd_2_720x1280.jpg', badge: { ro: 'Design & Atmosferă', ru: 'Интерьер & Атмосфера' }, title: { ro: 'Barul Amika & Terasa la Apus', ru: 'Барная стойка Amika & Закаты' }, subtitle: { ro: 'Vedere panoramică spre viile Cricovei și leagăn la asfințit', ru: 'Панорамный вид на виноградники Крикова и качели на закате' }, details: { ro: 'Vino să te bucuri de un latte fin sau un matcha într-o atmosferă luminoasă.', ru: 'Идеальное место для неспешного утра или вечера со спешелти кофе.' }, visible: true },
+        { image: 'insta_hd/hd_3_720x1280.jpg', badge: { ro: 'Băuturi Speciale Amika', ru: 'Авторские напитки Amika' }, title: { ro: 'Matcha Uji & Cold Brew Tonic', ru: 'Церемониальная Матча & Колд Брю' }, subtitle: { ro: 'Ceai matcha ceremonial bătut cu tel de bambus și lapte Oatly', ru: 'Оригинальная матча из Японии, взбитая венчиком на овсяном молоке' }, details: { ro: 'Sau încearcă deserturile trifles în pahar cu mascarpone și fructe.', ru: 'А также муссовые десерты в стаканчиках с лесными ягодами.' }, visible: true }
+      ]
+    };
+
+    // Load saved custom config from TV localStorage
+    function loadSavedConfig() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.coffeeItems && parsed.dessertItems && parsed.slides) {
+            boardConfig = parsed;
+          }
+        }
+      } catch (e) {}
+
+      if (boardConfig.themeMode) {
+        currentThemeMode = boardConfig.themeMode;
+      } else {
+        try {
+          var savedTheme = localStorage.getItem('amika_tv_theme_mode');
+          if (savedTheme) currentThemeMode = savedTheme;
+        } catch (e) {}
+      }
+      applyTheme();
+    }
+
+    function applyNewConfig(cfg, showNotification) {
+      if (!cfg || !cfg.coffeeItems || !cfg.dessertItems || !cfg.slides) return;
+      var changed = (!boardConfig.updatedAt || cfg.updatedAt !== boardConfig.updatedAt);
+      boardConfig = cfg;
+      hasSyncedFromCloud = true;
+      updateCloudIndicator();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+      } catch (e) {}
+
+      if (cfg.themeMode) {
+        currentThemeMode = cfg.themeMode;
+        try {
+          localStorage.setItem('amika_tv_theme_mode', cfg.themeMode);
+        } catch (e) {}
+        applyTheme();
+      }
+
+      if (changed) {
+        currentSlideIdx = 0;
+      }
+      renderMenu();
+      if (showNotification && changed) {
+        playMelodicChime();
+        var t = document.getElementById('syncToast');
+        t.className = 'active';
+        setTimeout(function() { t.className = ''; }, 4000);
+      }
+    }
+
+    // Download remote config file (with custom photos) via ES5 XMLHttpRequest
+    var lastLoadedUrl = '';
+    function fetchConfigFromUrl(url, showNotification) {
+      if (!url || url === lastLoadedUrl) return;
+      lastLoadedUrl = url;
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+              var cfg = JSON.parse(xhr.responseText);
+              if (cfg && (!boardConfig.updatedAt || !cfg.updatedAt || cfg.updatedAt >= boardConfig.updatedAt)) {
+                applyNewConfig(cfg, showNotification);
+              }
+            } catch (e) {}
+          }
+        };
+        xhr.send();
+      } catch (e) {}
+    }
+
+    // SUPABASE CLOUD DATABASE CONFIG
+    var SUPABASE_URL = 'https://ildagazsbdtgjlzlkfaq.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZGFnYXpzYmR0Z2psemxrZmFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NzA3NDgsImV4cCI6MjEwODE0Njc0OH0.BSGfGWuXT7HNfsCjmUbeisbcGzXs0FJvUHMz5lC-FeQ';
+
+    function parseAndApplySupabaseRows(responseText, showNotification) {
+      try {
+        var rows = JSON.parse(responseText);
+        if (rows && rows.length > 0 && rows[0].config) {
+          var cfg = rows[0].config;
+          if (cfg && cfg.coffeeItems && cfg.dessertItems && cfg.slides) {
+            hasSyncedFromCloud = true;
+            updateCloudIndicator();
+            if (!boardConfig.updatedAt || !cfg.updatedAt || cfg.updatedAt >= boardConfig.updatedAt) {
+              applyNewConfig(cfg, showNotification);
+            }
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function fetchSupabaseWithHeadersFallback(showNotification) {
+      try {
+        var xhr2 = new XMLHttpRequest();
+        var url2 = SUPABASE_URL + '/rest/v1/menu_config?id=eq.current&id=neq._cb_' + new Date().getTime() + '&select=*';
+        xhr2.open('GET', url2, true);
+        xhr2.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr2.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr2.onreadystatechange = function() {
+          if (xhr2.readyState === 4 && xhr2.status === 200) {
+            parseAndApplySupabaseRows(xhr2.responseText, showNotification);
+          }
+        };
+        xhr2.send();
+      } catch (e) {}
+    }
+
+    function fetchSupabaseConfig(showNotification) {
+      try {
+        var xhr = new XMLHttpRequest();
+        var simpleUrl = SUPABASE_URL +
+          '/rest/v1/menu_config?id=eq.current&id=neq._cb_' + new Date().getTime() +
+          '&select=*&apikey=' + encodeURIComponent(SUPABASE_ANON_KEY);
+        xhr.open('GET', simpleUrl, true);
+        xhr.timeout = 12000;
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              if (!parseAndApplySupabaseRows(xhr.responseText, showNotification)) {
+                fetchSupabaseWithHeadersFallback(showNotification);
+              }
+            } else {
+              fetchSupabaseWithHeadersFallback(showNotification);
+            }
+          }
+        };
+        xhr.send();
+      } catch (e) {
+        fetchSupabaseWithHeadersFallback(showNotification);
+      }
+    }
+
+    // Get visible slides array
+    function getVisibleSlides() {
+      var arr = [];
+      for (var i = 0; i < boardConfig.slides.length; i++) {
+        if (boardConfig.slides[i].visible !== false) {
+          arr.push(boardConfig.slides[i]);
+        }
+      }
+      return arr.length > 0 ? arr : boardConfig.slides;
+    }
+
+    // MELODIC BOUTIQUE CHIME (G5 -> C6 -> E6)
+    function playMelodicChime() {
+      if (!soundEnabled) return;
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        var ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        var notes = [
+          { freq: 783.99, time: 0.0, dur: 0.9, gain: 0.22 },
+          { freq: 1046.50, time: 0.16, dur: 1.1, gain: 0.24 },
+          { freq: 1318.51, time: 0.32, dur: 1.5, gain: 0.20 }
+        ];
+
+        for (var i = 0; i < notes.length; i++) {
+          (function(n) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.time);
+
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime + n.time);
+            gain.gain.exponentialRampToValueAtTime(n.gain, ctx.currentTime + n.time + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + n.time + n.dur);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime + n.time);
+            osc.stop(ctx.currentTime + n.time + n.dur);
+          })(notes[i]);
+        }
+      } catch (e) {}
+    }
+
+    // RENDER MENU ITEMS
+    function renderMenu() {
+      var isRo = currentLang === 'ro';
+
+      // Column 1 & Column 2 headers (fallback to other lang if one side is whitespace)
+      document.getElementById('coffeeHeaderTitle').innerText = pickLangText(
+        boardConfig.coffeeHeader,
+        isRo,
+        'Cafea & Băuturi',
+        'Кофе & Напитки',
+        true
+      );
+      document.getElementById('dessertHeaderTitle').innerText = pickLangText(
+        boardConfig.dessertHeader,
+        isRo,
+        'Ceaiuri & Specialități',
+        'Чаи и напитки',
+        true
+      );
+
+      // Column 1 Badge (hide cleanly if cleared by admin)
+      var coffeeBadgeEl = document.getElementById('coffeeHeaderBadge');
+      var coffeeBadgeText = boardConfig.coffeeBadge !== undefined
+        ? stripUnsupportedEmojis(boardConfig.coffeeBadge)
+        : '100% Arabica';
+      coffeeBadgeEl.innerText = coffeeBadgeText;
+      coffeeBadgeEl.style.display = coffeeBadgeText ? 'inline-block' : 'none';
+
+      // Column 2 Badge (hide cleanly if cleared by admin; show -30% during Flash Sale)
+      var dessertBadgeEl = document.getElementById('dessertHeaderBadge');
+      if (isFlashSaleActive) {
+        dessertBadgeEl.innerText = '-30% REDUCERE';
+        dessertBadgeEl.className = 'card-tag rose';
+        dessertBadgeEl.style.display = 'inline-block';
+      } else {
+        var dessertBadgeText = boardConfig.dessertBadge !== undefined
+          ? stripUnsupportedEmojis(boardConfig.dessertBadge)
+          : '';
+        dessertBadgeEl.innerText = dessertBadgeText;
+        dessertBadgeEl.className = 'card-tag emerald';
+        dessertBadgeEl.style.display = dessertBadgeText ? 'inline-block' : 'none';
+      }
+
+      // Column 1 Footer (note + price)
+      var milkNoteText = pickLangText(boardConfig.coffeeFooterNote, isRo, '', '', true);
+      var milkPriceText = boardConfig.coffeeFooterPrice !== undefined
+        ? stripUnsupportedEmojis(boardConfig.coffeeFooterPrice)
+        : '';
+      document.getElementById('milkNoteText').innerText = milkNoteText;
+      document.getElementById('milkNoteWrap').style.display = milkNoteText ? 'inline-flex' : 'none';
+      var milkPriceEl = document.getElementById('milkNotePrice');
+      milkPriceEl.innerText = milkPriceText;
+      milkPriceEl.style.display = milkPriceText ? 'inline-block' : 'none';
+      document.getElementById('coffeeFooterRow').style.display = (milkNoteText || milkPriceText) ? 'flex' : 'none';
+
+      // Column 2 Footer (note + brand)
+      var freshNoteText = pickLangText(boardConfig.dessertFooterNote, isRo, '', '', true);
+      var freshBrandText = boardConfig.dessertFooterBrand !== undefined
+        ? stripUnsupportedEmojis(boardConfig.dessertFooterBrand)
+        : '';
+      document.getElementById('freshDeliveryText').innerText = freshNoteText;
+      document.getElementById('freshDeliveryWrap').style.display = freshNoteText ? 'inline-flex' : 'none';
+      var freshBrandEl = document.getElementById('freshDeliveryBrand');
+      freshBrandEl.innerText = freshBrandText;
+      freshBrandEl.style.display = freshBrandText ? 'inline-block' : 'none';
+      document.getElementById('dessertFooterRow').style.display = (freshNoteText || freshBrandText) ? 'flex' : 'none';
+
+      // Flash sale marquee texts
+      var marqueeCloseEl = document.getElementById('marqueeCloseHour');
+      if (marqueeCloseEl) marqueeCloseEl.innerText = isRo ? 'Închidere la 21:00' : 'До закрытия в 21:00';
+      var marqueeTextEl = document.getElementById('marqueeText');
+      if (marqueeTextEl) {
+        marqueeTextEl.innerText = isRo
+          ? 'FLASH SALE DE SEARĂ: -30% LA TOATĂ VITRINA DE DESERTURI FOODBERRY PÂNĂ LA ÎNCHIDERE!'
+          : 'ВЕЧЕРНЯЯ FLASH-РАСПРОДАЖА: -30% НА ВСЮ ВИТРИНУ ДЕСЕРТОВ FOODBERRY ДО ЗАКРЫТИЯ!';
+      }
+
+      // Coffee list (Column 1)
+      var coffeeHtml = '';
+      var cItems = boardConfig.coffeeItems || [];
+      var visCoffeeCount = 0;
+      for (var c0 = 0; c0 < cItems.length; c0++) {
+        if (cItems[c0].visible !== false) visCoffeeCount++;
+      }
+
+      var coffeeListEl = document.getElementById('coffeeList');
+      coffeeListEl.className = 'items-container' +
+        (visCoffeeCount >= 8 ? ' dense' : (visCoffeeCount <= 5 ? ' sparse' : ''));
+
+      for (var c = 0; c < cItems.length; c++) {
+        var ci = cItems[c];
+        if (ci.visible === false) continue;
+        var name = escapeHtml(pickLangText(ci.name, isRo, '', '', true));
+        var desc = escapeHtml(pickLangText(ci.notes, isRo, '', '', false));
+        var badge = ci.badge ? escapeHtml(pickLangText(ci.badge, isRo, '', '', true)) : '';
+
+        var volRaw = ci.volume;
+        if (Array.isArray(boardConfig.storeProducts)) {
+          for (var spIdx = 0; spIdx < boardConfig.storeProducts.length; spIdx++) {
+            var sp = boardConfig.storeProducts[spIdx];
+            if (sp && sp.id === ci.id) {
+              var spBase = (sp.volume || '').replace(/^\s+|\s+$/g, '');
+              var spSec = (sp.secondVolume || '').replace(/^\s+|\s+$/g, '');
+              if (!spBase && !spSec) {
+                volRaw = '';
+              } else if (spBase && spSec) {
+                volRaw = spBase + ' / ' + spSec;
+              } else if (spBase) {
+                volRaw = spBase;
+              }
+              break;
+            }
+          }
+        }
+        var vol = escapeHtml(cleanVolume(volRaw));
+
+        var coffeePriceText = ci.secondPrice ? (ci.price + ' / ' + ci.secondPrice) : ci.price;
+        coffeeHtml += '<div class="item-row">' +
+          '<div class="item-left">' +
+            '<div class="item-name-line">' +
+              '<span class="item-name">' + name + '</span>' +
+              (badge ? '<span class="item-badge">' + badge + '</span>' : '') +
+              (vol ? '<span class="item-volume">' + vol + '</span>' : '') +
+            '</div>' +
+            (desc ? '<div class="item-desc">' + desc + '</div>' : '') +
+          '</div>' +
+          '<div class="item-price-block">' +
+            '<span class="item-price">' + coffeePriceText + '</span>' +
+            '<span class="item-price-mdl">MDL</span>' +
+          '</div>' +
+        '</div>';
+      }
+      coffeeListEl.innerHTML = coffeeHtml;
+
+      // Dessert / Column 2 list
+      var dessertHtml = '';
+      var dItems = boardConfig.dessertItems || [];
+      var visDessertCount = 0;
+      for (var d0 = 0; d0 < dItems.length; d0++) {
+        if (dItems[d0].visible !== false) visDessertCount++;
+      }
+
+      var dessertListEl = document.getElementById('dessertList');
+      dessertListEl.className = 'items-container' +
+        (visDessertCount >= 8 ? ' dense' : (visDessertCount <= 5 ? ' sparse' : ''));
+
+      for (var d = 0; d < dItems.length; d++) {
+        var di = dItems[d];
+        if (di.visible === false) continue;
+        var dName = escapeHtml(pickLangText(di.name, isRo, '', '', true));
+        var dDesc = escapeHtml(pickLangText(di.desc, isRo, '', '', false));
+        var dBadge = di.badge ? escapeHtml(pickLangText(di.badge, isRo, '', '', true)) : '';
+
+        var dVolRaw = di.volume;
+        if (Array.isArray(boardConfig.storeProducts)) {
+          for (var dspIdx = 0; dspIdx < boardConfig.storeProducts.length; dspIdx++) {
+            var dsp = boardConfig.storeProducts[dspIdx];
+            if (dsp && dsp.id === di.id) {
+              var dspBase = (dsp.volume || '').replace(/^\s+|\s+$/g, '');
+              var dspSec = (dsp.secondVolume || '').replace(/^\s+|\s+$/g, '');
+              if (!dspBase && !dspSec) {
+                dVolRaw = '';
+              } else if (dspBase && dspSec) {
+                dVolRaw = dspBase + ' / ' + dspSec;
+              } else if (dspBase) {
+                dVolRaw = dspBase;
+              }
+              break;
+            }
+          }
+        }
+        var dVolClean = escapeHtml(cleanVolume(dVolRaw));
+
+        var priceMarkup = '';
+        if (isFlashSaleActive) {
+          priceMarkup = '<span class="item-price-old">' + di.price + '</span>' +
+            '<span class="item-price discounted">' + di.discountPrice + '</span>' +
+            '<span class="item-price-mdl" style="color: #fda4af;">L</span>';
+        } else {
+          var dessertPriceText = di.secondPrice ? (di.price + ' / ' + di.secondPrice) : di.price;
+          priceMarkup = '<span class="item-price">' + dessertPriceText + '</span>' +
+            '<span class="item-price-mdl">MDL</span>';
+        }
+
+        dessertHtml += '<div class="item-row">' +
+          '<div class="item-left">' +
+            '<div class="item-name-line">' +
+              '<span class="item-name">' + dName + '</span>' +
+              (dBadge && !isFlashSaleActive ? '<span class="item-badge rose">' + dBadge + '</span>' : '') +
+              (dVolClean ? '<span class="item-volume">' + dVolClean + '</span>' : '') +
+            '</div>' +
+            (dDesc ? '<div class="item-desc">' + dDesc + '</div>' : '') +
+          '</div>' +
+          '<div class="item-price-block">' +
+            priceMarkup +
+          '</div>' +
+        '</div>';
+      }
+      dessertListEl.innerHTML = dessertHtml;
+
+      renderSlide();
+    }
+
+    // RENDER ACTIVE SLIDE (Supports arbitrary number of slides!)
+    function renderSlide() {
+      var isRo = currentLang === 'ro';
+      var visSlides = getVisibleSlides();
+      if (visSlides.length === 0) return;
+
+      if (currentSlideIdx >= visSlides.length) currentSlideIdx = 0;
+      var sl = visSlides[currentSlideIdx];
+
+      document.getElementById('slideImg').src = sl.image;
+      var badgeText = pickLangText(sl.badge, isRo, '', '', true);
+      var slideBadgeEl = document.getElementById('slideBadge');
+      slideBadgeEl.innerText = badgeText;
+      slideBadgeEl.style.display = badgeText ? 'inline-block' : 'none';
+
+      var titleText = pickLangText(sl.title, isRo, '', '', true);
+      var subText = pickLangText(sl.subtitle, isRo, '', '', false);
+      var detText = pickLangText(sl.details, isRo, '', '', false);
+
+      document.getElementById('slideTitle').innerText = titleText;
+      document.getElementById('slideSubtitle').innerText = subText;
+      document.getElementById('slideDetails').innerText = detText;
+
+      // Clean Instagram view: when slide has no text, hide bottom dark shadow & info box
+      var hasAnyText = (titleText || subText || detText);
+      var gradEl = document.getElementById('slideGradient');
+      if (gradEl) gradEl.style.display = hasAnyText ? 'block' : 'none';
+      var infoEl = document.getElementById('slideInfo');
+      if (infoEl) infoEl.style.display = hasAnyText ? 'block' : 'none';
+
+      // Dynamically build progress bar for visSlides.length
+      var progContainer = document.getElementById('sliderProgressBar');
+      var progHtml = '';
+      for (var b = 0; b < visSlides.length; b++) {
+        var w = b <= currentSlideIdx ? '100%' : '0%';
+        progHtml += '<div class="progress-bar"><div class="progress-fill" style="width: ' + w + ';"></div></div>';
+      }
+      progContainer.innerHTML = progHtml;
+    }
+
+    // TOGGLE FLASH SALE
+    function toggleFlashSale(mode) {
+      if (mode === 'active') {
+        isFlashSaleActive = true;
+      } else if (mode === 'inactive') {
+        isFlashSaleActive = false;
+      } else {
+        isFlashSaleActive = !isFlashSaleActive;
+      }
+
+      var marquee = document.getElementById('flashSaleMarquee');
+      var card = document.getElementById('dessertCard');
+
+      if (isFlashSaleActive) {
+        marquee.className = 'active';
+        card.className = 'menu-card flash-card';
+      } else {
+        marquee.className = '';
+        card.className = 'menu-card';
+      }
+      renderMenu();
+    }
+
+    // FULLSCREEN
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        var el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }
+
+    // CENTRAL COMMAND DISPATCHER
+    var processedCmds = {};
+    function handleRemoteCommand(cmd) {
+      if (!cmd || typeof cmd !== 'object') return;
+      var id = cmd._cmdId || cmd.id || (cmd.type + '_' + cmd._ts);
+      if (id && processedCmds[id]) return;
+      if (id) processedCmds[id] = true;
+
+      if (cmd.type === 'CHIME') {
+        playMelodicChime();
+      } else if (cmd.type === 'SET_THEME' && cmd.theme) {
+        setThemeMode(cmd.theme, true);
+      } else if (cmd.type === 'CONFIG_SUPABASE_SYNC') {
+        fetchSupabaseConfig(true);
+      } else if (cmd.type === 'CONFIG_SYNC' && cmd.config) {
+        applyNewConfig(cmd.config, true);
+      } else if (cmd.type === 'CONFIG_URL_SYNC' && cmd.url) {
+        fetchConfigFromUrl(cmd.url, true);
+      } else if (cmd.type === 'SET_FLASH_SALE') {
+        toggleFlashSale(cmd.mode);
+      } else if (cmd.type === 'SET_SLIDE' && typeof cmd.index === 'number') {
+        var vis = getVisibleSlides();
+        currentSlideIdx = cmd.index % vis.length;
+        renderSlide();
+      }
+    }
+
+    // Check recent cloud relay history on TV startup (redundant channel alongside Supabase)
+    function checkRecentCloudConfig() {
+      var pollUrls = [
+        'https://ntfy.adminforge.de/amika_cricova_tv_control/json?poll=1&since=48h',
+        'https://ntfy.tedomum.fr/amika_cricova_tv_control/json?poll=1&since=48h'
+      ];
+      for (var p = 0; p < pollUrls.length; p++) {
+        (function(pUrl) {
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', pUrl, true);
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === 4 && xhr.status === 200) {
+                var lines = xhr.responseText.split('\n');
+                var latestAttachmentUrl = '';
+                for (var i = 0; i < lines.length; i++) {
+                  if (!lines[i]) continue;
+                  try {
+                    var item = JSON.parse(lines[i]);
+                    if (item.attachment && item.attachment.url) {
+                      latestAttachmentUrl = item.attachment.url;
+                    } else if (item.event === 'message' && item.message) {
+                      var msg = JSON.parse(item.message);
+                      if (msg.type === 'CONFIG_URL_SYNC' && msg.url) {
+                        latestAttachmentUrl = msg.url;
+                      } else if (msg.type === 'CONFIG_SYNC' && msg.config) {
+                        if (!boardConfig.updatedAt || msg.config.updatedAt > boardConfig.updatedAt) {
+                          applyNewConfig(msg.config, false);
+                        }
+                      }
+                    }
+                  } catch (e) {}
+                }
+                if (latestAttachmentUrl) {
+                  fetchConfigFromUrl(latestAttachmentUrl, false);
+                }
+              }
+            };
+            xhr.send();
+          } catch (e) {}
+        })(pollUrls[p]);
+      }
+    }
+
+    // MULTI-CLUSTER REAL-TIME SSE CONNECTION
+    function initCloudRelay() {
+      var sseUrls = [
+        'https://ntfy.tedomum.fr/amika_cricova_tv_control/sse',
+        'https://ntfy.adminforge.de/amika_cricova_tv_control/sse'
+      ];
+      updateCloudIndicator();
+
+      for (var i = 0; i < sseUrls.length; i++) {
+        (function(url) {
+          try {
+            if (typeof EventSource === 'undefined') return;
+            var sse = new EventSource(url);
+            sse.onopen = function() {
+              sseActiveCount++;
+              updateCloudIndicator();
+            };
+            sse.onerror = function() {
+              sseActiveCount = Math.max(0, sseActiveCount - 1);
+              updateCloudIndicator();
+            };
+            sse.addEventListener('message', function(e) {
+              try {
+                var payload = JSON.parse(e.data);
+                if (payload.attachment && payload.attachment.url) {
+                  fetchConfigFromUrl(payload.attachment.url, true);
+                  return;
+                }
+                if (payload.event === 'message' && payload.message) {
+                  var cmd = JSON.parse(payload.message);
+                  handleRemoteCommand(cmd);
+                }
+              } catch (err) {}
+            });
+          } catch (e) {}
+        })(sseUrls[i]);
+      }
+
+      // Local storage fallback (only on explicit command / Save button click)
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'amika_tv_command' && e.newValue) {
+          try {
+            var c = JSON.parse(e.newValue);
+            handleRemoteCommand(c);
+          } catch (err) {}
+        }
+      });
+
+      // BroadcastChannel fallback
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          var bc = new BroadcastChannel('amika_tv_bus');
+          bc.onmessage = function(ev) {
+            handleRemoteCommand(ev.data);
+          };
+        }
+      } catch (e) {}
+    }
+
+    // Precise Moldova EET / UTC+2 (Winter) and EEST / UTC+3 (Summer)
+    function getMoldovaDate() {
+      var now = new Date();
+      var utcMs = now.getTime();
+      var offsetHours = getMoldovaOffsetHours(utcMs);
+      return new Date(utcMs + offsetHours * 3600000);
+    }
+
+    // CLOCK TICKER (Calculates exact Moldova EET time)
+    function updateClock() {
+      try {
+        var clockEl = document.getElementById('clockTime');
+        var dateEl = document.getElementById('clockDate');
+
+        var md = getMoldovaDate();
+        var h = md.getUTCHours();
+        var m = md.getUTCMinutes();
+        var s = md.getUTCSeconds();
+        var timeStr = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+        if (clockEl) clockEl.innerText = timeStr;
+
+        if (dateEl) {
+          var dayIdx = md.getUTCDay();
+          var monthIdx = md.getUTCMonth();
+          var dateNum = md.getUTCDate();
+          var days_ro = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+          var days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+          var months_ro = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+          var months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+          var dateStr = currentLang === 'ro'
+            ? days_ro[dayIdx] + ', ' + dateNum + ' ' + months_ro[monthIdx]
+            : days_ru[dayIdx] + ', ' + dateNum + ' ' + months_ru[monthIdx];
+          dateEl.innerText = dateStr;
+        }
+
+        // Update solar day/night check every minute ONLY if in auto mode
+        if (s === 0 && currentThemeMode === 'auto') {
+          applyTheme();
+        }
+      } catch (err) {}
+    }
+
+    // Start clock ticker immediately so clock never stays frozen
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // INIT LOOPS
+    var tvInitialized = false;
+    function initTvApp() {
+      if (tvInitialized) return;
+      tvInitialized = true;
+      loadSavedConfig();
+      renderMenu();
+      updateCloudIndicator();
+      fetchSupabaseConfig(false);
+      initCloudRelay();
+      checkRecentCloudConfig();
+      updateClock();
+
+      // Auto-advance slides every 7 seconds
+      setInterval(function() {
+        var vis = getVisibleSlides();
+        if (vis.length > 0) {
+          currentSlideIdx = (currentSlideIdx + 1) % vis.length;
+          renderSlide();
+        }
+      }, 7000);
+
+      // Fast retry (every 15s) while Wi-Fi / TV is still booting; gentle 60s sync once connected
+      var tickCounter = 0;
+      setInterval(function() {
+        tickCounter++;
+        if (!hasSyncedFromCloud || tickCounter % 4 === 0) {
+          fetchSupabaseConfig(false);
+        }
+      }, 15000);
+
+      window.addEventListener('online', function() {
+        fetchSupabaseConfig(false);
+        checkRecentCloudConfig();
+      });
+
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          fetchSupabaseConfig(false);
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTvApp);
+    } else {
+      initTvApp();
+    }
+    window.addEventListener('load', initTvApp);
+
+    // KEYBOARD SHORTCUTS
+    window.addEventListener('keydown', function(e) {
+      var vis = getVisibleSlides();
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 't' || e.key === 'T') cycleThemeMode();
+      if (e.key === 's' || e.key === 'S') toggleFlashSale();
+      if (e.key === 'ArrowRight' && vis.length > 0) {
+        currentSlideIdx = (currentSlideIdx + 1) % vis.length;
+        renderSlide();
+      }
+      if (e.key === 'ArrowLeft' && vis.length > 0) {
+        currentSlideIdx = (currentSlideIdx - 1 + vis.length) % vis.length;
+        renderSlide();
+      }
+    });
+  </script>
+</body>
+</html>
