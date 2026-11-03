@@ -61,7 +61,7 @@ export const STORAGE_KEY_TV_CONFIG = 'amika_tv_custom_config_v1';
 export const DEFAULT_TV_CONFIG: TvBoardConfig = {
   updatedAt: 0,
   themeMode: 'auto',
-  youtubeStreamUrl: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+  youtubeStreamUrl: 'https://www.youtube.com/watch?v=5yx6BWlEVcY',
   youtubeStreamEnabled: false,
   youtubeVolume: 50,
   coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },

@@ -1830,7 +1830,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                 </span>
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {YOUTUBE_STREAM_PRESETS.map((preset) => {
                   const isSelected = draftConfig.youtubeStreamUrl === preset.url;
                   return (
@@ -1880,7 +1880,16 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] pt-1 border-t border-stone-800/80">
-                        <span className="text-emerald-400 font-mono text-[10px]">YouTube Live</span>
+                        <span className="flex items-center gap-1 text-[10px] font-mono">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              preset.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                            }`}
+                          />
+                          <span className={preset.isLive ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                            {preset.isLive ? '24/7 Live' : 'HD Non-stop'}
+                          </span>
+                        </span>
                         <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-300' : 'text-stone-400'}`}>
                           {isSelected ? (language === 'ro' ? '✓ Activ' : '✓ Выбран') : (language === 'ro' ? 'Selectează' : 'Выбрать')}
                         </span>

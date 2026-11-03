@@ -13,48 +13,75 @@ export interface YouTubePreset {
   genre: string;
   url: string;
   thumbnail: string;
+  isLive?: boolean;
 }
 
 export const YOUTUBE_STREAM_PRESETS: YouTubePreset[] = [
   {
-    id: 'lofi-girl',
+    id: 'chillhop-radio',
     name: {
-      ro: 'Lofi Girl • Beats to relax / study',
-      ru: 'Lofi Girl • Уютный чилл & лофай',
+      ro: 'Chillhop Radio • Jazzy & Lofi Beats',
+      ru: 'Chillhop Radio • Джаз и тёплый лофай',
     },
-    genre: 'Lofi Hip Hop • 24/7 Live',
-    url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
-    thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg',
+    genre: 'Jazzy & Lofi Beats • 24/7 Live',
+    url: 'https://www.youtube.com/watch?v=5yx6BWlEVcY',
+    thumbnail: 'https://img.youtube.com/vi/5yx6BWlEVcY/hqdefault.jpg',
+    isLive: true,
   },
   {
-    id: 'coffee-shop-radio',
+    id: 'cafe-music-bgm',
     name: {
-      ro: 'Coffee Shop Radio • 24/7 Cafe Vibes',
-      ru: 'Кофейное радио • 24/7 атмосфера кофейни',
+      ro: 'Cafe Music BGM • Cafe Jazz & Piano',
+      ru: 'Cafe Music BGM • Уютный джаз и рояль',
     },
-    genre: 'Lofi & Chillhop • 24/7 Live',
-    url: 'https://www.youtube.com/watch?v=lP26UCnoH9s',
-    thumbnail: 'https://img.youtube.com/vi/lP26UCnoH9s/hqdefault.jpg',
+    genre: 'Smooth Cafe Jazz • 24/7 Live',
+    url: 'https://www.youtube.com/watch?v=h2a32T45zxs',
+    thumbnail: 'https://img.youtube.com/vi/h2a32T45zxs/hqdefault.jpg',
+    isLive: true,
   },
   {
-    id: 'cozy-jazz-cafe',
+    id: 'bakery-cafe-jazz',
     name: {
-      ro: 'Cozy Jazz Cafe • Sax & Piano relax',
-      ru: 'Уютный кофейный джаз • Саксофон и пианино',
+      ro: 'Bakery Café Jazz • Acustică & Relax',
+      ru: 'Кофейный джаз • Нежная акустика и релакс',
     },
-    genre: 'Smooth Instrumental Jazz',
-    url: 'https://www.youtube.com/watch?v=fEvM-OUq940',
-    thumbnail: 'https://img.youtube.com/vi/fEvM-OUq940/hqdefault.jpg',
+    genre: 'Acoustic Cafe Vibes • 24/7 Live',
+    url: 'https://www.youtube.com/watch?v=8jyLh3IhvAU',
+    thumbnail: 'https://img.youtube.com/vi/8jyLh3IhvAU/hqdefault.jpg',
+    isLive: true,
   },
   {
-    id: 'bossa-nova-morning',
+    id: 'synthwave-chill',
     name: {
-      ro: 'Bossa Nova Cafe • Chitara & soare',
-      ru: 'Босса-нова в кофейне • Солнечная гитара',
+      ro: 'Synthwave & Chill • Lofi Girl Radio',
+      ru: 'Synthwave & Chill • Спокойный вечерний чилл',
     },
-    genre: 'Acoustic Bossa Nova',
+    genre: 'Ambient & Chillwave • 24/7 Live',
     url: 'https://www.youtube.com/watch?v=4xDzrJKXOOY',
     thumbnail: 'https://img.youtube.com/vi/4xDzrJKXOOY/hqdefault.jpg',
+    isLive: true,
+  },
+  {
+    id: 'cozy-fall-cafe',
+    name: {
+      ro: 'Cozy Fall Coffee Shop • Jazz & Ploaie',
+      ru: 'Осенняя кофейня • Мягкий джаз и шелест дождя',
+    },
+    genre: 'Smooth Instrumental • Non-stop 8h',
+    url: 'https://www.youtube.com/watch?v=VMAPTo7RVCo',
+    thumbnail: 'https://img.youtube.com/vi/VMAPTo7RVCo/hqdefault.jpg',
+    isLive: false,
+  },
+  {
+    id: 'chillhop-plant-cafe',
+    name: {
+      ro: 'Plant Café • Lofi Classics',
+      ru: 'Plant Café • Классический лофай',
+    },
+    genre: 'Lofi & Chillhop Classics • Permanent',
+    url: 'https://www.youtube.com/watch?v=QyGbnE-RHKA',
+    thumbnail: 'https://img.youtube.com/vi/QyGbnE-RHKA/hqdefault.jpg',
+    isLive: false,
   },
 ];
 
@@ -71,15 +98,15 @@ export function parseYouTubeUrl(input?: string | null): ParsedYouTubeTarget {
     return {
       type: 'playlist',
       id: listId,
-      embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1`,
+      embedUrl: `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1`,
       canonicalUrl: `https://www.youtube.com/playlist?list=${listId}`,
     };
   }
 
   // 2. Check for standard 11-char video ID (or live stream)
-  // Supports youtube.com/watch?v=ID, youtu.be/ID, youtube.com/live/ID, youtube.com/embed/ID
+  // Supports youtube.com/watch?v=ID, youtu.be/ID, youtube.com/live/ID, youtube.com/embed/ID, /shorts/ID, m.youtube.com
   const videoMatch = str.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/))([a-zA-Z0-9_-]{11})/
+    /(?:youtu\.be\/|(?:www\.|m\.|music\.)?youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([a-zA-Z0-9_-]{11})/
   );
 
   let videoId: string | null = null;
@@ -94,7 +121,7 @@ export function parseYouTubeUrl(input?: string | null): ParsedYouTubeTarget {
     return {
       type: 'video',
       id: videoId,
-      embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1${extraPlaylist}`,
+      embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1${extraPlaylist}`,
       canonicalUrl: `https://www.youtube.com/watch?v=${videoId}`,
     };
   }

@@ -1575,12 +1575,12 @@
         return {
           type: 'playlist',
           id: listId,
-          embedUrl: 'https://www.youtube-nocookie.com/embed/videoseries?list=' + listId + '&autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1',
+          embedUrl: 'https://www.youtube.com/embed/videoseries?list=' + listId + '&autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1',
           canonicalUrl: 'https://www.youtube.com/playlist?list=' + listId
         };
       }
 
-      var videoMatch = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/))([a-zA-Z0-9_-]{11})/);
+      var videoMatch = str.match(/(?:youtu\.be\/|(?:www\.|m\.|music\.)?youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([a-zA-Z0-9_-]{11})/);
       var videoId = null;
       if (videoMatch && videoMatch[1]) {
         videoId = videoMatch[1];
@@ -1593,7 +1593,7 @@
         return {
           type: 'video',
           id: videoId,
-          embedUrl: 'https://www.youtube-nocookie.com/embed/' + videoId + '?autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1' + extraPlaylist,
+          embedUrl: 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1' + extraPlaylist,
           canonicalUrl: 'https://www.youtube.com/watch?v=' + videoId
         };
       }
@@ -1706,6 +1706,10 @@
                   } else if (event.data === 2) { // PAUSED
                     ytMusicPlaying = false;
                   }
+                  updateMusicPillUI(parsed);
+                },
+                onError: function(event) {
+                  ytMusicPlaying = false;
                   updateMusicPillUI(parsed);
                 }
               }
