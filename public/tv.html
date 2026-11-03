@@ -1244,8 +1244,8 @@
 
   </div>
 
-  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at 0.01 opacity for active media decoding) -->
-  <div id="ytMusicContainer" style="position: fixed; right: 0; bottom: 0; width: 64px; height: 36px; opacity: 0.01; pointer-events: none; z-index: 0; overflow: hidden;">
+  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at 0.02 opacity for active media decoding with hardware surface) -->
+  <div id="ytMusicContainer" style="position: fixed; right: 0; bottom: 0; width: 320px; height: 180px; opacity: 0.02; pointer-events: none; z-index: 0; overflow: hidden;">
     <div id="ytPlayerTarget"></div>
   </div>
 
@@ -1658,7 +1658,7 @@
     // panel can see what is happening on the TV without anyone being in the cafe.
     // Keep TV_BUILD in sync with EXPECTED_TV_BUILD in src/utils/tvTelemetry.ts
     // (enforced by scripts/verify_tv.cjs).
-    var TV_BUILD = '2026.11.03-telemetry-1';
+    var TV_BUILD = '2026.11.03-telemetry-2';
     var TV_STATUS_TOPIC = 'amika_cricova_tv_status';
     var TV_STATUS_ENDPOINTS = [
       'https://ntfy.adminforge.de/' + TV_STATUS_TOPIC,
@@ -1861,6 +1861,7 @@
     var ytUnlockPromptVisible = false;
     var YT_STATE_NAMES = { '-1': 'unstarted', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering', '5': 'cued' };
 
+    var ytBufferingTimer = null;
     function onYtRealState(state, source) {
       if (typeof state !== 'number') return;
       var changed = state !== ytRealState;
@@ -1871,6 +1872,35 @@
         tvLog('yt state ' + (YT_STATE_NAMES[String(state)] || state) + ' (' + source + ')');
         scheduleTvStatus('yt_state');
       }
+
+      // Watchdog for buffering hang (often occurs on older WebKit TV hardware video decoders)
+      if (state === 3) {
+        if (!ytBufferingTimer) {
+          ytBufferingTimer = setTimeout(function() {
+            ytBufferingTimer = null;
+            if (ytRealState === 3 && boardConfig && boardConfig.youtubeStreamEnabled) {
+              tvLog('yt buffering hang -> kick play');
+              if (ytPlayer && ytPlayerMode === 'api') {
+                try { ytPlayer.playVideo(); } catch (e) {}
+              }
+              sendIframeCommand('playVideo');
+              setTimeout(function() {
+                if (ytRealState === 3 && boardConfig && boardConfig.youtubeStreamEnabled && ytPlayerMode === 'api') {
+                  tvLog('yt buffering hang -> fallback to direct iframe');
+                  ytForceIframe = true;
+                  syncYouTubeMusic();
+                }
+              }, 8000);
+            }
+          }, 10000);
+        }
+      } else {
+        if (ytBufferingTimer) {
+          clearTimeout(ytBufferingTimer);
+          ytBufferingTimer = null;
+        }
+      }
+
       refreshMusicPill();
     }
 
@@ -2085,6 +2115,7 @@
       if (!container) return false;
       try {
         container.innerHTML = '<div id="ytPlayerTarget"></div>';
+        var origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
         var playerVars = {
           autoplay: 1,
           controls: 0,
@@ -2092,13 +2123,12 @@
           enablejsapi: 1,
           rel: 0,
           modestbranding: 1,
-          loop: 1
+          origin: origin
         };
         if (isPlaylist) {
           playerVars.listType = 'playlist';
           playerVars.list = targetId;
-        } else {
-          playerVars.playlist = targetId;
+          playerVars.loop = 1;
         }
         ytPlayerMode = 'api';
         ytApiPlayerReady = false;
@@ -2107,8 +2137,8 @@
         ytLastError = null;
         tvLog('yt api player create ' + targetId);
         ytPlayer = new window.YT.Player('ytPlayerTarget', {
-          width: '64',
-          height: '36',
+          width: '320',
+          height: '180',
           videoId: isPlaylist ? undefined : targetId,
           playerVars: playerVars,
           events: {
@@ -2146,12 +2176,12 @@
       ytRealState = null;
       ytLastError = null;
       var origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
-      var src = 'https://www.youtube.com/embed/' + targetId + '?enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=' + targetId + '&origin=' + encodeURIComponent(origin);
+      var src = 'https://www.youtube.com/embed/' + targetId + '?enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&origin=' + encodeURIComponent(origin);
       if (isPlaylist) {
         src = 'https://www.youtube.com/embed/videoseries?list=' + targetId + '&enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&origin=' + encodeURIComponent(origin);
       }
       tvLog('yt iframe create ' + targetId);
-      container.innerHTML = '<iframe id="ytDirectIframe" width="64" height="36" src="' + src + '" allow="autoplay *; encrypted-media *" frameborder="0" style="border:0;width:64px;height:36px;"></iframe>';
+      container.innerHTML = '<iframe id="ytDirectIframe" width="320" height="180" src="' + src + '" allow="autoplay *; encrypted-media *" frameborder="0" style="border:0;width:320px;height:180px;"></iframe>';
       var ifr = document.getElementById('ytDirectIframe');
       if (ifr) {
         ifr.onload = function() {
@@ -2623,6 +2653,21 @@
         }
         syncYouTubeMusic();
         scheduleTvStatus('cmd_music');
+      } else if (cmd.type === 'RESTART_MUSIC') {
+        tvLog('cmd RESTART_MUSIC');
+        ytCurrentVideoId = null;
+        ytRealState = null;
+        if (cmd.mode === 'iframe') ytForceIframe = true;
+        else if (cmd.mode === 'api') ytForceIframe = false;
+        syncYouTubeMusic();
+        scheduleTvStatus('cmd_restart_music');
+      } else if (cmd.type === 'RELOAD_PAGE') {
+        tvLog('cmd RELOAD_PAGE');
+        scheduleTvStatus('cmd_reload');
+        setTimeout(function() {
+          window.location.reload(true);
+        }, 600);
+      }
       }
     }
 

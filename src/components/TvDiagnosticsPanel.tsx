@@ -24,6 +24,7 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
+  RotateCcw,
 } from 'lucide-react';
 
 interface TvDiagnosticsPanelProps {
@@ -113,6 +114,32 @@ export const TvDiagnosticsPanel: React.FC<TvDiagnosticsPanelProps> = ({ language
     }, 3000);
   };
 
+  const handleRestartMusic = async (mode?: 'api' | 'iframe') => {
+    setIsRequesting(true);
+    await sendTvCommand({ type: 'RESTART_MUSIC', mode });
+    setTimeout(async () => {
+      try {
+        const list = await fetchRecentTvReports('10m');
+        if (list.length > 0) setReports(list);
+      } catch {}
+      setIsRequesting(false);
+    }, 2500);
+  };
+
+  const handleReloadPage = async () => {
+    if (window.confirm(isRo ? 'Reîncărcați pagina TV?' : 'Перезагрузить страницу меню на телевизоре?')) {
+      setIsRequesting(true);
+      await sendTvCommand({ type: 'RELOAD_PAGE' });
+      setTimeout(async () => {
+        try {
+          const list = await fetchRecentTvReports('10m');
+          if (list.length > 0) setReports(list);
+        } catch {}
+        setIsRequesting(false);
+      }, 4000);
+    }
+  };
+
   const isRo = language === 'ro';
 
   // Format relative time (e.g., "15 сек назад")
@@ -155,15 +182,39 @@ export const TvDiagnosticsPanel: React.FC<TvDiagnosticsPanelProps> = ({ language
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleRequestStatus}
-          disabled={isRequesting}
-          className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-750 border border-stone-700 text-xs font-bold text-stone-200 hover:text-white flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRequesting ? 'animate-spin text-emerald-400' : ''}`} />
-          <span>{isRo ? 'Cere status acum' : 'Запросить статус ТВ'}</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleRequestStatus}
+            disabled={isRequesting}
+            className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-750 border border-stone-700 text-xs font-bold text-stone-200 hover:text-white flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRequesting ? 'animate-spin text-emerald-400' : ''}`} />
+            <span>{isRo ? 'Cere status' : 'Запросить статус ТВ'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleRestartMusic()}
+            disabled={isRequesting}
+            title={isRo ? 'Repornește playerul audio pe TV' : 'Перезапустить аудио-плеер на ТВ'}
+            className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-amber-950/40 border border-stone-700 hover:border-amber-500/40 text-xs font-bold text-stone-300 hover:text-amber-200 flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isRo ? 'Restart player' : 'Перезапустить плеер'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleReloadPage}
+            disabled={isRequesting}
+            title={isRo ? 'Reîncarcă pagina completă pe TV' : 'Перезагрузить страницу меню на телевизоре'}
+            className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-rose-950/40 border border-stone-700 hover:border-rose-500/40 text-xs font-bold text-stone-300 hover:text-rose-200 flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+          >
+            <Tv className="w-3.5 h-3.5 text-rose-400" />
+            <span>{isRo ? 'Reload TV' : 'Перезагрузить ТВ'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Multiple device switcher if more than 1 TV report received */}
