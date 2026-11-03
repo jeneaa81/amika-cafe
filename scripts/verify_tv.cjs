@@ -59,4 +59,14 @@ if (tvBuildMatch[1] !== expectedBuildMatch[1]) {
 }
 console.log('TV_BUILD matched:', tvBuildMatch[1]);
 
+// Strict VM syntax parse check
+const vm = require('vm');
+try {
+  new vm.Script(code);
+  console.log('--- JS SYNTAX AUDIT: VALID SCRIPT ---');
+} catch (err) {
+  console.error('JS SYNTAX ERROR in public/tv.html script:', err.message);
+  process.exit(1);
+}
+
 console.log('ALL AUDITS PASSED!');

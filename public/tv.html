@@ -649,7 +649,6 @@
       -webkit-border-radius: 26px;
       -moz-border-radius: 26px;
       border-radius: 26px;
-      -webkit-mask-image: -webkit-radial-gradient(white, black);
       -webkit-background-clip: padding-box;
       background-clip: padding-box;
       padding: 16px 22px;
@@ -970,7 +969,6 @@
       -webkit-border-radius: 26px;
       -moz-border-radius: 26px;
       border-radius: 26px;
-      -webkit-mask-image: -webkit-radial-gradient(white, black);
       -webkit-background-clip: padding-box;
       background-clip: padding-box;
       overflow: hidden;
@@ -1658,7 +1656,7 @@
     // panel can see what is happening on the TV without anyone being in the cafe.
     // Keep TV_BUILD in sync with EXPECTED_TV_BUILD in src/utils/tvTelemetry.ts
     // (enforced by scripts/verify_tv.cjs).
-    var TV_BUILD = '2026.11.03-telemetry-2';
+    var TV_BUILD = '2026.11.03-telemetry-3';
     var TV_STATUS_TOPIC = 'amika_cricova_tv_status';
     var TV_STATUS_ENDPOINTS = [
       'https://ntfy.adminforge.de/' + TV_STATUS_TOPIC,
@@ -2667,7 +2665,6 @@
         setTimeout(function() {
           window.location.reload(true);
         }, 600);
-      }
       }
     }
 
