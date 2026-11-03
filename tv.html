@@ -1242,8 +1242,8 @@
 
   </div>
 
-  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at opacity 1 for Smart TV hardware video overlay plane) -->
-  <div id="ytMusicContainer" style="position: fixed; right: 24px; bottom: 24px; width: 320px; height: 180px; opacity: 1; pointer-events: none; z-index: 0; overflow: hidden;">
+  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Hidden behind UI at 0.01 opacity so no video box overlaps the menu) -->
+  <div id="ytMusicContainer" style="position: fixed; right: 24px; bottom: 24px; width: 320px; height: 180px; opacity: 0.01; pointer-events: none; z-index: 0; overflow: hidden;">
     <div id="ytPlayerTarget"></div>
   </div>
 
@@ -1656,7 +1656,7 @@
     // panel can see what is happening on the TV without anyone being in the cafe.
     // Keep TV_BUILD in sync with EXPECTED_TV_BUILD in src/utils/tvTelemetry.ts
     // (enforced by scripts/verify_tv.cjs).
-    var TV_BUILD = '2026.11.03-telemetry-4';
+    var TV_BUILD = '2026.11.03-telemetry-5';
     var TV_STATUS_TOPIC = 'amika_cricova_tv_status';
     var TV_STATUS_ENDPOINTS = [
       'https://ntfy.adminforge.de/' + TV_STATUS_TOPIC,
@@ -1751,7 +1751,7 @@
     };
 
     function buildTvStatus(reason, skipPoll) {
-      if (!skipPoll && ytPlayerMode === 'api') readApiPlayerFacts();
+      if (!skipPoll) readApiPlayerFacts();
       var parsed = boardConfig ? parseYouTubeUrl(boardConfig.youtubeStreamUrl) : null;
       var now = new Date().getTime();
       return {
@@ -1875,20 +1875,24 @@
       }
     }
 
-    // ================= YOUTUBE BACKGROUND STREAMING (PURE ES5) =================
-    // ytMusicPlaying is TRUE only when the YouTube player itself reports PLAYING.
-    // The header pill reflects the real player state, never an optimistic guess.
+    // ================= YOUTUBE & NATIVE HTML5 AUDIO STREAMING (PURE ES5) =================
+    // 3-Stage Self-Healing Pipeline:
+    //   Stage 1 ('api')            -> Official YouTube IFrame API player
+    //   Stage 2 ('iframe')         -> Direct YouTube embed iframe (at +14s if API stalls)
+    //   Stage 3 ('audio-fallback') -> Native HTML5 <audio> 24/7 MP3 stream (at +22s if MSE/video hangs on legacy Smart TV)
+    // Also supports direct MP3 stream URLs ('audio' mode).
     var ytPlayer = null;
     var ytApiReady = false;
     var ytApiPlayerReady = false;
     var ytCurrentVideoId = null;
     var ytMusicPlaying = false;
     var ytUserInteracted = false;
-    var ytPlayerMode = 'none';      // 'none' | 'api' | 'iframe'
+    var ytPlayerMode = 'none';      // 'none' | 'api' | 'iframe' | 'audio' | 'audio-fallback'
     var ytApiScriptStatus = 'idle'; // 'idle' | 'loading' | 'loaded' | 'error'
     var ytForceIframe = false;
+    var ytForceAudio = false;
     var ytApiTimeoutSet = false;
-    var ytRealState = null;         // last state reported by YouTube (-1,0,1,2,3,5) or null
+    var ytRealState = null;         // last state (-1,0,1,2,3,5) or null
     var ytRealMuted = null;
     var ytRealVolume = null;
     var ytLoadedFraction = null;
@@ -1899,56 +1903,109 @@
     var ytUnlockPromptVisible = false;
     var YT_STATE_NAMES = { '-1': 'unstarted', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering', '5': 'cued' };
 
-    var ytBufferingTimer = null;
+    // Verified 24/7 HTTPS audio/mpeg (MP3) streams matched to Amika Cafe presets
+    var YT_AUDIO_FALLBACK_MAP = {
+      '5yx6BWlEVcY': 'https://streams.fluxfm.de/chillhop/mp3-128/streams.fluxfm.de/',
+      'h2a32T45zxs': 'https://stream.srg-ssr.ch/m/rsj/mp3_128',
+      '8jyLh3IhvAU': 'https://streams.fluxfm.de/jazzradio/mp3-128/streams.fluxfm.de/',
+      '4xDzrJKXOOY': 'https://stream.nightride.fm/chillsynth.mp3',
+      'VMAPTo7RVCo': 'https://streams.fluxfm.de/lounge/mp3-128/streams.fluxfm.de/',
+      'QyGbnE-RHKA': 'https://lofi.stream.laut.fm/lofi'
+    };
+    var YT_AUDIO_BACKUP_STREAMS = [
+      'https://stream.srg-ssr.ch/m/rsj/mp3_128',
+      'https://streams.fluxfm.de/chillhop/mp3-128/streams.fluxfm.de/',
+      'https://streams.fluxfm.de/lounge/mp3-128/streams.fluxfm.de/',
+      'https://ice1.somafm.com/groovesalad-128-mp3'
+    ];
+    var ytAudioBackupIdx = 0;
+    var ytWatchdogKickTimer = null;
+    var ytWatchdogIframeTimer = null;
+    var ytWatchdogAudioTimer = null;
+
+    function clearPlaybackWatchdog() {
+      if (ytWatchdogKickTimer) { clearTimeout(ytWatchdogKickTimer); ytWatchdogKickTimer = null; }
+      if (ytWatchdogIframeTimer) { clearTimeout(ytWatchdogIframeTimer); ytWatchdogIframeTimer = null; }
+      if (ytWatchdogAudioTimer) { clearTimeout(ytWatchdogAudioTimer); ytWatchdogAudioTimer = null; }
+    }
+
+    function ensurePlaybackWatchdog() {
+      if (ytRealState === 1 || !boardConfig || !boardConfig.youtubeStreamEnabled) return;
+      if (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') return;
+      if (ytWatchdogAudioTimer) return;
+
+      // Step 1 (+8s): kick playVideo() if still not playing
+      ytWatchdogKickTimer = setTimeout(function() {
+        ytWatchdogKickTimer = null;
+        if (ytRealState !== 1 && boardConfig && boardConfig.youtubeStreamEnabled) {
+          tvLog('yt watchdog 8s -> kick play');
+          var v = typeof boardConfig.youtubeVolume === 'number' ? boardConfig.youtubeVolume : 50;
+          if (ytPlayer && ytPlayerMode === 'api') {
+            try {
+              ytPlayer.setVolume(v);
+              if (ytUserInteracted) ytPlayer.unMute();
+              ytPlayer.playVideo();
+            } catch (e) {}
+          } else if (ytPlayerMode === 'iframe') {
+            sendIframeCommand('setVolume', [v]);
+            if (ytUserInteracted) sendIframeCommand('unMute');
+            sendIframeCommand('playVideo');
+          }
+        }
+      }, 8000);
+
+      // Step 2 (+14s): switch from API mode to direct iframe mode if still not playing
+      ytWatchdogIframeTimer = setTimeout(function() {
+        ytWatchdogIframeTimer = null;
+        if (ytRealState !== 1 && boardConfig && boardConfig.youtubeStreamEnabled && ytPlayerMode === 'api') {
+          tvLog('yt watchdog 14s -> fallback to direct iframe');
+          ytForceIframe = true;
+          syncYouTubeMusic();
+        }
+      }, 14000);
+
+      // Step 3 (+22s): switch to Native HTML5 MP3 stream if YouTube video decoder is hung
+      ytWatchdogAudioTimer = setTimeout(function() {
+        ytWatchdogAudioTimer = null;
+        if (ytRealState !== 1 && boardConfig && boardConfig.youtubeStreamEnabled) {
+          tvLog('yt watchdog 22s -> fallback to native mp3 audio');
+          ytForceAudio = true;
+          syncYouTubeMusic();
+        }
+      }, 22000);
+    }
+
     function onYtRealState(state, source) {
       if (typeof state !== 'number') return;
       var changed = state !== ytRealState;
       ytRealState = state;
       ytMusicPlaying = state === 1;
-      if (state === 1) ytLastError = null;
+      if (state === 1) {
+        ytLastError = null;
+        clearPlaybackWatchdog();
+      } else if (state === 2) {
+        clearPlaybackWatchdog();
+      } else if (boardConfig && boardConfig.youtubeStreamEnabled) {
+        ensurePlaybackWatchdog();
+      }
       if (changed) {
         tvLog('yt state ' + (YT_STATE_NAMES[String(state)] || state) + ' (' + source + ')');
         scheduleTvStatus('yt_state');
       }
-
-      // Watchdog for buffering hang (often occurs on older WebKit TV hardware video decoders)
-      if (state === 3) {
-        if (!ytBufferingTimer) {
-          ytBufferingTimer = setTimeout(function() {
-            ytBufferingTimer = null;
-            if (ytRealState === 3 && boardConfig && boardConfig.youtubeStreamEnabled) {
-              tvLog('yt buffering hang -> kick play');
-              if (ytPlayer && ytPlayerMode === 'api') {
-                try { ytPlayer.playVideo(); } catch (e) {}
-              } else {
-                sendIframeCommand('playVideo');
-              }
-              setTimeout(function() {
-                if (ytRealState === 3 && boardConfig && boardConfig.youtubeStreamEnabled && ytPlayerMode === 'api') {
-                  tvLog('yt buffering hang -> fallback to direct iframe');
-                  ytForceIframe = true;
-                  syncYouTubeMusic();
-                }
-              }, 8000);
-            }
-          }, 10000);
-        }
-      } else {
-        if (ytBufferingTimer) {
-          clearTimeout(ytBufferingTimer);
-          ytBufferingTimer = null;
-        }
-      }
-
       refreshMusicPill();
     }
 
     function onYtError(code, source) {
       ytLastError = code;
       ytMusicPlaying = false;
-      tvLog('yt ERROR ' + code + ' (' + source + ')');
-      refreshMusicPill();
+      tvLog('yt ERROR ' + code + ' (' + source + ') -> audio fallback');
       scheduleTvStatus('yt_error');
+      if (boardConfig && boardConfig.youtubeStreamEnabled && !ytForceAudio) {
+        ytForceAudio = true;
+        syncYouTubeMusic();
+        return;
+      }
+      refreshMusicPill();
     }
 
     function refreshMusicPill() {
@@ -1957,6 +2014,17 @@
     }
 
     function readApiPlayerFacts() {
+      if (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') {
+        try {
+          var aud = document.getElementById('tvNativeAudio');
+          if (aud) {
+            ytRealMuted = !!aud.muted;
+            ytRealVolume = Math.round((typeof aud.volume === 'number' ? aud.volume : 0.5) * 100);
+            ytCurrentTime = Math.round((aud.currentTime || 0) * 10) / 10;
+          }
+        } catch (e) {}
+        return;
+      }
       if (!ytPlayer || !ytApiPlayerReady) return;
       try { if (typeof ytPlayer.isMuted === 'function') ytRealMuted = ytPlayer.isMuted(); } catch (e) {}
       try { if (typeof ytPlayer.getVolume === 'function') ytRealVolume = ytPlayer.getVolume(); } catch (e) {}
@@ -1988,6 +2056,7 @@
     // Messages coming FROM the YouTube iframe (both API mode and plain iframe mode)
     window.addEventListener('message', function(ev) {
       try {
+        if (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') return;
         if (!ev || typeof ev.origin !== 'string' || ev.origin.indexOf('youtube') === -1) return;
         var data = ev.data;
         if (typeof data === 'string') data = JSON.parse(data);
@@ -2018,6 +2087,105 @@
           }), '*');
         }
       } catch (e) {}
+    }
+
+    function stopNativeAudio(markPaused) {
+      try {
+        var aud = document.getElementById('tvNativeAudio');
+        if (aud) {
+          aud.onplaying = null;
+          aud.onwaiting = null;
+          aud.onerror = null;
+          aud.onpause = null;
+          aud.pause();
+          aud.src = '';
+          if (aud.parentNode) aud.parentNode.removeChild(aud);
+        }
+      } catch (e) {}
+      if (markPaused) {
+        tvNativeAudioState = 'paused';
+        ytRealState = 2;
+        ytMusicPlaying = false;
+      } else {
+        tvNativeAudioState = null;
+      }
+    }
+
+    function startNativeAudioFallback(targetId, customUrl, vol) {
+      clearPlaybackWatchdog();
+      // Destroy any active YouTube iframe/player to free TV memory & CPU
+      try { if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy(); } catch (e) {}
+      ytPlayer = null;
+      ytApiPlayerReady = false;
+      var container = document.getElementById('ytMusicContainer');
+      if (container) container.innerHTML = '<div id="ytPlayerTarget"></div>';
+
+      var streamUrl = customUrl || YT_AUDIO_FALLBACK_MAP[targetId] || YT_AUDIO_BACKUP_STREAMS[ytAudioBackupIdx % YT_AUDIO_BACKUP_STREAMS.length];
+      ytPlayerMode = customUrl ? 'audio' : 'audio-fallback';
+      ytCurrentVideoId = targetId;
+      ytLastError = null;
+
+      try {
+        var existing = document.getElementById('tvNativeAudio');
+        if (existing) {
+          existing.onplaying = null;
+          existing.onwaiting = null;
+          existing.onerror = null;
+          existing.onpause = null;
+          existing.pause();
+          if (existing.parentNode) existing.parentNode.removeChild(existing);
+        }
+
+        var aud = document.createElement('audio');
+        aud.id = 'tvNativeAudio';
+        aud.preload = 'auto';
+        aud.autoplay = true;
+        aud.muted = false;
+        aud.volume = Math.max(0, Math.min(1, (typeof vol === 'number' ? vol : 50) / 100));
+        aud.src = streamUrl;
+
+        aud.onplaying = function() {
+          tvNativeAudioState = 'playing';
+          ytRealMuted = !!aud.muted;
+          ytRealVolume = Math.round((typeof aud.volume === 'number' ? aud.volume : 0.5) * 100);
+          tvLog('mp3 stream playing (' + targetId + ')');
+          onYtRealState(1, 'audio');
+        };
+        aud.onwaiting = function() {
+          tvNativeAudioState = 'buffering';
+        };
+        aud.onerror = function() {
+          var errCode = aud.error ? aud.error.code : '?';
+          tvNativeAudioState = 'error:' + errCode;
+          tvLog('mp3 stream error ' + errCode + ' -> rotating backup');
+          ytAudioBackupIdx = (ytAudioBackupIdx + 1) % YT_AUDIO_BACKUP_STREAMS.length;
+          var nextUrl = YT_AUDIO_BACKUP_STREAMS[ytAudioBackupIdx];
+          setTimeout(function() {
+            if (boardConfig && boardConfig.youtubeStreamEnabled && (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback')) {
+              startNativeAudioFallback(targetId, nextUrl, boardConfig.youtubeVolume);
+            }
+          }, 2500);
+        };
+
+        document.body.appendChild(aud);
+        tvNativeAudioState = 'starting';
+        ytRealMuted = false;
+        ytRealVolume = typeof vol === 'number' ? vol : 50;
+        tvLog('mp3 stream start ' + streamUrl.substring(0, 48));
+
+        var p = aud.play();
+        if (p && typeof p.then === 'function') {
+          p.then(function() {}, function(err) {
+            tvNativeAudioState = 'blocked';
+            tvLog('mp3 autoplay awaits remote button: ' + (err && err.message ? err.message : err));
+            showAudioUnlockPrompt();
+            scheduleTvStatus('audio_blocked');
+          });
+        }
+      } catch (e) {
+        tvNativeAudioState = 'ex';
+        tvLog('mp3 start exception: ' + (e && e.message ? e.message : e));
+      }
     }
 
     function showAudioUnlockPrompt() {
@@ -2053,7 +2221,16 @@
       var vol = (boardConfig && typeof boardConfig.youtubeVolume === 'number') ? boardConfig.youtubeVolume : 50;
       var shouldPlay = !!(boardConfig && boardConfig.youtubeStreamEnabled);
 
-      if (ytPlayerMode === 'api' && ytApiPlayerReady && ytPlayer) {
+      if (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') {
+        try {
+          var aud = document.getElementById('tvNativeAudio');
+          if (aud) {
+            aud.muted = false;
+            aud.volume = Math.max(0, Math.min(1, vol / 100));
+            if (shouldPlay && aud.paused) aud.play();
+          }
+        } catch (e) {}
+      } else if (ytPlayerMode === 'api' && ytApiPlayerReady && ytPlayer) {
         try {
           ytPlayer.unMute();
           ytPlayer.setVolume(vol);
@@ -2097,6 +2274,15 @@
           id: videoId,
           embedUrl: 'https://www.youtube.com/embed/' + videoId + '?enablejsapi=1&autoplay=1&mute=0&controls=0&playsinline=1&loop=1' + extraPlaylist,
           canonicalUrl: 'https://www.youtube.com/watch?v=' + videoId
+        };
+      }
+
+      if (/^https?:\/\/.+/i.test(str) && str.indexOf('youtube.com') === -1 && str.indexOf('youtu.be') === -1) {
+        return {
+          type: 'audio',
+          id: 'direct-audio',
+          streamUrl: str,
+          canonicalUrl: str
         };
       }
 
@@ -2151,7 +2337,7 @@
       var ro = currentLang === 'ro';
       var cls = 'music-pill paused';
       var text;
-      if (ytLastError !== null) {
+      if (ytLastError !== null && ytRealState !== 1) {
         text = ro ? 'Eroare muzică' : 'Ошибка музыки';
       } else if (ytRealState === 1 && ytRealMuted === true) {
         text = ro ? 'Fără sunet' : 'Без звука';
@@ -2193,6 +2379,7 @@
         ytRealState = null;
         ytLastError = null;
         tvLog('yt api player create ' + targetId);
+        ensurePlaybackWatchdog();
         ytPlayer = new window.YT.Player('ytPlayerTarget', {
           width: '320',
           height: '180',
@@ -2238,6 +2425,7 @@
         src = 'https://www.youtube.com/embed/videoseries?list=' + targetId + '&enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&origin=' + encodeURIComponent(origin);
       }
       tvLog('yt iframe create ' + targetId);
+      ensurePlaybackWatchdog();
       container.innerHTML = '<iframe id="ytDirectIframe" width="320" height="180" src="' + src + '" allow="autoplay *; encrypted-media *" frameborder="0" style="border:0;width:320px;height:180px;"></iframe>';
       var ifr = document.getElementById('ytDirectIframe');
       if (ifr) {
@@ -2264,7 +2452,9 @@
       if (!container) return;
 
       if (!isEnabled || !parsed) {
+        clearPlaybackWatchdog();
         hideAudioUnlockPrompt();
+        stopNativeAudio(true);
         if (ytPlayerMode === 'api' && ytApiPlayerReady && ytPlayer) {
           try { ytPlayer.pauseVideo(); } catch (e) {}
         }
@@ -2282,6 +2472,24 @@
       var targetId = parsed.id;
       var isPlaylist = parsed.type === 'playlist';
 
+      // Stage 3 or Direct Audio Stream: Native HTML5 <audio> MP3 Stream
+      if (parsed.type === 'audio' || ytForceAudio) {
+        var customStreamUrl = parsed.type === 'audio' ? parsed.streamUrl : null;
+        var existingAud = document.getElementById('tvNativeAudio');
+        if ((ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') && ytCurrentVideoId === targetId && existingAud) {
+          try {
+            existingAud.muted = false;
+            existingAud.volume = Math.max(0, Math.min(1, vol / 100));
+            ytRealVolume = vol;
+            if (existingAud.paused) existingAud.play();
+          } catch (e) {}
+        } else {
+          startNativeAudioFallback(targetId, customStreamUrl, vol);
+        }
+        updateMusicPillUI(parsed);
+        return;
+      }
+
       if (ytForceIframe && ytPlayerMode === 'api') {
         try { if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy(); } catch (e) {}
         ytPlayer = null;
@@ -2291,6 +2499,7 @@
 
       // A. API player exists
       if (!ytForceIframe && ytPlayerMode === 'api' && ytPlayer) {
+        ensurePlaybackWatchdog();
         if (!ytApiPlayerReady) {
           // onReady will call syncYouTubeMusic() again with the latest config
           updateMusicPillUI(parsed);
@@ -2320,6 +2529,7 @@
 
       // B. Plain iframe exists
       if (ytPlayerMode === 'iframe') {
+        ensurePlaybackWatchdog();
         if (ytCurrentVideoId !== targetId) {
           createDirectIframe(targetId, isPlaylist);
         } else {
@@ -2342,6 +2552,7 @@
           return;
         }
         initYouTubeApi();
+        ensurePlaybackWatchdog();
         if (!ytApiTimeoutSet) {
           ytApiTimeoutSet = true;
           setTimeout(function() {
@@ -2367,6 +2578,24 @@
 
       unlockAudioOnInteraction();
       var vol = typeof boardConfig.youtubeVolume === 'number' ? boardConfig.youtubeVolume : 50;
+
+      if (ytPlayerMode === 'audio' || ytPlayerMode === 'audio-fallback') {
+        try {
+          var aud = document.getElementById('tvNativeAudio');
+          if (aud) {
+            if (ytMusicPlaying) {
+              aud.pause();
+              onYtRealState(2, 'audio');
+            } else {
+              aud.muted = false;
+              aud.volume = Math.max(0, Math.min(1, vol / 100));
+              aud.play();
+            }
+          }
+        } catch (e) {}
+        updateMusicPillUI(parsed);
+        return;
+      }
 
       if (ytMusicPlaying) {
         if (ytPlayerMode === 'api' && ytApiPlayerReady && ytPlayer) {
@@ -2718,11 +2947,19 @@
         syncYouTubeMusic();
         scheduleTvStatus('cmd_music');
       } else if (cmd.type === 'RESTART_MUSIC') {
-        tvLog('cmd RESTART_MUSIC');
+        tvLog('cmd RESTART_MUSIC ' + (cmd.mode || 'auto'));
+        clearPlaybackWatchdog();
+        stopNativeAudio(false);
         ytCurrentVideoId = null;
         ytRealState = null;
-        if (cmd.mode === 'iframe') ytForceIframe = true;
-        else if (cmd.mode === 'api') {
+        if (cmd.mode === 'audio') {
+          ytForceAudio = true;
+          ytForceIframe = false;
+        } else if (cmd.mode === 'iframe') {
+          ytForceAudio = false;
+          ytForceIframe = true;
+        } else {
+          ytForceAudio = false;
           ytForceIframe = false;
           ytPlayerMode = 'none';
         }
