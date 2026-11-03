@@ -1021,15 +1021,15 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         </section>
       </main>
 
-      {/* Background YouTube Audio Container */}
+      {/* Background YouTube Audio Container (Inside viewport at 0.01 opacity for active media decoding) */}
       {boardConfig.youtubeStreamEnabled && parsedYoutube.embedUrl && (
-        <div className="fixed -left-[9999px] -bottom-[9999px] w-[200px] h-[120px] opacity-[0.001] pointer-events-none z-[-10]">
+        <div className="fixed right-1 bottom-1 w-16 h-9 opacity-[0.01] pointer-events-none z-0 overflow-hidden">
           <iframe
             key={parsedYoutube.id}
             title="TV Background Music"
             src={isMusicMuted ? '' : parsedYoutube.embedUrl}
             className="w-full h-full border-0"
-            allow="autoplay; encrypted-media"
+            allow="autoplay *; encrypted-media *"
           />
         </div>
       )}

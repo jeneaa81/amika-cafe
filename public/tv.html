@@ -492,6 +492,85 @@
       0% { height: 3px; }
       100% { height: 14px; }
     }
+    .audio-unlock-prompt {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: none;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      background: rgba(24, 20, 18, 0.96);
+      border: 2px solid #9bb155;
+      border-radius: 40px;
+      padding: 12px 24px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(155, 177, 85, 0.35);
+      color: #f5f5f4;
+      cursor: pointer;
+      -webkit-animation: unlockPulse 2.2s infinite;
+      animation: unlockPulse 2.2s infinite;
+    }
+    .app-root.theme-day .audio-unlock-prompt {
+      background: rgba(255, 252, 246, 0.96);
+      border-color: #556b2f;
+      color: #1c1917;
+      box-shadow: 0 12px 36px rgba(60, 40, 20, 0.25), 0 0 20px rgba(85, 107, 47, 0.3);
+    }
+    .audio-unlock-prompt .unlock-icon {
+      margin-right: 14px;
+      color: #9bb155;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+    }
+    .app-root.theme-day .audio-unlock-prompt .unlock-icon {
+      color: #556b2f;
+    }
+    .audio-unlock-prompt .unlock-title {
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+    .audio-unlock-prompt .unlock-sub {
+      font-size: 12px;
+      color: #a8a29e;
+      margin-top: 2px;
+    }
+    .app-root.theme-day .audio-unlock-prompt .unlock-sub {
+      color: #78716c;
+    }
+    .audio-unlock-prompt .unlock-badge {
+      margin-left: 20px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(155, 177, 85, 0.2);
+      border: 1px solid rgba(155, 177, 85, 0.5);
+      color: #9bb155;
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .app-root.theme-day .audio-unlock-prompt .unlock-badge {
+      background: rgba(85, 107, 47, 0.15);
+      border-color: rgba(85, 107, 47, 0.4);
+      color: #556b2f;
+    }
+    @-webkit-keyframes unlockPulse {
+      0% { -webkit-transform: translateX(-50%) scale(1); }
+      50% { -webkit-transform: translateX(-50%) scale(1.02); }
+      100% { -webkit-transform: translateX(-50%) scale(1); }
+    }
+    @keyframes unlockPulse {
+      0% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.02); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
     .clock-pill {
       display: -webkit-box;
       display: -webkit-flex;
@@ -1165,9 +1244,25 @@
 
   </div>
 
-  <!-- HIDDEN/BACKGROUND YOUTUBE MUSIC CONTAINER -->
-  <div id="ytMusicContainer" style="position: fixed; left: -9999px; bottom: -9999px; width: 240px; height: 140px; opacity: 0.001; pointer-events: none; z-index: -10;">
+  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at 0.01 opacity for active media decoding) -->
+  <div id="ytMusicContainer" style="position: fixed; right: 0; bottom: 0; width: 64px; height: 36px; opacity: 0.01; pointer-events: none; z-index: 0; overflow: hidden;">
     <div id="ytPlayerTarget"></div>
+  </div>
+
+  <!-- AUDIO UNLOCK BANNER FOR SMART TV (Auto-hidden after first remote press or tap) -->
+  <div id="audioUnlockPrompt" class="audio-unlock-prompt" style="display: none;" onclick="unlockAudioOnInteraction()">
+    <div class="unlock-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+    </div>
+    <div class="unlock-text">
+      <div class="unlock-title" id="unlockTitle">Muzică de ambianță activată</div>
+      <div class="unlock-sub" id="unlockSub">Apăsați orice tastă pe telecomandă pentru a activa sunetul</div>
+    </div>
+    <div class="unlock-badge">TV Remote [OK]</div>
   </div>
 
   <!-- PURE ES5 SCRIPT FOR UNIVERSAL SMART TV COMPATIBILITY (LG webOS 3.0+, Samsung Tizen, Android TV) -->
@@ -1564,6 +1659,72 @@
     }
 
     // ================= YOUTUBE BACKGROUND STREAMING (PURE ES5) =================
+    var ytPlayer = null;
+    var ytApiReady = false;
+    var ytCurrentVideoId = null;
+    var ytMusicPlaying = false;
+    var ytUserInteracted = false;
+
+    function sendIframeCommand(func, args) {
+      try {
+        var ifr = document.querySelector('#ytMusicContainer iframe');
+        if (ifr && ifr.contentWindow) {
+          ifr.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: func,
+            args: args || []
+          }), '*');
+        }
+      } catch (e) {}
+    }
+
+    function showAudioUnlockPrompt() {
+      if (ytUserInteracted) return;
+      var prompt = document.getElementById('audioUnlockPrompt');
+      if (!prompt) return;
+      var title = document.getElementById('unlockTitle');
+      var sub = document.getElementById('unlockSub');
+      if (title) title.innerText = currentLang === 'ro' ? 'Muzică de ambianță activată' : 'Музыка включена';
+      if (sub) sub.innerText = currentLang === 'ro'
+        ? 'Apăsați orice tastă pe telecomandă pentru a activa sunetul'
+        : 'Нажмите любую кнопку на пульте для включения звука';
+      prompt.style.display = '-webkit-flex';
+      prompt.style.display = 'flex';
+    }
+
+    function hideAudioUnlockPrompt() {
+      var prompt = document.getElementById('audioUnlockPrompt');
+      if (prompt) prompt.style.display = 'none';
+    }
+
+    function unlockAudioOnInteraction() {
+      ytUserInteracted = true;
+      hideAudioUnlockPrompt();
+
+      var vol = (boardConfig && typeof boardConfig.youtubeVolume === 'number') ? boardConfig.youtubeVolume : 50;
+
+      // Unmute via YT Player API
+      if (ytPlayer && typeof ytPlayer.unMute === 'function') {
+        try {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(vol);
+          if (boardConfig && boardConfig.youtubeStreamEnabled) {
+            ytPlayer.playVideo();
+          }
+        } catch (e) {}
+      }
+
+      // Unmute via direct iframe postMessage
+      sendIframeCommand('unMute');
+      sendIframeCommand('setVolume', [vol]);
+      if (boardConfig && boardConfig.youtubeStreamEnabled) {
+        sendIframeCommand('playVideo');
+        ytMusicPlaying = true;
+        var parsed = parseYouTubeUrl(boardConfig.youtubeStreamUrl);
+        updateMusicPillUI(parsed);
+      }
+    }
+
     function parseYouTubeUrl(input) {
       if (!input) return null;
       var str = (input + '').replace(/^\s+|\s+$/g, '');
@@ -1575,7 +1736,7 @@
         return {
           type: 'playlist',
           id: listId,
-          embedUrl: 'https://www.youtube.com/embed/videoseries?list=' + listId + '&autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1',
+          embedUrl: 'https://www.youtube.com/embed/videoseries?list=' + listId + '&enablejsapi=1&autoplay=1&mute=0&controls=0&playsinline=1&loop=1',
           canonicalUrl: 'https://www.youtube.com/playlist?list=' + listId
         };
       }
@@ -1593,7 +1754,7 @@
         return {
           type: 'video',
           id: videoId,
-          embedUrl: 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&mute=0&controls=0&playsinline=1&enablejsapi=1&loop=1' + extraPlaylist,
+          embedUrl: 'https://www.youtube.com/embed/' + videoId + '?enablejsapi=1&autoplay=1&mute=0&controls=0&playsinline=1&loop=1' + extraPlaylist,
           canonicalUrl: 'https://www.youtube.com/watch?v=' + videoId
         };
       }
@@ -1649,106 +1810,134 @@
       updateMusicPillUI(parsed);
 
       var container = document.getElementById('ytMusicContainer');
+      if (!container) return;
+
       if (!isEnabled || !parsed) {
+        hideAudioUnlockPrompt();
         if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
           try { ytPlayer.pauseVideo(); } catch (e) {}
         }
+        sendIframeCommand('pauseVideo');
         ytMusicPlaying = false;
         updateMusicPillUI(parsed);
         return;
       }
 
+      var targetId = parsed.id;
+      var isPlaylist = parsed.type === 'playlist';
+
+      if (!ytUserInteracted) {
+        showAudioUnlockPrompt();
+      } else {
+        hideAudioUnlockPrompt();
+      }
+
+      // 1. If ytPlayer is already alive and running
+      if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        try {
+          ytPlayer.setVolume(vol);
+          if (ytCurrentVideoId !== targetId) {
+            ytCurrentVideoId = targetId;
+            if (isPlaylist) {
+              ytPlayer.loadPlaylist({ list: targetId, listType: 'playlist' });
+            } else {
+              ytPlayer.loadVideoById({ videoId: targetId });
+            }
+          }
+          if (ytUserInteracted) {
+            ytPlayer.unMute();
+          }
+          ytPlayer.playVideo();
+          sendIframeCommand('playVideo');
+          if (ytUserInteracted) {
+            sendIframeCommand('unMute');
+            sendIframeCommand('setVolume', [vol]);
+          }
+          ytMusicPlaying = true;
+          updateMusicPillUI(parsed);
+          return;
+        } catch (e) {}
+      }
+
+      // 2. Initialize YT API script if not yet loaded
       if (!ytApiReady) {
         initYouTubeApi();
       }
 
-      var targetId = parsed.id;
-      var isPlaylist = parsed.type === 'playlist';
-
+      // 3. Create YT.Player instance if API is ready
       if (ytApiReady && window.YT && window.YT.Player) {
-        if (!ytPlayer) {
-          try {
-            var playerVars = {
-              autoplay: 1,
-              controls: 0,
-              playsinline: 1,
-              enablejsapi: 1,
-              rel: 0,
-              modestbranding: 1
-            };
-            if (isPlaylist) {
-              playerVars.listType = 'playlist';
-              playerVars.list = targetId;
-              playerVars.loop = 1;
-            } else {
-              playerVars.playlist = targetId;
-              playerVars.loop = 1;
-            }
+        try {
+          if (!document.getElementById('ytPlayerTarget')) {
+            container.innerHTML = '<div id="ytPlayerTarget"></div>';
+          }
+          var playerVars = {
+            autoplay: 1,
+            controls: 0,
+            playsinline: 1,
+            enablejsapi: 1,
+            rel: 0,
+            modestbranding: 1
+          };
+          if (isPlaylist) {
+            playerVars.listType = 'playlist';
+            playerVars.list = targetId;
+            playerVars.loop = 1;
+          } else {
+            playerVars.playlist = targetId;
+            playerVars.loop = 1;
+          }
 
-            ytPlayer = new window.YT.Player('ytPlayerTarget', {
-              width: '240',
-              height: '140',
-              videoId: isPlaylist ? undefined : targetId,
-              playerVars: playerVars,
-              events: {
-                onReady: function(event) {
-                  try {
-                    event.target.setVolume(vol);
-                    event.target.playVideo();
+          ytPlayer = new window.YT.Player('ytPlayerTarget', {
+            width: '64',
+            height: '36',
+            videoId: isPlaylist ? undefined : targetId,
+            playerVars: playerVars,
+            events: {
+              onReady: function(event) {
+                try {
+                  event.target.setVolume(vol);
+                  if (ytUserInteracted) {
                     event.target.unMute();
-                    ytMusicPlaying = true;
-                    updateMusicPillUI(parsed);
-                  } catch (e) {}
-                },
-                onStateChange: function(event) {
-                  if (event.data === 1) { // PLAYING
-                    ytMusicPlaying = true;
-                  } else if (event.data === 2) { // PAUSED
-                    ytMusicPlaying = false;
                   }
+                  event.target.playVideo();
+                  ytMusicPlaying = true;
                   updateMusicPillUI(parsed);
-                },
-                onError: function(event) {
+                } catch (e) {}
+              },
+              onStateChange: function(event) {
+                if (event.data === 1) { // PLAYING
+                  ytMusicPlaying = true;
+                } else if (event.data === 2) { // PAUSED
                   ytMusicPlaying = false;
-                  updateMusicPillUI(parsed);
                 }
-              }
-            });
-            ytCurrentVideoId = targetId;
-          } catch (e) {
-            fallbackDirectIframe(parsed);
-          }
-        } else {
-          try {
-            ytPlayer.setVolume(vol);
-            if (ytCurrentVideoId !== targetId) {
-              ytCurrentVideoId = targetId;
-              if (isPlaylist) {
-                ytPlayer.loadPlaylist({ list: targetId, listType: 'playlist' });
-              } else {
-                ytPlayer.loadVideoById({ videoId: targetId });
+                updateMusicPillUI(parsed);
+              },
+              onError: function(event) {
+                ytMusicPlaying = false;
+                updateMusicPillUI(parsed);
               }
             }
-            ytPlayer.unMute();
-            ytPlayer.playVideo();
-            ytMusicPlaying = true;
-            updateMusicPillUI(parsed);
-          } catch (e) {
-            fallbackDirectIframe(parsed);
-          }
-        }
-      } else {
-        fallbackDirectIframe(parsed);
+          });
+          ytCurrentVideoId = targetId;
+          return;
+        } catch (e) {}
       }
-    }
 
-    function fallbackDirectIframe(parsed) {
-      if (!parsed || !parsed.embedUrl) return;
-      var container = document.getElementById('ytMusicContainer');
-      if (!container) return;
-      if (ytCurrentVideoId === parsed.id && container.children.length > 0) return;
-      ytCurrentVideoId = parsed.id;
-      container.innerHTML = '<iframe id="ytDirectIframe" width="240" height="140" src="' + parsed.embedUrl + '" allow="autoplay; encrypted-media" frameborder="0"></iframe>';
+      // 4. Fallback direct iframe with postMessage
+      if (ytCurrentVideoId !== targetId || container.children.length === 0) {
+        ytCurrentVideoId = targetId;
+        var origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
+        var directSrc = 'https://www.youtube.com/embed/' + targetId + '?enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=' + targetId + '&origin=' + encodeURIComponent(origin);
+        if (isPlaylist) {
+          directSrc = 'https://www.youtube.com/embed/videoseries?list=' + targetId + '&enablejsapi=1&autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&origin=' + encodeURIComponent(origin);
+        }
+        container.innerHTML = '<iframe id="ytDirectIframe" width="64" height="36" src="' + directSrc + '" allow="autoplay *; encrypted-media *" frameborder="0" style="border:0;width:64px;height:36px;"></iframe>';
+      }
+      if (ytUserInteracted) {
+        sendIframeCommand('unMute');
+        sendIframeCommand('setVolume', [vol]);
+      }
+      sendIframeCommand('playVideo');
       ytMusicPlaying = true;
       updateMusicPillUI(parsed);
     }
@@ -1758,44 +1947,35 @@
       var parsed = parseYouTubeUrl(boardConfig.youtubeStreamUrl);
       if (!parsed) return;
 
-      if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
-        try {
-          var state = ytPlayer.getPlayerState();
-          if (state === 1) {
-            ytPlayer.pauseVideo();
-            ytMusicPlaying = false;
-          } else {
+      unlockAudioOnInteraction();
+
+      if (ytMusicPlaying) {
+        if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+          try { ytPlayer.pauseVideo(); } catch (e) {}
+        }
+        sendIframeCommand('pauseVideo');
+        ytMusicPlaying = false;
+      } else {
+        var vol = typeof boardConfig.youtubeVolume === 'number' ? boardConfig.youtubeVolume : 50;
+        if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+          try {
             ytPlayer.unMute();
+            ytPlayer.setVolume(vol);
             ytPlayer.playVideo();
-            ytMusicPlaying = true;
-          }
-          updateMusicPillUI(parsed);
-          return;
-        } catch (e) {}
+          } catch (e) {}
+        }
+        sendIframeCommand('unMute');
+        sendIframeCommand('setVolume', [vol]);
+        sendIframeCommand('playVideo');
+        ytMusicPlaying = true;
       }
-
-      boardConfig.youtubeStreamEnabled = !boardConfig.youtubeStreamEnabled;
-      syncYouTubeMusic();
-    }
-
-    function unlockAudioOnInteraction() {
-      if (ytUserInteracted) return;
-      ytUserInteracted = true;
-      if (ytPlayer && typeof ytPlayer.unMute === 'function') {
-        try {
-          ytPlayer.unMute();
-          if (boardConfig && boardConfig.youtubeStreamEnabled) {
-            ytPlayer.playVideo();
-            ytMusicPlaying = true;
-            var parsed = parseYouTubeUrl(boardConfig.youtubeStreamUrl);
-            updateMusicPillUI(parsed);
-          }
-        } catch (e) {}
-      }
+      updateMusicPillUI(parsed);
     }
 
     window.addEventListener('click', unlockAudioOnInteraction);
     window.addEventListener('touchstart', unlockAudioOnInteraction);
+    window.addEventListener('pointerdown', unlockAudioOnInteraction);
+    document.addEventListener('keydown', unlockAudioOnInteraction);
 
     // RENDER MENU ITEMS
     function renderMenu() {
@@ -2101,6 +2281,7 @@
         currentSlideIdx = cmd.index % vis.length;
         renderSlide();
       } else if (cmd.type === 'SET_YOUTUBE_MUSIC') {
+        if (!boardConfig) boardConfig = {};
         if (typeof cmd.enabled === 'boolean') {
           boardConfig.youtubeStreamEnabled = cmd.enabled;
         }
