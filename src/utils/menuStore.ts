@@ -39,6 +39,9 @@ export interface TvSlideItem {
 export interface TvBoardConfig {
   updatedAt: number;
   themeMode?: 'auto' | 'day' | 'night';
+  youtubeStreamUrl?: string;
+  youtubeStreamEnabled?: boolean;
+  youtubeVolume?: number;
   coffeeHeader: { ro: string; ru: string };
   coffeeBadge: string;
   coffeeFooterNote: { ro: string; ru: string };
@@ -58,6 +61,9 @@ export const STORAGE_KEY_TV_CONFIG = 'amika_tv_custom_config_v1';
 export const DEFAULT_TV_CONFIG: TvBoardConfig = {
   updatedAt: 0,
   themeMode: 'auto',
+  youtubeStreamUrl: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+  youtubeStreamEnabled: false,
+  youtubeVolume: 50,
   coffeeHeader: { ro: 'Cafea & Băuturi', ru: 'Кофе & Напитки' },
   coffeeBadge: '100% Arabica',
   coffeeFooterNote: {

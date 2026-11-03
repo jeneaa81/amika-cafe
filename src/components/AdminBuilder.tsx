@@ -50,7 +50,15 @@ import {
   Search,
   X,
   Check,
+  Music,
+  Volume2,
+  VolumeX,
+  Play,
+  Square,
+  Radio,
+  ExternalLink,
 } from 'lucide-react';
+import { parseYouTubeUrl, YOUTUBE_STREAM_PRESETS } from '../utils/youtube';
 
 const ADMIN_PASS_STORAGE_KEY = 'amika_admin_password_v1';
 const ADMIN_SESSION_UNLOCKED_KEY = 'amika_admin_unlocked_v1';
@@ -370,6 +378,7 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
   const [showInstaPicker, setShowInstaPicker] = useState<boolean>(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+  const [previewingAudio, setPreviewingAudio] = useState<boolean>(false);
 
   // Store Catalog Management State (TRK-014)
   const [storeFilterCategory, setStoreFilterCategory] = useState<string>('all');
@@ -1508,6 +1517,378 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
                   </div>
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* TV YouTube Background Live Stream Music Card */}
+          <div className="p-6 rounded-3xl bg-stone-900 border border-emerald-500/30 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                  <Music className="w-5 h-5" />
+                </span>
+                <div>
+                  <h4 className="text-base font-bold text-white font-serif flex items-center gap-2">
+                    <span>
+                      {language === 'ro'
+                        ? 'Muzică de Fundal pe TV (Transmisiune YouTube)'
+                        : 'Фоновая музыка на ТВ (YouTube-трансляция / Плейлист)'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      Smart TV
+                    </span>
+                  </h4>
+                  <p className="text-xs text-stone-400">
+                    {language === 'ro'
+                      ? 'Redare audio live continuă în fundalul ecranului TV (Lofi, Jazz Cafe, Bossa Nova sau orice link propriu).'
+                      : 'Непрерывное фоновое воспроизведение музыки на телевизоре (Lofi, джаз, босса-нова или любая ссылка).'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-xs font-mono font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
+                    draftConfig.youtubeStreamEnabled
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-md shadow-emerald-950/40'
+                      : 'bg-stone-950 text-stone-400 border-stone-800'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      draftConfig.youtubeStreamEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-stone-500'
+                    }`}
+                  />
+                  <span>
+                    {draftConfig.youtubeStreamEnabled
+                      ? language === 'ro'
+                        ? 'În direct pe TV'
+                        : 'В эфире на ТВ'
+                      : language === 'ro'
+                      ? 'Oprit'
+                      : 'Выключено'}
+                  </span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextEnabled = !draftConfig.youtubeStreamEnabled;
+                    const next = { ...draftConfig, youtubeStreamEnabled: nextEnabled };
+                    updateDraft(next);
+                    persistConfigToCloud(
+                      next,
+                      nextEnabled
+                        ? language === 'ro'
+                          ? '🎵 Muzica activată în cloud și trimisă pe TV'
+                          : '🎵 Музыка включена в облаке и отправлена на ТВ'
+                        : language === 'ro'
+                        ? '🔇 Muzica oprită în cloud și pe TV'
+                        : '🔇 Музыка выключена в облаке и на ТВ'
+                    );
+                    sendTvCommand({
+                      type: 'SET_YOUTUBE_MUSIC',
+                      enabled: nextEnabled,
+                      url: next.youtubeStreamUrl,
+                      volume: next.youtubeVolume,
+                    });
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+                    draftConfig.youtubeStreamEnabled
+                      ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-extrabold shadow-lg shadow-emerald-950/40'
+                  }`}
+                >
+                  {draftConfig.youtubeStreamEnabled ? (
+                    <>
+                      <VolumeX className="w-4 h-4" />
+                      <span>{language === 'ro' ? 'Oprește Muzica' : 'Выключить музыку'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      <span>{language === 'ro' ? 'Pornește Muzica' : 'Включить музыку'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* URL Input & Status */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-stone-300">
+                {language === 'ro'
+                  ? 'Link către transmisiune live sau playlist YouTube:'
+                  : 'Ссылка на YouTube-трансляцию, видео или плейлист:'}
+              </label>
+
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={draftConfig.youtubeStreamUrl || ''}
+                    onChange={(e) => {
+                      updateDraft({ ...draftConfig, youtubeStreamUrl: e.target.value });
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=... sau https://youtu.be/..."
+                    className="w-full px-4 py-3 rounded-2xl bg-stone-950 border border-stone-700 text-sm font-mono text-amber-200 placeholder-stone-600 focus:outline-none focus:border-emerald-500 transition"
+                  />
+                  {draftConfig.youtubeStreamUrl && (
+                    <button
+                      type="button"
+                      onClick={() => updateDraft({ ...draftConfig, youtubeStreamUrl: '' })}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-500 hover:text-stone-300 rounded-md"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    persistConfigToCloud(
+                      draftConfig,
+                      language === 'ro'
+                        ? '🎵 Setările muzicale au fost salvate și aplicate pe TV!'
+                        : '🎵 Настройки музыки сохранены и применены на ТВ!'
+                    );
+                    sendTvCommand({
+                      type: 'SET_YOUTUBE_MUSIC',
+                      enabled: draftConfig.youtubeStreamEnabled,
+                      url: draftConfig.youtubeStreamUrl,
+                      volume: draftConfig.youtubeVolume,
+                    });
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-emerald-950/40"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{language === 'ro' ? 'Aplică pe TV' : 'Применить на ТВ'}</span>
+                </button>
+              </div>
+
+              {/* URL Parser Feedback */}
+              {(() => {
+                const parsed = parseYouTubeUrl(draftConfig.youtubeStreamUrl);
+                if (parsed.type === 'video' || parsed.type === 'playlist') {
+                  return (
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs px-3.5 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 font-mono">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>
+                          {parsed.type === 'playlist'
+                            ? `Playlist ID: ${parsed.id}`
+                            : `Video ID: ${parsed.id}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewingAudio(!previewingAudio)}
+                          className="text-amber-300 hover:text-amber-200 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          {previewingAudio ? (
+                            <>
+                              <Square className="w-3.5 h-3.5" />
+                              <span>{language === 'ro' ? 'Oprește proba' : 'Остановить тест'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5" />
+                              <span>{language === 'ro' ? 'Ascultă probă' : 'Проверить звук'}</span>
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={parsed.canonicalUrl || '#'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-stone-400 hover:text-stone-200 flex items-center gap-1"
+                        >
+                          <span>YouTube</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                } else if (draftConfig.youtubeStreamUrl && draftConfig.youtubeStreamUrl.trim()) {
+                  return (
+                    <div className="flex items-center gap-2 text-xs px-3.5 py-2 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>
+                        {language === 'ro'
+                          ? 'Nu am putut identifica ID-ul video. Asigurați-vă că link-ul conține youtube.com sau youtu.be'
+                          : 'Не удалось распознать ID видео. Убедитесь, что ссылка содержит youtube.com или youtu.be'}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Audio Preview iframe if active */}
+              {previewingAudio && (() => {
+                const parsed = parseYouTubeUrl(draftConfig.youtubeStreamUrl);
+                if (parsed.embedUrl) {
+                  return (
+                    <div className="p-3 rounded-2xl bg-stone-950 border border-amber-500/40 space-y-2">
+                      <div className="flex items-center justify-between text-xs text-amber-300 font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <Radio className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                          <span>
+                            {language === 'ro'
+                              ? 'Previzualizare audio în cabinet (sunet de probă):'
+                              : 'Прослушивание звука в админке (тест):'}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewingAudio(false)}
+                          className="text-stone-400 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="w-full h-32 rounded-xl overflow-hidden bg-black">
+                        <iframe
+                          title="Admin YouTube Preview"
+                          src={parsed.embedUrl}
+                          className="w-full h-full border-0"
+                          allow="autoplay; encrypted-media"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Volume Control */}
+            <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-stone-300 flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    {language === 'ro' ? 'Volum recomandat pe TV:' : 'Уровень громкости на ТВ:'}
+                  </span>
+                </span>
+                <span className="font-mono text-emerald-400 font-extrabold text-sm">
+                  {draftConfig.youtubeVolume ?? 50}%
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <VolumeX className="w-4 h-4 text-stone-500 shrink-0" />
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={draftConfig.youtubeVolume ?? 50}
+                  onChange={(e) => {
+                    const vol = Number(e.target.value);
+                    const next = { ...draftConfig, youtubeVolume: vol };
+                    updateDraft(next);
+                    sendTvCommand({ type: 'SET_YOUTUBE_MUSIC', volume: vol });
+                  }}
+                  className="w-full accent-emerald-500 cursor-pointer"
+                />
+                <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              </div>
+
+              <div className="flex gap-2">
+                {[20, 50, 75].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => {
+                      const next = { ...draftConfig, youtubeVolume: v };
+                      updateDraft(next);
+                      sendTvCommand({ type: 'SET_YOUTUBE_MUSIC', volume: v });
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition border cursor-pointer ${
+                      (draftConfig.youtubeVolume ?? 50) === v
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400'
+                        : 'bg-stone-900 text-stone-400 border-stone-800 hover:text-stone-200'
+                    }`}
+                  >
+                    {v}% {v <= 25 ? (language === 'ro' ? '(Fin)' : '(Тихий фон)') : v >= 70 ? (language === 'ro' ? '(Viu)' : '(Громко)') : (language === 'ro' ? '(Optim)' : '(Оптимально)')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick 1-Click Coffee Presets */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-stone-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>
+                  {language === 'ro'
+                    ? 'Posturi de ambianță recomandate pentru cafenea (1-click):'
+                    : 'Рекомендованные кофейные стримы (выбор в 1 клик):'}
+                </span>
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {YOUTUBE_STREAM_PRESETS.map((preset) => {
+                  const isSelected = draftConfig.youtubeStreamUrl === preset.url;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        const next = {
+                          ...draftConfig,
+                          youtubeStreamUrl: preset.url,
+                          youtubeStreamEnabled: true,
+                        };
+                        updateDraft(next);
+                        persistConfigToCloud(
+                          next,
+                          language === 'ro'
+                            ? `🎵 Stream selectat: ${preset.name.ro}`
+                            : `🎵 Стрим выбран: ${preset.name.ru}`
+                        );
+                        sendTvCommand({
+                          type: 'SET_YOUTUBE_MUSIC',
+                          enabled: true,
+                          url: preset.url,
+                          volume: next.youtubeVolume,
+                        });
+                      }}
+                      className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between gap-2 cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-950/40 border-emerald-400 ring-2 ring-emerald-400/40 shadow-lg'
+                          : 'bg-stone-950 hover:bg-stone-850 border-stone-800 hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={preset.thumbnail}
+                          alt={preset.name.ro}
+                          className="w-12 h-9 rounded-lg object-cover shrink-0 border border-stone-800"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-white truncate">
+                            {language === 'ro' ? preset.name.ro : preset.name.ru}
+                          </div>
+                          <div className="text-[10px] text-stone-400 truncate">
+                            {preset.genre}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-stone-800/80">
+                        <span className="text-emerald-400 font-mono text-[10px]">YouTube Live</span>
+                        <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-300' : 'text-stone-400'}`}>
+                          {isSelected ? (language === 'ro' ? '✓ Activ' : '✓ Выбран') : (language === 'ro' ? 'Selectează' : 'Выбрать')}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

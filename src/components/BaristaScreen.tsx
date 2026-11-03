@@ -20,6 +20,9 @@ import {
   Search,
   X,
   QrCode,
+  Music,
+  VolumeX,
+  Play,
 } from 'lucide-react';
 import { PRODUCTS } from '../data/products';
 import { playMelodicChime } from '../utils/audio';
@@ -211,6 +214,33 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
       if (cur) {
         await saveMenuConfigToSupabase({ ...cur, themeMode: mode });
       }
+    } catch {}
+  };
+
+  const [isMusicActive, setIsMusicActive] = useState<boolean>(() => {
+    try {
+      const cfg = loadTvConfig();
+      return !!cfg.youtubeStreamEnabled;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleBaristaMusicToggle = async () => {
+    const nextState = !isMusicActive;
+    setIsMusicActive(nextState);
+    sendTvCommand(
+      { type: 'SET_YOUTUBE_MUSIC', enabled: nextState },
+      setTvCommandToast,
+      nextState
+        ? (language === 'ro' ? '🎵 Muzica YouTube activată pe TV!' : '🎵 Музыка YouTube включена на ТВ!')
+        : (language === 'ro' ? '🔇 Muzica YouTube oprită pe TV!' : '🔇 Музыка YouTube выключена на ТВ!')
+    );
+    try {
+      const cur = await fetchMenuConfigFromSupabase() || loadTvConfig();
+      const updated = { ...cur, youtubeStreamEnabled: nextState };
+      saveTvConfigLocal(updated);
+      await saveMenuConfigToSupabase(updated);
     } catch {}
   };
 
@@ -956,6 +986,48 @@ export const BaristaScreen: React.FC<BaristaScreenProps> = ({
                     <span>{language === 'ro' ? 'Auto' : 'Авто'}</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Background YouTube Music Control for Barista */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-stone-900/80 border border-emerald-500/30 space-y-3 sm:space-y-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-extrabold text-stone-200 uppercase tracking-wider flex items-center gap-2">
+                    <Music className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+                    <span>{language === 'ro' ? 'Muzică pe TV (YouTube)' : 'Музыка на ТВ (YouTube)'}</span>
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
+                      isMusicActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-stone-950 text-stone-400 border-stone-800'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isMusicActive ? 'bg-emerald-400 animate-pulse' : 'bg-stone-500'}`} />
+                    <span>{isMusicActive ? (language === 'ro' ? 'În direct' : 'Играет') : (language === 'ro' ? 'Pauză' : 'Пауза')}</span>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleBaristaMusicToggle}
+                  className={`w-full py-3 px-3 rounded-2xl text-xs sm:text-sm font-bold transition active:scale-95 border cursor-pointer flex items-center justify-center gap-2 shadow ${
+                    isMusicActive
+                      ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-extrabold shadow-emerald-950/40'
+                  }`}
+                >
+                  {isMusicActive ? (
+                    <>
+                      <VolumeX className="w-4 h-4" />
+                      <span>{language === 'ro' ? 'Oprește muzica pe TV' : 'Поставить музыку на паузу'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      <span>{language === 'ro' ? 'Pornește muzica pe TV' : 'Включить музыку на ТВ'}</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* 3. Language & Melodic Audio Chime */}

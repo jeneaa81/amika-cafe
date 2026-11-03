@@ -18,7 +18,9 @@ import {
   X,
   Volume2,
   VolumeX,
+  Music,
 } from 'lucide-react';
+import { parseYouTubeUrl } from '../utils/youtube';
 
 interface TvMenuBoardProps {
   language: Language;
@@ -92,6 +94,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [isMusicMuted, setIsMusicMuted] = useState<boolean>(false);
 
   // Flash Sale Mode: 'auto' | 'active' | 'inactive'
   const [flashSaleMode, setFlashSaleMode] = useState<'auto' | 'active' | 'inactive'>('inactive');
@@ -108,6 +111,7 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
   const visibleDessertItems = boardConfig.dessertItems.filter((d) => d.visible !== false);
 
   const isDay = themeMode === 'day' ? true : themeMode === 'night' ? false : isDaytimeInCricova(currentTime);
+  const parsedYoutube = parseYouTubeUrl(boardConfig.youtubeStreamUrl);
 
   const triggerMelodicChime = () => {
     if (!soundEnabled) return;
@@ -205,6 +209,25 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
     } else if (msg.type === 'CHIME') {
       triggerMelodicChime();
       setRemoteToast(`🔔 ${source}: Мелодичный гонг`);
+    } else if (msg.type === 'SET_YOUTUBE_MUSIC') {
+      setBoardConfig((prev) => {
+        const next = {
+          ...prev,
+          youtubeStreamEnabled:
+            typeof msg.enabled === 'boolean' ? msg.enabled : prev.youtubeStreamEnabled,
+          youtubeStreamUrl:
+            typeof msg.url === 'string' ? msg.url : prev.youtubeStreamUrl,
+          youtubeVolume:
+            typeof msg.volume === 'number' ? msg.volume : prev.youtubeVolume,
+        };
+        saveTvConfigLocal(next, true);
+        return next;
+      });
+      setRemoteToast(
+        msg.enabled !== false
+          ? `🎵 ${source}: Музыка YouTube запущена`
+          : `🔇 ${source}: Музыка YouTube на паузе`
+      );
     }
 
     setTimeout(() => setRemoteToast(null), 3500);
@@ -345,6 +368,8 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
         setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
       } else if (e.key === 's' || e.key === 'S') {
         setFlashSaleMode((prev) => (prev === 'active' ? 'inactive' : 'active'));
+      } else if (e.key === 'm' || e.key === 'M') {
+        setIsMusicMuted((prev) => !prev);
       } else if (e.key === 'Escape') {
         if (!document.fullscreenElement) {
           onExitTvMode();
@@ -471,6 +496,24 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
               <Sparkles className="w-3 h-3 text-indigo-400 animate-spin" />
               <span>{remoteToast}</span>
             </div>
+          )}
+
+          {boardConfig.youtubeStreamEnabled && (
+            <button
+              type="button"
+              onClick={() => setIsMusicMuted((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition cursor-pointer ${
+                isDay
+                  ? 'bg-white/80 border-amber-900/15 text-[#556b2f]'
+                  : 'bg-stone-900/80 border-stone-800 text-[#9bb155]'
+              }`}
+              title="Muzică live YouTube [Tasta M]"
+            >
+              <Music className="w-3.5 h-3.5" />
+              <span className="font-mono text-[11px] font-extrabold uppercase tracking-wider">
+                {isMusicMuted ? (lang === 'ro' ? 'Pauză' : 'Пауза') : (lang === 'ro' ? 'Live Music' : 'Музыка')}
+              </span>
+            </button>
           )}
 
           <div
@@ -977,6 +1020,19 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           </div>
         </section>
       </main>
+
+      {/* Background YouTube Audio Container */}
+      {boardConfig.youtubeStreamEnabled && parsedYoutube.embedUrl && (
+        <div className="fixed -left-[9999px] -bottom-[9999px] w-[200px] h-[120px] opacity-[0.001] pointer-events-none z-[-10]">
+          <iframe
+            key={parsedYoutube.id}
+            title="TV Background Music"
+            src={isMusicMuted ? '' : parsedYoutube.embedUrl}
+            className="w-full h-full border-0"
+            allow="autoplay; encrypted-media"
+          />
+        </div>
+      )}
     </div>
   );
 };
