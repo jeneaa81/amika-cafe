@@ -1242,8 +1242,8 @@
 
   </div>
 
-  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at 0.02 opacity for active media decoding with hardware surface) -->
-  <div id="ytMusicContainer" style="position: fixed; right: 0; bottom: 0; width: 320px; height: 180px; opacity: 0.02; pointer-events: none; z-index: 0; overflow: hidden;">
+  <!-- BACKGROUND YOUTUBE MUSIC CONTAINER (Inside viewport at opacity 1 for Smart TV hardware video overlay plane) -->
+  <div id="ytMusicContainer" style="position: fixed; right: 24px; bottom: 24px; width: 320px; height: 180px; opacity: 1; pointer-events: none; z-index: 0; overflow: hidden;">
     <div id="ytPlayerTarget"></div>
   </div>
 
@@ -1656,7 +1656,7 @@
     // panel can see what is happening on the TV without anyone being in the cafe.
     // Keep TV_BUILD in sync with EXPECTED_TV_BUILD in src/utils/tvTelemetry.ts
     // (enforced by scripts/verify_tv.cjs).
-    var TV_BUILD = '2026.11.03-telemetry-3';
+    var TV_BUILD = '2026.11.03-telemetry-4';
     var TV_STATUS_TOPIC = 'amika_cricova_tv_status';
     var TV_STATUS_ENDPOINTS = [
       'https://ntfy.adminforge.de/' + TV_STATUS_TOPIC,
@@ -1671,6 +1671,37 @@
     var tvLastStatusSentAt = 0;
     var tvStatusTimer = null;
     var tvDebugMode = /[?&]debug=1/.test(window.location.search || '');
+    var tvMediaCapsCache = null;
+
+    function getMediaCaps() {
+      if (tvMediaCapsCache) return tvMediaCapsCache;
+      var caps = { mse: false, mseMp4: false, mseWebm: false, vidMp4: '', vidWebm: '', vidHls: '', audMp3: '', audAac: '' };
+      try {
+        var ms = window.MediaSource || window.WebKitMediaSource;
+        caps.mse = typeof ms !== 'undefined';
+        if (caps.mse && typeof ms.isTypeSupported === 'function') {
+          caps.mseMp4 = !!ms.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+          caps.mseWebm = !!ms.isTypeSupported('video/webm; codecs="vp9, opus"');
+        }
+      } catch (e) {}
+      try {
+        var v = document.createElement('video');
+        if (v && typeof v.canPlayType === 'function') {
+          caps.vidMp4 = v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || '';
+          caps.vidWebm = v.canPlayType('video/webm; codecs="vp8, vorbis"') || '';
+          caps.vidHls = v.canPlayType('application/vnd.apple.mpegurl') || '';
+        }
+      } catch (e) {}
+      try {
+        var a = document.createElement('audio');
+        if (a && typeof a.canPlayType === 'function') {
+          caps.audMp3 = a.canPlayType('audio/mpeg') || '';
+          caps.audAac = a.canPlayType('audio/aac') || '';
+        }
+      } catch (e) {}
+      tvMediaCapsCache = caps;
+      return caps;
+    }
 
     function tvPad2(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -1741,6 +1772,7 @@
         configUpdatedAt: boardConfig && boardConfig.updatedAt ? boardConfig.updatedAt : 0,
         theme: currentThemeMode,
         lastCmd: tvLastCmd,
+        mediaCaps: getMediaCaps(),
         music: {
           enabled: !!(boardConfig && boardConfig.youtubeStreamEnabled),
           videoId: parsed ? parsed.id : null,
@@ -1752,6 +1784,10 @@
           stateName: ytRealState === null ? 'unknown' : (YT_STATE_NAMES[String(ytRealState)] || String(ytRealState)),
           muted: ytRealMuted,
           volume: ytRealVolume,
+          loadedFrac: ytLoadedFraction,
+          curTime: ytCurrentTime,
+          quality: ytQuality,
+          audioState: tvNativeAudioState,
           error: ytLastError,
           userInteracted: !!ytUserInteracted,
           unlockPromptVisible: !!ytUnlockPromptVisible
@@ -1855,6 +1891,10 @@
     var ytRealState = null;         // last state reported by YouTube (-1,0,1,2,3,5) or null
     var ytRealMuted = null;
     var ytRealVolume = null;
+    var ytLoadedFraction = null;
+    var ytCurrentTime = null;
+    var ytQuality = null;
+    var tvNativeAudioState = null;
     var ytLastError = null;
     var ytUnlockPromptVisible = false;
     var YT_STATE_NAMES = { '-1': 'unstarted', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering', '5': 'cued' };
@@ -1880,8 +1920,9 @@
               tvLog('yt buffering hang -> kick play');
               if (ytPlayer && ytPlayerMode === 'api') {
                 try { ytPlayer.playVideo(); } catch (e) {}
+              } else {
+                sendIframeCommand('playVideo');
               }
-              sendIframeCommand('playVideo');
               setTimeout(function() {
                 if (ytRealState === 3 && boardConfig && boardConfig.youtubeStreamEnabled && ytPlayerMode === 'api') {
                   tvLog('yt buffering hang -> fallback to direct iframe');
@@ -1919,6 +1960,23 @@
       if (!ytPlayer || !ytApiPlayerReady) return;
       try { if (typeof ytPlayer.isMuted === 'function') ytRealMuted = ytPlayer.isMuted(); } catch (e) {}
       try { if (typeof ytPlayer.getVolume === 'function') ytRealVolume = ytPlayer.getVolume(); } catch (e) {}
+      try {
+        if (typeof ytPlayer.getVideoLoadedFraction === 'function') {
+          var lf = ytPlayer.getVideoLoadedFraction();
+          if (typeof lf === 'number') ytLoadedFraction = Math.round(lf * 1000) / 1000;
+        }
+      } catch (e) {}
+      try {
+        if (typeof ytPlayer.getCurrentTime === 'function') {
+          var ct = ytPlayer.getCurrentTime();
+          if (typeof ct === 'number') ytCurrentTime = Math.round(ct * 10) / 10;
+        }
+      } catch (e) {}
+      try {
+        if (typeof ytPlayer.getPlaybackQuality === 'function') {
+          ytQuality = ytPlayer.getPlaybackQuality() || null;
+        }
+      } catch (e) {}
       try {
         if (typeof ytPlayer.getPlayerState === 'function') {
           var st = ytPlayer.getPlayerState();
@@ -2001,10 +2059,11 @@
           ytPlayer.setVolume(vol);
           if (shouldPlay) ytPlayer.playVideo();
         } catch (e) {}
+      } else if (ytPlayerMode === 'iframe') {
+        sendIframeCommand('unMute');
+        sendIframeCommand('setVolume', [vol]);
+        if (shouldPlay) sendIframeCommand('playVideo');
       }
-      sendIframeCommand('unMute');
-      sendIframeCommand('setVolume', [vol]);
-      if (shouldPlay) sendIframeCommand('playVideo');
     }
 
     function parseYouTubeUrl(input) {
@@ -2223,8 +2282,15 @@
       var targetId = parsed.id;
       var isPlaylist = parsed.type === 'playlist';
 
+      if (ytForceIframe && ytPlayerMode === 'api') {
+        try { if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy(); } catch (e) {}
+        ytPlayer = null;
+        ytApiPlayerReady = false;
+        ytPlayerMode = 'none';
+      }
+
       // A. API player exists
-      if (ytPlayerMode === 'api' && ytPlayer) {
+      if (!ytForceIframe && ytPlayerMode === 'api' && ytPlayer) {
         if (!ytApiPlayerReady) {
           // onReady will call syncYouTubeMusic() again with the latest config
           updateMusicPillUI(parsed);
@@ -2656,9 +2722,63 @@
         ytCurrentVideoId = null;
         ytRealState = null;
         if (cmd.mode === 'iframe') ytForceIframe = true;
-        else if (cmd.mode === 'api') ytForceIframe = false;
+        else if (cmd.mode === 'api') {
+          ytForceIframe = false;
+          ytPlayerMode = 'none';
+        }
         syncYouTubeMusic();
         scheduleTvStatus('cmd_restart_music');
+      } else if (cmd.type === 'SET_YT_STYLE' && typeof cmd.css === 'string') {
+        tvLog('cmd SET_YT_STYLE');
+        var ytc = document.getElementById('ytMusicContainer');
+        if (ytc) ytc.style.cssText = cmd.css;
+        scheduleTvStatus('cmd_yt_style');
+      } else if (cmd.type === 'TEST_AUDIO') {
+        tvLog('cmd TEST_AUDIO ' + (cmd.url || 'stop'));
+        try {
+          var existingAud = document.getElementById('tvNativeAudio');
+          if (existingAud && existingAud.parentNode) {
+            existingAud.pause();
+            existingAud.parentNode.removeChild(existingAud);
+          }
+          if (cmd.url) {
+            var aud = document.createElement('audio');
+            aud.id = 'tvNativeAudio';
+            aud.src = cmd.url;
+            aud.autoplay = true;
+            aud.volume = typeof cmd.volume === 'number' ? Math.max(0, Math.min(1, cmd.volume / 100)) : 0.5;
+            aud.onplaying = function() {
+              tvNativeAudioState = 'playing';
+              tvLog('audio playing ct=' + Math.round(aud.currentTime || 0));
+              scheduleTvStatus('audio_playing');
+            };
+            aud.onwaiting = function() {
+              tvNativeAudioState = 'waiting';
+              tvLog('audio waiting');
+            };
+            aud.onerror = function() {
+              var errCode = aud.error ? aud.error.code : '?';
+              tvNativeAudioState = 'error:' + errCode;
+              tvLog('audio error ' + errCode);
+              scheduleTvStatus('audio_error');
+            };
+            document.body.appendChild(aud);
+            var playRes = aud.play();
+            if (playRes && typeof playRes.then === 'function') {
+              playRes.then(function() {}, function(err) {
+                tvNativeAudioState = 'rejected';
+                tvLog('audio play rejected: ' + (err && err.message ? err.message : err));
+                scheduleTvStatus('audio_rejected');
+              });
+            }
+          } else {
+            tvNativeAudioState = 'stopped';
+          }
+        } catch (e) {
+          tvNativeAudioState = 'ex:' + (e && e.message ? e.message : e);
+          tvLog('audio exception: ' + tvNativeAudioState);
+        }
+        scheduleTvStatus('cmd_test_audio');
       } else if (cmd.type === 'RELOAD_PAGE') {
         tvLog('cmd RELOAD_PAGE');
         scheduleTvStatus('cmd_reload');

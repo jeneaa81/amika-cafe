@@ -3,7 +3,7 @@
 // receives its own reports and commands stay uncluttered.
 
 // Must match `var TV_BUILD` in public/tv.html (enforced by scripts/verify_tv.cjs).
-export const EXPECTED_TV_BUILD = '2026.11.03-telemetry-3';
+export const EXPECTED_TV_BUILD = '2026.11.03-telemetry-4';
 
 export const TV_STATUS_TOPIC = 'amika_cricova_tv_status';
 
