@@ -114,7 +114,7 @@ export const TvDiagnosticsPanel: React.FC<TvDiagnosticsPanelProps> = ({ language
     }, 3000);
   };
 
-  const handleRestartMusic = async (mode?: 'api' | 'iframe') => {
+  const handleRestartMusic = async (mode?: 'api' | 'iframe' | 'audio') => {
     setIsRequesting(true);
     await sendTvCommand({ type: 'RESTART_MUSIC', mode });
     setTimeout(async () => {
@@ -191,6 +191,21 @@ export const TvDiagnosticsPanel: React.FC<TvDiagnosticsPanelProps> = ({ language
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRequesting ? 'animate-spin text-emerald-400' : ''}`} />
             <span>{isRo ? 'Cere status' : 'Запросить статус ТВ'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleRestartMusic('audio')}
+            disabled={isRequesting}
+            title={
+              isRo
+                ? 'Trece instant pe streamul direct MP3 (HTML5 Audio) pentru Smart TV'
+                : 'Мгновенно включить прямое радио MP3 (HTML5 Audio) в обход видеоплеера YouTube'
+            }
+            className="px-3 py-2 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-xs font-bold text-emerald-200 hover:text-white flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+          >
+            <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isRo ? 'Radio MP3 (HTML5)' : 'Радио MP3 (HTML5)'}</span>
           </button>
 
           <button
@@ -320,10 +335,16 @@ export const TvDiagnosticsPanel: React.FC<TvDiagnosticsPanelProps> = ({ language
               <span>{isRo ? 'Browser TV' : 'Браузер ТВ'}</span>
             </div>
             <div className="font-mono font-bold text-white text-xs">
-              {activeReport.chrome ? `Chromium ${activeReport.chrome}` : 'WebOS Browser'}
+              {activeReport.chrome
+                ? `Chromium ${activeReport.chrome}`
+                : activeReport.ua.includes('NetCast')
+                ? 'LG NetCast 7.0'
+                : 'Smart TV Browser'}
             </div>
             <div className="text-[10px] text-stone-400">
-              {activeReport.chrome && activeReport.chrome < 70
+              {activeReport.ua.includes('NetCast')
+                ? (isRo ? 'HTML5 MP3 compatibil' : 'HTML5 MP3 совместим')
+                : activeReport.chrome && activeReport.chrome < 70
                 ? (isRo ? '⚠️ Versiune veche' : '⚠️ Старый браузер')
                 : (isRo ? 'Compatibil' : 'Совместим')}
             </div>

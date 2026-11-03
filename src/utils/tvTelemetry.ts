@@ -3,7 +3,7 @@
 // receives its own reports and commands stay uncluttered.
 
 // Must match `var TV_BUILD` in public/tv.html (enforced by scripts/verify_tv.cjs).
-export const EXPECTED_TV_BUILD = '2026.11.03-telemetry-4';
+export const EXPECTED_TV_BUILD = '2026.11.03-telemetry-5';
 
 export const TV_STATUS_TOPIC = 'amika_cricova_tv_status';
 
@@ -12,17 +12,32 @@ export const TV_STATUS_RELAYS = [
   `https://ntfy.tedomum.fr/${TV_STATUS_TOPIC}`,
 ];
 
+export interface TvMediaCaps {
+  mse?: boolean;
+  mseMp4?: boolean;
+  mseWebm?: boolean;
+  vidMp4?: string;
+  vidWebm?: string;
+  vidHls?: string;
+  audMp3?: string;
+  audAac?: string;
+}
+
 export interface TvMusicStatus {
   enabled: boolean;
   videoId: string | null;
   configVolume: number | null;
-  mode: 'none' | 'api' | 'iframe' | 'react-iframe';
+  mode: 'none' | 'api' | 'iframe' | 'react-iframe' | 'audio' | 'audio-fallback';
   apiScript?: 'idle' | 'loading' | 'loaded' | 'error';
   apiReady?: boolean;
   state: number | null;
   stateName: string;
   muted: boolean | null;
   volume: number | null;
+  loadedFrac?: number | null;
+  curTime?: number | null;
+  quality?: string | null;
+  audioState?: string | null;
   error: number | null;
   userInteracted: boolean;
   unlockPromptVisible?: boolean;
@@ -46,6 +61,7 @@ export interface TvStatusReport {
   configUpdatedAt?: number;
   theme?: string;
   lastCmd?: { type: string; at: string } | null;
+  mediaCaps?: TvMediaCaps;
   music: TvMusicStatus;
   log: string[];
   jsErrors: string[];
@@ -228,12 +244,22 @@ export function diagnose(r: TvStatusReport, now = Date.now()): Diagnosis[] {
       },
     });
   } else if (m.state === 1) {
+    const isAudioFallback = m.mode === 'audio-fallback' || m.mode === 'audio';
     out.push({
       severity: 'ok',
-      title: { ru: `Плеер играет со звуком (громкость ${m.volume ?? '?'}%)`, ro: `Playerul rulează cu sunet (volum ${m.volume ?? '?'}%)` },
+      title: {
+        ru: isAudioFallback
+          ? `Играет прямое радио MP3 / HTML5 Audio (громкость ${m.volume ?? '?'}%)`
+          : `Плеер YouTube играет со звуком (громкость ${m.volume ?? '?'}%)`,
+        ro: isAudioFallback
+          ? `Rulează radio MP3 / HTML5 Audio (volum ${m.volume ?? '?'}%)`
+          : `Playerul YouTube rulează cu sunet (volum ${m.volume ?? '?'}%)`,
+      },
       action: {
-        ru: 'Со стороны страницы всё в порядке. Если в зале тихо — проверьте громкость и аудиовыход самого ТВ (динамики / ARC / Bluetooth).',
-        ro: 'Pagina funcționează. Verificați volumul și ieșirea audio a TV-ului.',
+        ru: isAudioFallback
+          ? 'Включён резервный аудиопоток HTML5 MP3 (для совместимости с браузером Smart TV). Проверьте уровень громкости на самом телевизоре.'
+          : 'Со стороны страницы всё в порядке. Если в зале тихо — проверьте громкость и аудиовыход самого ТВ (динамики / ARC / Bluetooth).',
+        ro: 'Pagina transmite sunetul normal. Verificați volumul televizorului.',
       },
     });
   } else if (!err && m.apiScript !== 'error') {
@@ -241,16 +267,16 @@ export function diagnose(r: TvStatusReport, now = Date.now()): Diagnosis[] {
     out.push({
       severity: stuck ? 'warn' : 'ok',
       title: {
-        ru: `Плеер не играет (состояние: ${m.stateName}, режим: ${m.mode})`,
-        ro: `Playerul nu rulează (stare: ${m.stateName}, mod: ${m.mode})`,
+        ru: `Плеер загружается (состояние: ${m.stateName}, режим: ${m.mode})`,
+        ro: `Playerul se încarcă (stare: ${m.stateName}, mod: ${m.mode})`,
       },
       action: {
         ru: !m.userInteracted
-          ? 'Браузер, скорее всего, блокирует автозапуск. Нажмите любую кнопку на пульте, затем «Запросить статус».'
-          : m.state === null
-            ? 'YouTube не отвечает плееру. Если так остаётся — браузер ТВ, вероятно, не поддерживает встроенный плеер.'
-            : 'Подождите 10–20 секунд и запросите статус ещё раз.',
-        ro: !m.userInteracted ? 'Apăsați orice tastă pe telecomandă, apoi „Cere status”.' : 'Așteptați și cereți statusul din nou.',
+          ? 'Нажмите любую кнопку на пульте ТВ или кнопку «Радио MP3 (HTML5)» выше для мгновенного запуска звука.'
+          : 'Если браузер ТВ (LG NetCast) не декодирует видеопоток YouTube за 22 сек, страница автоматически переключится на прямое радио MP3 (HTML5 Audio). Также можно нажать «Радио MP3 (HTML5)» вручную.',
+        ro: !m.userInteracted
+          ? 'Apăsați orice tastă pe telecomandă sau butonul „Radio MP3 (HTML5)” mai sus.'
+          : 'Dacă YouTube nu pornește în 22 sec, pagina trece automat pe streamul MP3 (HTML5 Audio).',
       },
     });
   }
