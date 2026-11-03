@@ -44,4 +44,19 @@ if (hasGap || hasInset || hasSpaceEvenly) {
   process.exit(1);
 }
 
+// Ensure TV_BUILD in public/tv.html matches EXPECTED_TV_BUILD in src/utils/tvTelemetry.ts
+const tvBuildMatch = code.match(/var\s+TV_BUILD\s*=\s*['"]([^'"]+)['"]/);
+const telemetryTs = fs.readFileSync('src/utils/tvTelemetry.ts', 'utf8');
+const expectedBuildMatch = telemetryTs.match(/export\s+const\s+EXPECTED_TV_BUILD\s*=\s*['"]([^'"]+)['"]/);
+
+if (!tvBuildMatch || !expectedBuildMatch) {
+  console.error('Could not locate TV_BUILD or EXPECTED_TV_BUILD!');
+  process.exit(1);
+}
+if (tvBuildMatch[1] !== expectedBuildMatch[1]) {
+  console.error(`Build mismatch: tv.html has ${tvBuildMatch[1]} but tvTelemetry.ts expects ${expectedBuildMatch[1]}`);
+  process.exit(1);
+}
+console.log('TV_BUILD matched:', tvBuildMatch[1]);
+
 console.log('ALL AUDITS PASSED!');

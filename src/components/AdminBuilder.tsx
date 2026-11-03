@@ -59,6 +59,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { parseYouTubeUrl, YOUTUBE_STREAM_PRESETS } from '../utils/youtube';
+import { TvDiagnosticsPanel } from './TvDiagnosticsPanel';
 
 const ADMIN_PASS_STORAGE_KEY = 'amika_admin_password_v1';
 const ADMIN_SESSION_UNLOCKED_KEY = 'amika_admin_unlocked_v1';
@@ -1900,6 +1901,9 @@ export const AdminBuilder: React.FC<AdminBuilderProps> = ({
               </div>
             </div>
           </div>
+
+          {/* TV Remote Telemetry & Diagnostics Card */}
+          <TvDiagnosticsPanel language={language} />
 
           {/* TV Screen Headers, Badges & Footers Settings */}
           <div className="p-6 rounded-3xl bg-stone-900 border border-stone-800 shadow-xl space-y-6">

@@ -21,6 +21,11 @@ import {
   Music,
 } from 'lucide-react';
 import { parseYouTubeUrl } from '../utils/youtube';
+import {
+  publishTvStatus,
+  getOrCreateTvDeviceId,
+  EXPECTED_TV_BUILD,
+} from '../utils/tvTelemetry';
 
 interface TvMenuBoardProps {
   language: Language;
@@ -228,6 +233,41 @@ export const TvMenuBoard: React.FC<TvMenuBoardProps> = ({
           ? `🎵 ${source}: Музыка YouTube запущена`
           : `🔇 ${source}: Музыка YouTube на паузе`
       );
+    } else if (msg.type === 'REQUEST_TV_STATUS') {
+      try {
+        const parsed = parseYouTubeUrl(boardConfig.youtubeStreamUrl);
+        publishTvStatus({
+          type: 'TV_STATUS',
+          page: 'react-tv',
+          build: EXPECTED_TV_BUILD,
+          deviceId: getOrCreateTvDeviceId(),
+          reason: 'request',
+          ts: Date.now(),
+          uptimeSec: Math.round((Date.now() - performance.timeOrigin) / 1000),
+          ua: navigator.userAgent.substring(0, 200),
+          chrome: null,
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          online: navigator.onLine !== false,
+          visible: !document.hidden,
+          relayConnections: 2,
+          cloudSynced: true,
+          theme: themeMode,
+          music: {
+            enabled: !!boardConfig.youtubeStreamEnabled,
+            videoId: parsed?.id ?? null,
+            configVolume: boardConfig.youtubeVolume ?? 50,
+            mode: 'react-iframe',
+            state: isMusicMuted ? 2 : 1,
+            stateName: isMusicMuted ? 'paused' : 'playing',
+            muted: isMusicMuted,
+            volume: boardConfig.youtubeVolume ?? 50,
+            error: null,
+            userInteracted: true,
+          },
+          log: ['React TV screen active'],
+          jsErrors: [],
+        });
+      } catch {}
     }
 
     setTimeout(() => setRemoteToast(null), 3500);
